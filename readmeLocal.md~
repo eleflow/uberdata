@@ -1,4 +1,5 @@
 # Uberdata
+Write a project description...
 # Getting Started
 ## Requirements
 * [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
@@ -8,7 +9,6 @@
 * [Zeppelin](http://www-us.apache.org/dist/zeppelin/zeppelin-0.6.0/zeppelin-0.6.0-bin-all.tgz)
 * [Spark](http://www-us.apache.org/dist/spark/spark-1.6.1/spark-1.6.1-bin-hadoop2.6.tgz)
 * [Spark-timeseries](https://github.com/sryza/spark-timeseries)
-
 ## Installation
 Clone the project Uberdata
 ```
@@ -24,9 +24,10 @@ $ ./zeppelin.sh
 ```
 Zeppelin will be running at http://localhost:8080/
 ## Uberdata Zeppelin Notebook on AWS
-To build and run on AWS go [here](https://github.com/eleflow/uberdata/blob/master/readmeAws.md)
+To build and run on AWS go [here]()
+## Contributing
+We must write a CONTRIBUTING.md for details on our code of conduct.
 ## Authors
 [Eleflow](http://www.eleflow.com.br/)
 ## License
 Apache - http://www.apache.org/licenses/LICENSE-2.0
-
