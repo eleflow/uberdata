@@ -1,6 +1,6 @@
 *.class
 *.log
-
+.project
 # sbt specific
 .cache/
 .history/
