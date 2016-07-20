@@ -1,0 +1,74 @@
+- hosts: localhost
+  connection: local
+  gather_facts: False
+  vars:
+    #keypair: "eleflowawsoi" 
+    keypair: "objeleflow"
+    instance_type: "r3.xlarge"
+    price: "0.15"
+    image: "ami-e9527ed9"
+    #image: amzn-ami-hvm-2015.03.0.x86_64-ebs
+    group: "IUberdataApplication"
+    region: "us-west-2"
+    zone: "us-west-2c"
+    #region: "sa-east-1"
+    #zone: "sa-east-1a"
+    iamrole: "dev-ops"
+  tasks:
+    - name: create iuberdata security group
+      ec2_group:
+        name: "{{ group }}"
+        description: Security Group for the Web app
+        region: "{{ region }}"
+        purge_rules: false 
+        purge_rules_egress: false 
+        rules:
+          - proto: tcp
+            from_port: 80
+            to_port: 80
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 22
+            to_port: 22
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 4040
+            to_port: 4040
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 8080
+            to_port: 8080
+            cidr_ip: 0.0.0.0/0
+          - proto: tcp
+            from_port: 8081
+            to_port: 8081
+            cidr_ip: 0.0.0.0/0
+        rules_egress:
+          - proto: all
+            cidr_ip: 0.0.0.0/0
+    - name: create iuberdata instance
+      ec2: image={{ image }}
+           instance_type={{ instance_type }}
+           keypair={{ keypair }}
+           instance_tags='{"Name":"iuberdata"}'
+           instance_profile_name={{ iamrole }}
+           region={{ region }}
+           zone={{ zone }}
+           group={{ group }}
+           
+           wait=true
+           #spot_price={{price}} 
+      register: ec2_info
+    - debug: var=script.stdout
+    - debug: var=script.stderr
+    # # vpc_subnet_id=subnet-e32aff86
+    # assign_public_ip=yes
+    # - add_host: hostname={{ item.public_ip }} groupname=ec2hosts
+    #   with_items: ec2_info.instances
+    - name: wait for instances to listen on port:22
+      wait_for:
+        state=started
+        host={{ item.public_dns_name }}
+        port=22
+        timeout=600
+      with_items: ec2_info.instances

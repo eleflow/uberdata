@@ -1,0 +1,50 @@
+---
+- hosts: tag_Name_iuberdata
+  gather_facts: True
+  user: ec2-user
+  sudo: yes
+  tasks:
+    - name: install spark jars
+      script: spark-jars.sh
+    - debug: var=script.stdout
+    - debug: var=script.stderr
+    - name: copy iuberdata to init.d
+      copy: src=iuberdata dest=/etc/init.d/iuberdata
+    - name: copy local iuberdata
+      copy: src=../iuberdata_zeppelin/target/scala-2.10/eleflow.uberdata.IUberdata-Zeppelin-0.1.0.jar dest=/tmp/eleflow.uberdata.IUberdata-Zeppelin-0.1.0.jar
+      ignore_errors: yes
+    - name: copy zeppelin-site.xml
+      copy: src=zeppelin-site.xml dest=/tmp/zeppelin-site.xml
+    - name: copy interpreter.sh
+      copy: src=interpreter.sh dest=/tmp/interpreter.sh
+    - name: copy shell.zip
+      copy: src=shell.zip dest=/tmp/shell.zip 
+    - name: stop iuberdata
+      service: name=iuberdata state=stopped enabled=yes
+      ignore_errors: yes
+    - name: zeppelin and iuberdata
+      script: iuberdata.sh
+    - debug: var=script.stdout
+    - debug: var=script.stderr
+    - name: start iuberdata
+      service: name=iuberdata state=started enabled=yes
+    - debug: var=script.stdout
+    - debug: var=script.stderr
+    - name: install nginx
+      script: nginx.sh
+    - debug: var=script.stdout
+    - debug: var=script.stderr
+    - name: copy nginx conf
+      copy: src=nginx.conf dest=/etc/nginx/nginx.conf
+      tags:
+        - nginx
+    - debug: var=script.stdout
+    - debug: var=script.stderr
+    - name:  nginx on startup
+      service: name=nginx state=started enabled=on
+      tags:
+        - nginx
+        - nginx-conf
+    - debug: var=script.stdout
+    - debug: var=script.stderr
+
