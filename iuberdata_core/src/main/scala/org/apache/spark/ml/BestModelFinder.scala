@@ -59,7 +59,7 @@ abstract class BestModelFinder[T, M <: ForecastBaseModel[M]](implicit kt: ClassT
   }
 
   def transformSchema(schema: StructType): StructType = {
-    SchemaUtils.checkColumnType(schema, $(featuresCol), inputOutputDataType)
+//    SchemaUtils.checkColumnType(schema, $(featuresCol), inputOutputDataType)
     schema
   }
 

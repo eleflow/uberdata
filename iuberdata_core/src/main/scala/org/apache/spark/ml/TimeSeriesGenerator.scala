@@ -17,8 +17,7 @@ import scala.reflect.ClassTag
   * Created by celio on 05/05/16.
   */
 class TimeSeriesGenerator[T, U](override val uid: String)(implicit ct: ClassTag[T])
-  extends Transformer with HasInputCol with HasOutputCol with HasTimeCol with DefaultParamsWritable
-    with HasLabelCol with HasFeaturesCol  {
+  extends BaseTimeSeriesGenerator {
 
   def this()(implicit ct: ClassTag[T]) =
     this(Identifiable.randomUID("TimeSeriesGenerator"))
@@ -44,8 +43,8 @@ class TimeSeriesGenerator[T, U](override val uid: String)(implicit ct: ClassTag[
     val featuresColIndex = sparkContext.broadcast(dataSet.schema.fieldIndex($(featuresCol)))
     val grouped = rdd.map {
       row =>
-        val timeColRow = IUberdataForecastUtil.convertColumnToLong(row,index.value)
-          convertColumnToDouble(timeColRow, featuresColIndex)
+        val timeColRow = IUberdataForecastUtil.convertColumnToLong(row, index.value)
+        convertColumnToDouble(timeColRow, featuresColIndex)
     }.groupBy { row =>
       row.getAs[T](labelColIndex.value)
     }.map {
@@ -61,24 +60,6 @@ class TimeSeriesGenerator[T, U](override val uid: String)(implicit ct: ClassTag[
 
     val trainSchema = transformSchema(dataSet.schema)
     dataSet.sqlContext.createDataFrame(toBeTrained, trainSchema)
-}
-
-  def convertColumnToDouble(toBeTransformed: Row, colIndex: Broadcast[Int]): Row = {
-    toBeTransformed.get(colIndex.value) match {
-      case s: Double => toBeTransformed
-      case i: Int =>
-        val (prior, after) = toBeTransformed.toSeq.splitAt(colIndex.value)
-        val result = (prior :+ i.toDouble) ++ after.tail
-        Row(result: _*)
-      case l: Long =>
-        val (prior, after) = toBeTransformed.toSeq.splitAt(colIndex.value)
-        val result = (prior :+ l.toDouble) ++ after.tail
-        Row(result: _*)
-      case s: Short =>
-        val (prior, after) = toBeTransformed.toSeq.splitAt(colIndex.value)
-        val result = (prior :+ s.toDouble) ++ after.tail
-        Row(result: _*)
-    }
   }
 
   override def transformSchema(schema: StructType): StructType = {

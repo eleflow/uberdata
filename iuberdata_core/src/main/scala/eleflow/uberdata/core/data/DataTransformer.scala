@@ -29,8 +29,8 @@ import org.apache.spark.sql._
 import scala.collection.mutable
 
 /**
- * Created by dirceu on 16/10/14.
- */
+  * Created by dirceu on 16/10/14.
+  */
 
 object DataTransformer {
 
@@ -69,7 +69,7 @@ object DataTransformer {
   }
 
   def convertNullValues: Row => Row = {
-    a:Row => Row(a.toSeq.map(f => if (f == null) 0d else f))
+    a: Row => Row(a.toSeq.map(f => if (f == null) 0d else f))
   }
 
   def prepareToSummarizeColumns(train: Dataset, test: Dataset, target: Seq[String], id: Seq[String]) = {
@@ -81,7 +81,7 @@ object DataTransformer {
                                 dataSetType: DataSetType.Types, columnsSize: Int): RDD[((Double, Any),
     LabeledPoint)] = {
     // TODO Break in two methods. One for train another for test
-    val fields = dataset.dtypes.zipWithIndex.filter(f => !target.contains(f._1._1) && !id.contains(f._1._1) )
+    val fields = dataset.dtypes.zipWithIndex.filter(f => !target.contains(f._1._1) && !id.contains(f._1._1))
     val targetFieldType = dataset.dtypes.filter(f => target.contains(f._1))
     val targetIndices = target.map(f => dataset.columnIndexOf(f))
     val idIndices = id.map(f => dataset.columnIndexOf(f))
@@ -94,33 +94,52 @@ object DataTransformer {
         val norm = normalizedStrings.value
 
         val normValues = fields.map {
-          case (_, index) => {
+          case (_, index) =>
             val v = norm.get(index - columnShift).map {
-              f =>
-                (f._1, f._2.apply(row(index )),
-                  f._3.apply(row(index)))
+              case (id, funcToIndex, funcValue) =>
+                (id, funcToIndex(row(index)),
+                  funcValue(row(index)))
             }
             v.getOrElse(
               throw new UnexpectedValueException(s"Unexpected String Value exception ${norm.get(index)}$index, ${row(index)}"))
-          }
+
         }
 
-        val (_, indexes, values) = normValues.tail.scanLeft((normValues.head))((b, a) => (b._1 + a._1, (b._1 + a._2), a._3)).filter(_._3 != 0).unzip3
-        val targetIndex = if(targetIndices.isEmpty) 0 else targetIndices.head
-        val rowIndexD =  if (targetFieldType.isEmpty || targetFieldType.head._2 ==  "StringType") {
-            rowIndex.toDouble + 1
-        } else{
-             toDouble(row(targetIndex))
+        val (_, indexes, values) = normValues.tail.scanLeft(normValues.head)((b, a) => (b._1 + a._1, b._1 + a._2, a._3)).filter(_._3 != 0).unzip3
+        val targetIndex = if (targetIndices.isEmpty) 0 else targetIndices.head
+        val rowIndexD = if (targetFieldType.isEmpty || targetFieldType.head._2 == "StringType") {
+          rowIndex.toDouble + 1
+        } else {
+          toDouble(row(targetIndex))
         }
 
         dataSetType match {
           case DataSetType.Test => ((rowIndexD, row(targetIndex)), LabeledPoint(rowIndexD, Vectors.sparse
-            (columnsSize, indexes.toArray, values.toArray)))
+          (columnsSize, indexes.toArray, values.toArray)))
           case DataSetType.Train =>
             val idIndex = if (idIndices.isEmpty) 0 else idIndices.head
             ((rowIndexD, row(idIndex)), LabeledPoint(rowIndexD, Vectors
-            .sparse(columnsSize, indexes.toArray, values.toArray)))
+              .sparse(columnsSize, indexes.toArray, values.toArray)))
         }
+    }
+  }
+
+  def toFloat(toConvert: Any): Float = {
+    toConvert match {
+      case v: Int => v.toFloat
+      case v: Long => v.toFloat
+      case v: BigDecimal => v.toFloat
+      case v: java.math.BigDecimal => v.floatValue()
+      case v: Double => v.toFloat
+      case v: Float => v
+      case v: Timestamp => (v.getTime / 3600000).toFloat
+      case v: String => v.toFloat
+      case v: Byte => v.toFloat
+      case v: Boolean => v match {
+        case true => 1f
+        case false => 0f
+      }
+      case _ => throw new Exception(toConvert.toString)
     }
   }
 

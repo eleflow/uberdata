@@ -25,4 +25,8 @@ object DateSplitType {
   val DayOfAWeek = 1 << 2
   val WorkNonWorkingDay = 1 << 3
   val PeriodDayOfAWeek = Period | DayOfAWeek
+  val DayOfMonth = 1 << 5
+  val MonthOfYear = 1 << 6
+  val Year = 1 << 7
+  val DayMonthYear = DayOfMonth | MonthOfYear | Year
 }

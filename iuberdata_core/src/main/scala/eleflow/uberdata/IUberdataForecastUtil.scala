@@ -32,10 +32,9 @@ object IUberdataForecastUtil {
     }
   }
 
-  def convertColumnToLong2(row: Row, columnIndex: Int): Row = {
+  def convertColumnToLongAddAtEnd(row: Row, columnIndex: Int): Row = {
     val result = row.get(columnIndex) match {
       case s: java.sql.Timestamp =>
-//        val (prior, after) = row.toSeq.splitAt(columnIndex)
         val result = row.toSeq :+ s.getTime
         Row(result: _*)
       case d: Double =>
