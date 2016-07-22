@@ -17,23 +17,24 @@
 package eleflow.uberdata.core.util
 
 import java.nio.charset.StandardCharsets
-import eleflow.uberdata.core.conf.SparkNotebookConfig
-import eleflow.uberdata.core.enums.PeriodOfDay
-import org.apache.spark.SparkFiles
-
-import scala.collection.JavaConversions._
 import java.nio.file.{FileSystems, Files}
 import java.text.ParseException
 
-import org.joda.time.DateTime
+import eleflow.uberdata.core.conf.SparkNotebookConfig
+import eleflow.uberdata.core.enums.PeriodOfDay
+import org.apache.spark.SparkFiles
+import org.joda.time.{DateTime, DateTimeZone}
 import org.joda.time.format.DateTimeFormat
 
+import scala.collection.JavaConversions._
 import scala.util.{Success, Try}
 
 /**
   * Created by dirceu on 24/02/15.
   */
 object DateTimeParser extends Serializable {
+
+  val offset = DateTimeZone.getDefault().getOffset(new DateTime())
 
   def parse(dateString: String): Option[DateTime] = {
     val dateFormat: Option[String] = readDateFormat.orElse(determineDateFormat(dateString))
@@ -49,7 +50,7 @@ object DateTimeParser extends Serializable {
 
   def parse(dateString: String, dateFormat: String): Option[DateTime] = {
     val formatter = DateTimeFormat.forPattern(dateFormat).withZoneUTC()
-    Some(formatter.parseDateTime(dateString))
+    Some(formatter.parseDateTime(dateString).minusMillis(offset))
   }
 
   def parse(dateString: String, dateFormatOption: Option[String]): Option[DateTime] = {
