@@ -203,7 +203,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
       StructField("Sales", IntegerType), StructField("Open", BooleanType)))
 
       val rdd = sc.parallelize(data)
-      val dataFrame = sqlContext.createDataFrame(rdd, structType)
+      val dataFrame = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
 
       val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double, Double](labelCol = "Store",
         timeCol = "data", featuresCol = "Sales", nFutures = 5)
@@ -265,7 +265,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     val structType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
       StructField("Sales", IntegerType), StructField("Open", BooleanType)))
       val rdd = sc.parallelize(groupedList)
-      val dataFrame = sqlContext.createDataFrame(rdd, structType)
+      val dataFrame = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
 
       val pipeline= ForecastPredictor().prepareBestForecastPipeline[Int, Int]("Store",
         "Sales", "validation","data", 5, Seq(8,12,16,24,26),(0 to 2).toArray)
@@ -282,7 +282,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     val structType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
       StructField("Sales", IntegerType), StructField("Open", BooleanType)))
       val rdd = sc.parallelize(groupedList)
-      val trainDf = sqlContext.createDataFrame(rdd, structType)
+      val trainDf = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
     val testStructType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
       StructField("Id", IntegerType), StructField("Open", BooleanType)))
       val testRdd = sc.parallelize(groupedTest)
@@ -314,7 +314,6 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
         "Sales", "Store", "data","Id",SupportedAlgorithm.XGBoostAlgorithm, "validationCol")
 
       assert(result.collect().length == 64)
-  //    assert(result.map(_.getAs[String](IUberdataForecastUtil.ALGORITHM)).distinct().count() == 1)
     }
 
     it should "execute prediction with rosenn dataset" in {
