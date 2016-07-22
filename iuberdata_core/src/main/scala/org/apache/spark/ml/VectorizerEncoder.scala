@@ -12,35 +12,33 @@ import org.apache.spark.sql.types.{StructField, StructType}
 /**
   * Created by dirceu on 13/07/16.
   */
-class VectoriserEncoder(override val uid: String) extends Transformer
-  with HasIdCol with HasInputCols with HasLabelCol with HasFeaturesCol with HasOutputCol with DefaultParamsWritable {
+class VectorizerEncoder(override val uid: String) extends Transformer
+  with HasIdCol with HasInputCols with HasGroupByCol with HasFeaturesCol with HasOutputCol with DefaultParamsWritable {
+
+  def this() = this(Identifiable.randomUID("vectorizer"))
 
   def setIdCol(input: String) = set(idCol, input)
 
   def setFeaturesCol(input: String) = set(featuresCol, input)
 
-  def setLabelCol(labelName: String) = set(labelCol, labelName)
+  def setGroupByCol(toGroupBy: String) = set(groupByCol, toGroupBy)
 
   def setInputCol(input: Array[String]) = set(inputCols, input)
 
   def setOutputCol(output: String) = set(outputCol, output)
-
-  def this() = this(Identifiable.randomUID("vectorizer"))
 
   override def transform(dataSet: DataFrame): DataFrame = {
     val context = dataSet.sqlContext.sparkContext
     val input = context.broadcast($(inputCols))
     val allColumnNames = dataSet.schema.map(_.name)
     val nonInputColumnIndexes = context.broadcast(allColumnNames.zipWithIndex.filter(f => !$(inputCols).contains(f._1)
-//      || f._1 == $(labelCol)
-      || f._1 == $(featuresCol) || f._1 == $(idCol)))
+      || f._1 == $(groupByCol) || f._1 == $(idCol)))
     val result = dataSet.map {
       row =>
         val rowSeq = row.toSeq
         val nonInputColumns = nonInputColumnIndexes.value.map {
           case (_, index) => rowSeq(index)
         }
-
         val size = input.value.length
         val (values,indices) = input.value.map {
           column => DataTransformer.toDouble(row.getAs(column))
@@ -55,6 +53,6 @@ class VectoriserEncoder(override val uid: String) extends Transformer
 
   @DeveloperApi
   override def transformSchema(schema: StructType): StructType = StructType(schema.filter(col =>
-    !$(inputCols).contains(col.name) || col.name == $(featuresCol) || col.name == $(idCol) ||
-      col.name == $(labelCol))).add(StructField($(outputCol), new VectorUDT))
+    !$(inputCols).contains(col.name) || col.name == $(groupByCol) || col.name == $(idCol) ||
+      col.name == $(featuresCol))).add(StructField($(outputCol), new VectorUDT))
 }

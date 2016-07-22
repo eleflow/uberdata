@@ -2,6 +2,8 @@ package org.apache.spark.ml
 
 import com.cloudera.sparkts.models.{HOLTWinters, HOLTWintersModel}
 import org.apache.spark.Logging
+import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
+import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
@@ -18,6 +20,19 @@ class HoltWintersBestModelFinder[T](override val uid: String)(implicit kt: Class
     with Logging {
 
   import org.apache.spark.sql.DataFrame
+
+  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[T]) = set(timeSeriesEvaluator, eval)
+
+  def setEstimatorParamMaps(value: Array[ParamMap]): this.type = set(estimatorParamMaps, value)
+
+  def setNFutures(value: Int) = set(nFutures, value)
+
+  override def setValidationCol(value: String) = set(validationCol, value)
+
+  def setFeaturesCol(label: String) = set(featuresCol, label)
+
+  def setLabelCol(label: String) = set(labelCol, label)
+
 
   def this()(implicit kt: ClassTag[T]) = this(Identifiable.randomUID("arima"))
 

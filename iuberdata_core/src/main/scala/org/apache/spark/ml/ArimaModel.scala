@@ -1,6 +1,7 @@
 package org.apache.spark.ml
 
 import com.cloudera.sparkts.models.UberArimaModel
+import eleflow.uberdata.IUberdataForecastUtil
 import eleflow.uberdata.enums.SupportedAlgorithm
 import org.apache.hadoop.fs.Path
 import org.apache.spark.Logging
@@ -56,7 +57,7 @@ class ArimaModel[T](override val uid: String,
   }
 
   override def transformSchema(schema: StructType) = super.transformSchema(schema).
-    add(StructField("featuresPrediction", new VectorUDT))
+    add(StructField(IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME, new VectorUDT))
 
   override def copy(extra: ParamMap): ArimaModel[T] = {
     val newModel = copyValues(new ArimaModel[T](uid, models), extra)

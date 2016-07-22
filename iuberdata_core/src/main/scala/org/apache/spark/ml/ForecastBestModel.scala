@@ -56,7 +56,7 @@ class ForecastBestModel[T](override val uid: String,
           val movingAverageForecast = Vectors.dense(MovingAverageCalc.simpleMovingAverageArray(forecast.toArray,
             windowSize.values.head))
           Seq(movingAverageForecast, SupportedAlgorithm.MovingAverage8.toString,
-            windowSize.map(f => (f._1, f._2.toDouble)), features)
+            windowSize.map(f => (f._1, f._2.toString)), features)
       }
     } catch {
       case e: Exception =>

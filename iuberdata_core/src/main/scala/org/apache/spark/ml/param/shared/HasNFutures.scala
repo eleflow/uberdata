@@ -13,6 +13,4 @@ trait HasNFutures extends Params {
 
   /** @group getParam */
   final def getNFutures: Int = $(nFutures)
-
-  def setNFutures(value: Int) = set(nFutures, value)
 }

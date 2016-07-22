@@ -7,6 +7,8 @@ import org.apache.spark.sql.Row
   */
 object IUberdataForecastUtil {
 
+  lazy val FEATURES_PREDICTION_COL_NAME = "featuresPrediction"
+  lazy val FEATURES_COL_NAME = "features"
   lazy val ALGORITHM = "algorithm"
   lazy val PARAMS = "parameters"
 

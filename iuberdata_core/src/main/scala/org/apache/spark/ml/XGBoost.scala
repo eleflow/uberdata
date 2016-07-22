@@ -1,5 +1,6 @@
 package org.apache.spark.ml
 
+import eleflow.uberdata.IUberdataForecastUtil
 import eleflow.uberdata.core.data.DataTransformer
 import eleflow.uberdata.enums.SupportedAlgorithm
 import eleflow.uberdata.models.UberXGBOOSTModel
@@ -21,7 +22,8 @@ import scala.reflect.ClassTag
   */
 class XGBoost[T](override val uid: String, val models: RDD[(T, (UberXGBOOSTModel, Seq[(ModelParamEvaluation[T])]))])
                 (implicit kt: ClassTag[T], ord: Ordering[T] = null) extends ForecastBaseModel[XGBoostModel[T]]
-  with HasInputCol with HasOutputCol with HasLabelCol with DefaultParamsWritable with HasFeaturesCol with HasNFutures {
+  with HasInputCol with HasOutputCol with DefaultParamsWritable with HasFeaturesCol with HasNFutures
+with HasGroupByCol {
 
   def this(models: RDD[(T, (UberXGBOOSTModel, Seq[(ModelParamEvaluation[T])]))])(implicit kt: ClassTag[T],
                                                                                  ord: Ordering[T] = null) =
@@ -29,19 +31,14 @@ class XGBoost[T](override val uid: String, val models: RDD[(T, (UberXGBOOSTModel
 
   override def transform(dataSet: DataFrame): DataFrame = {
     val schema = dataSet.schema
-    val predSchema = transformSchema(schema) //TODO mudar pra groupbycol
+    val predSchema = transformSchema(schema)
 
-//    val scContext = dataSet.sqlContext.sparkContext
-    //TODO fazer com que os modelos invalidos voltem numeros absurdos
+    val joined = models.join(dataSet.map(r => (r.getAs[T]($(groupByCol)), r)))
 
-    val joined = models.join(dataSet.map(r => (r.getAs[T]($(featuresCol)), r)))
-
-    val featuresColName = dataSet.sqlContext.sparkContext.broadcast($(featuresCol))
-//    val nFut = scContext.broadcast($(nFutures))
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
-        val features = row.getAs[Array[org.apache.spark.mllib.linalg.Vector]]("features")
-        val label = DataTransformer.toFloat(row.getAs($(labelCol)))
+        val features = row.getAs[Array[org.apache.spark.mllib.linalg.Vector]](IUberdataForecastUtil.FEATURES_COL_NAME)
+        val label = DataTransformer.toFloat(row.getAs($(featuresCol)))
         val labelPoint = features.map {
           vec =>
             val array = vec.toArray.map(_.toFloat)
@@ -49,7 +46,7 @@ class XGBoost[T](override val uid: String, val models: RDD[(T, (UberXGBOOSTModel
         }
         val matrix = new DMatrix(labelPoint.toIterator)
         val (ownFeaturesPrediction, forecast) = bestModel.boosterInstance.predict(matrix).flatMap(_.map(_.toDouble)).splitAt(features.length)
-        Row(row.toSeq :+ Vectors.dense(forecast) :+ SupportedAlgorithm.Arima.toString :+ bestModel.params.map(f =>
+        Row(row.toSeq :+ Vectors.dense(forecast) :+ SupportedAlgorithm.XGBoostAlgorithm.toString :+ bestModel.params.map(f =>
           f._1 -> f._2.toString) :+ Vectors.dense(ownFeaturesPrediction): _*)
     }
     dataSet.sqlContext.createDataFrame(predictions, predSchema)

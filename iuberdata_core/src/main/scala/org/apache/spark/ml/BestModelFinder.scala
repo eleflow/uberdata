@@ -6,7 +6,6 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared._
-import org.apache.spark.ml.util.SchemaUtils
 import org.apache.spark.mllib.linalg.{VectorUDT, Vectors}
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -23,13 +22,7 @@ abstract class BestModelFinder[T, M <: ForecastBaseModel[M]](implicit kt: ClassT
   lazy val partialValidationCol = s"partial${$(validationCol)}"
   lazy val inputOutputDataType = new VectorUDT
 
-  def setValidationCol(value: String) = set(validationCol, value)
-
-  def setLabelCol(label: String) = set(labelCol, label)
-
-  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[T]) = set(timeSeriesEvaluator, eval)
-
-  def setEstimatorParamMaps(value: Array[ParamMap]): this.type = set(estimatorParamMaps, value)
+  def setValidationCol(colName:String) = set(validationCol,colName)
 
   protected def train(dataSet: DataFrame): M
 
@@ -54,19 +47,19 @@ abstract class BestModelFinder[T, M <: ForecastBaseModel[M]](implicit kt: ClassT
     }
     val context = dataSet.sqlContext
     context.createDataFrame(data, dataSet.schema.add(
-      new StructField(partialValidationCol, new VectorUDT)
+      StructField(partialValidationCol, new VectorUDT)
     )).cache
   }
 
   def transformSchema(schema: StructType): StructType = {
-//    SchemaUtils.checkColumnType(schema, $(featuresCol), inputOutputDataType)
     schema
   }
 
   override def copy(extra: ParamMap): Estimator[M] = {
     val that = this.getClass.getConstructor(classOf[String], classOf[scala.reflect.ClassTag[T]],
       classOf[scala.math.Ordering[T]]).
-      newInstance(uid, kt, ord).setValidationCol($(validationCol))
+      newInstance(uid, kt, ord)
+      .setValidationCol($(validationCol))
     copyValues(that, extra)
   }
 

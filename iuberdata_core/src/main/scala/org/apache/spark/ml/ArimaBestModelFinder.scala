@@ -25,6 +25,18 @@ class ArimaBestModelFinder[T](override val uid: String)(implicit kt: ClassTag[T]
     with TimeSeriesBestModelFinder with Logging {
   def this()(implicit kt: ClassTag[T]) = this(Identifiable.randomUID("arima"))
 
+  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[T]) = set(timeSeriesEvaluator, eval)
+
+  def setEstimatorParamMaps(value: Array[ParamMap]): this.type = set(estimatorParamMaps, value)
+
+  def setNFutures(value: Int) = set(nFutures, value)
+
+  override def setValidationCol(value: String) = set(validationCol, value)
+
+  def setFeaturesCol(label: String) = set(featuresCol, label)
+
+  def setLabelCol(label: String) = set(labelCol, label)
+
   def getOrdering(metricName: String): Ordering[Double] = {
     metricName match {
       case "re" => Ordering.Double.reverse

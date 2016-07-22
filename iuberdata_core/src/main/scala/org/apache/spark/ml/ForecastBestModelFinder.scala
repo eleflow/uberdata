@@ -28,6 +28,18 @@ class ForecastBestModelFinder[T, M <: ForecastBaseModel[M]](override val uid: St
 
   def this() (implicit kt: ClassTag[T]) = this(Identifiable.randomUID("BestForecast"))
 
+  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[T]) = set(timeSeriesEvaluator, eval)
+
+  def setEstimatorParamMaps(value: Array[ParamMap]): this.type = set(estimatorParamMaps, value)
+
+  def setNFutures(value: Int) = set(nFutures, value)
+
+  override def setValidationCol(value: String) = set(validationCol, value)
+
+  def setFeaturesCol(label: String) = set(featuresCol, label)
+
+  def setLabelCol(label: String) = set(labelCol, label)
+
   def setWindowParams(params:Seq[Int]) = set(windowParams,params)
 
   def movingAverageEvaluation(row: Row, model: HOLTWintersModel, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[T]],
