@@ -34,7 +34,11 @@ class TimeSeriesSmallModelRegressionMetrics(idPredictionsAndObservations: Array[
   def meanSquaredError = SSerr / summary.count
 
   def rootMeanSquaredPercentageError = math.sqrt(idPredictionsAndObservations.map {
-    case (observation, prediction) => Math.pow((observation - prediction) / observation, 2)
+    case (observation, prediction) => if (observation == 0) {
+      0
+    } else {
+      Math.pow((observation - prediction) / observation, 2)
+    }
   }.sum / summary.count)
 
   def rootMeanSquaredError = math.sqrt(meanSquaredError)
