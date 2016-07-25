@@ -37,9 +37,9 @@ class TestDataTransformer extends FunSuite with Matchers with BeforeAndAfterWith
     val dataSet = Dataset(context, s"${defaultFilePath}HandleDataTransformer.csv")
     val results = DataTransformer.createLabeledPointFromRDD(dataSet, Seq("id"), Seq(),DataSetType.Test).take(3)
 
-    assert(results(0)._2.features.toArray.deep == Array(5.0, 0.0, 1.0, 10.5, 394296.0).deep)
-    assert(results(1)._2.features.toArray.deep == Array(1.0, 1.0, 0.0, 0.1, 394176.0).deep)
-    assert(results(2)._2.features.toArray.deep == Array(8.0, 1.0, 0.0, 10.0, 394176.0).deep)
+    assert(results(0)._2.features.toArray.deep == Array(5.0, 0.0, 1.0, 10.5, 394299.0).deep)
+    assert(results(1)._2.features.toArray.deep == Array(1.0, 1.0, 0.0, 0.1, 394179.0).deep)
+    assert(results(2)._2.features.toArray.deep == Array(8.0, 1.0, 0.0, 10.0, 394179.0).deep)
 
   }
 
