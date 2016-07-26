@@ -1,3 +1,7 @@
 ### Uberdata
-Uberdata is a project on top of Apache Spark, that include Apache Zeppelin.
-With uberdata you can create a Cluster _[local](readmeLocal.md)_ or on _[AWS](readmeAws.md)_ in a few minutes 
+Uberdata is a distribution of Apache Spark, that include Apache Zeppelin that is ready to use _[locally](readmeLocal.md)_ on your computer or on  _[AWS](readmeAws.md)_ .
+
+Slack Channels:
+[User Support](https://uberdata.slack.com/messages/user)
+[Development Support](https://uberdata.slack.com/messages/dev)
+
