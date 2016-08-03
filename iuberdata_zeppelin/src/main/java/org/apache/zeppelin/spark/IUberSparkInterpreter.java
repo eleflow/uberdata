@@ -760,9 +760,9 @@ IUberSparkInterpreter extends Interpreter {
         synchronized (this) {
             if (z != null) {
                 z.setGui(context.getGui());
-                uc.sparkContext().setJobGroup(getJobGroup(context), "Zeppelin", false);
+                if (uc != null && uc.initialized()) uc.sparkContext().setJobGroup(getJobGroup(context), "Zeppelin", false);
                 InterpreterResult r = interpretInput(lines, context);
-                uc.sparkContext().clearJobGroup();
+                if (uc != null && uc.initialized()) uc.sparkContext().clearJobGroup();
                 return r;
             } else {
                 return interpretInput(lines, context);
