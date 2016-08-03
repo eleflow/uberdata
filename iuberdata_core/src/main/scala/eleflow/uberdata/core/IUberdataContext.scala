@@ -351,6 +351,13 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
     }
   }
 
+  def copy(input: File, output: String) = {
+    val conf = new Configuration()
+    val dstPath = createPathInstance(output)
+    val dstFs = dstPath.getFileSystem(conf)
+    FileUtil.copy(input, dstFs, dstPath, false, conf)
+  }
+
   def readFromS3(input: URI): Try[InputStream] ={
     val rangeObjectRequest: GetObjectRequest = new GetObjectRequest(input.getHost, input.getPath.substring(1))
      Try {
