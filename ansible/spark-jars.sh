@@ -3,7 +3,7 @@ buildVersion=1.6.2-bin-2.6.0-cdh5.4.2
 
 mkdir -p /opt/spark
 mkdir -p /opt/spark/conf
-
+echo "donwloading spark"
 wget https://uberdata-public.s3.amazonaws.com/spark/spark-$buildVersion.tgz -P /tmp
 
 tar -xzf /tmp/spark-$buildVersion.tgz --no-same-owner --strip-components 1 --wildcards --no-anchored 'spark-assembly*.jar'
@@ -21,5 +21,5 @@ mv lib /opt/spark
 mv python /opt/spark
 mv R /opt/spark
 
-rm -f spark-1.6.2.tgz
-rm -rf spark-1.6.2
+rm -f /tmp/spark-$buildVersion.tgz
+rm -rf /tmp/spark-$buildVersion
