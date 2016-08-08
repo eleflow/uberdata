@@ -3,6 +3,9 @@ language: scala
 scala:
   - 2.10.6
 
+jdk:
+  - oraclejdk8
+
 before_install:
   - ./install-dependencies.sh
 
