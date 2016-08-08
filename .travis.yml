@@ -3,6 +3,9 @@ language: scala
 scala:
    - 2.10.6
 
+before_install:
+  - ./install-dependencies.sh
+
 script:
   - sbt clean coverage test coverageReport
 
