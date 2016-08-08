@@ -3,8 +3,11 @@ language: scala
 scala:
    - 2.10.6
 
+sudo: required
+dist: trusty
+
 before_install:
-  - ./install-dependencies.sh
+  - sudo bash install-dependencies.sh
 
 script:
   - sbt clean coverage test coverageReport
