@@ -7,7 +7,7 @@ sudo: required
 dist: trusty
 
 before_install:
-  - sudo bash install-dependencies.sh
+  - ./install-dependencies.sh
 
 script:
   - sbt clean coverage test coverageReport
