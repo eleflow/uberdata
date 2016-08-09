@@ -10,7 +10,7 @@ before_install:
   - ./install-dependencies.sh
 
 script:
-  - sbt clean coverage test coverageReport
+  - sbt clean reload compile
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
