@@ -207,7 +207,7 @@ trait Predictor extends Serializable with Logging {
   Seq.empty[Int], validationPercentage: Double = 0.3d, algorithm: Algorithm,
                                 validationMethod: ValidationMethod, selectColumns: Either[Int, Double], iterations: Int) = {
     val (filteredTrainDataSet, filteredTestDataSet, targetIndexes, testTargetIndexes) =
-      extractDataAndIndexes(train, test, ids, target, train.toDataFrame().schema.fields.zipWithIndex.map(_._2), Seq.empty)
+      extractDataAndIndexes(train, test, ids, target, train.toDataFrame.schema.fields.zipWithIndex.map(_._2), Seq.empty)
     val (trainDataSetCached, _, validationDataSet, testDataSet) =
       buildTestAndTrainDataSet(filteredTrainDataSet, filteredTestDataSet, targetIndexes, testTargetIndexes, validationPercentage)
     val (trainLabel, validationLabel, testLabel, correlatedColumns) = Statistics.correlationLabeledPoint(
@@ -222,7 +222,7 @@ trait Predictor extends Serializable with Logging {
                              validationPercentage: Double = 0.3d, algorithm: Algorithm,
                              validationMethod: ValidationMethod, selectColumns: Either[Int, Double], iterations: Int) = {
     val (filteredTrainDataSet, filteredTestDataSet, targetIndexes, testTargetIndexes) =
-      extractDataAndIndexesStr(train, test, ids, target, train.toDataFrame().schema.fields.map(_.name), Seq.empty)
+      extractDataAndIndexesStr(train, test, ids, target, train.toDataFrame.schema.fields.map(_.name), Seq.empty)
     val (trainDataSetCached, _, validationDataSet, testDataSet) =
       buildTestAndTrainDataSet(filteredTrainDataSet, filteredTestDataSet, targetIndexes, testTargetIndexes, validationPercentage)
     val (trainLabel, validationLabel, testLabel, correlatedColumns) = Statistics.correlationLabeledPoint(
@@ -626,7 +626,7 @@ trait Predictor extends Serializable with Logging {
 
   private def evolutivePredictObjectSplit(train: Dataset, test: Dataset, ids: Seq[String], target: Seq[String]) = {
 
-    val (trainDataSet, validationDataSet) = splitRddInTestValidation(train.toDataFrame().rdd)
+    val (trainDataSet, validationDataSet) = splitRddInTestValidation(train.toDataFrame.rdd)
     val cachedTrain = train.sqlContext.createDataFrame(trainDataSet, train.schema).persist(StorageLevel.MEMORY_ONLY_SER)
     val cachedValidation = train.sqlContext.createDataFrame(validationDataSet, train.schema).
       persist(StorageLevel.MEMORY_ONLY_SER)

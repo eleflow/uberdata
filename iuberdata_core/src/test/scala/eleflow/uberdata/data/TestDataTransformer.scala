@@ -4,6 +4,7 @@ import eleflow.uberdata.core.ClusterSettings
 import eleflow.uberdata.core.data.Dataset._
 import eleflow.uberdata.core.data.{DataTransformer, Dataset}
 import eleflow.uberdata.core.enums.DataSetType
+import eleflow.uberdata.core.util.DateTimeParser
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
 import org.apache.spark.sql.types._
 import org.scalatest._
@@ -34,7 +35,8 @@ class TestDataTransformer extends FunSuite with Matchers with BeforeAndAfterWith
   }
 
   test("Correct handle date values") {
-    val dataSet = Dataset(context, s"${defaultFilePath}HandleDataTransformer.csv")
+    val dataSet = Dataset(context, s"${defaultFilePath}HandleDataTransformer.csv", DateTimeParser(0))
+
     val results = DataTransformer.createLabeledPointFromRDD(dataSet, Seq("id"), Seq(),DataSetType.Test).take(3)
 
     assert(results(0)._2.features.toArray.deep == Array(5.0, 0.0, 1.0, 10.5, 394299.0).deep)
