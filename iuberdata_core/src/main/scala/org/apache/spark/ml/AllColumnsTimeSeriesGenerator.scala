@@ -1,11 +1,10 @@
 package org.apache.spark.ml
 
-import eleflow.uberdata.IUberdataForecastUtil
 import org.apache.spark.annotation.Since
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.util.{DefaultParamsReadable, Identifiable}
-import org.apache.spark.mllib.linalg.Vectors
-import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
+
+import org.apache.spark.sql.types.{ StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row}
 
 import scala.reflect.ClassTag

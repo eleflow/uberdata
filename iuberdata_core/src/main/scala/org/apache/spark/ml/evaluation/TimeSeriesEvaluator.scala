@@ -2,14 +2,13 @@ package org.apache.spark.ml.evaluation
 
 import org.apache.spark.annotation.Since
 import org.apache.spark.ml.param.{Param, ParamMap, ParamValidators}
-import org.apache.spark.ml.param.shared.{HasFeaturesCol, HasLabelCol, HasPredictionCol, HasValidationCol}
+import org.apache.spark.ml.param.shared.{HasFeaturesCol, HasPredictionCol, HasValidationCol}
 import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable, _}
-import org.apache.spark.mllib.evaluation.RegressionMetrics
 import org.apache.spark.mllib.linalg.{Vector, VectorUDT}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{DoubleType, LongType}
+import org.apache.spark.sql.types.DoubleType
 
 import scala.reflect.ClassTag
 
@@ -71,16 +70,16 @@ final class TimeSeriesEvaluator[T](override val uid: String)(implicit kt: ClassT
     val featuresType = schema($(featuresCol)).dataType
 
     val predictionAndLabels = (validationColType, featuresType) match {
-      case (p: VectorUDT, f: VectorUDT) => {
+      case (p: VectorUDT, f: VectorUDT) =>
         dataSet
           .map { f =>
           val label = f.getAs[T](0)
           val prediction = f.getAs[org.apache.spark.mllib.linalg.Vector](1)
           val feature = f.getAs[org.apache.spark.mllib.linalg.Vector](2)
           val modelIndex = f.getAs[Int](3)
-          (label, modelIndex, (feature.toArray.zip(prediction.toArray)))
+          (label, modelIndex, feature.toArray.zip(prediction.toArray))
         }
-      }
+
 
       case _ =>
         dataSet

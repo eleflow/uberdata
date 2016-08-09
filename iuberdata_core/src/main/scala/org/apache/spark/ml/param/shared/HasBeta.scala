@@ -1,6 +1,6 @@
 package org.apache.spark.ml.param.shared
 
-import org.apache.spark.ml.param.{Param, Params, _}
+import org.apache.spark.ml.param.{Param, Params}
 
 /**
   * Created by dirceu on 17/05/16.
