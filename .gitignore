@@ -1,3 +1,4 @@
+.sbtopts
 *.class
 *.log
 .project
