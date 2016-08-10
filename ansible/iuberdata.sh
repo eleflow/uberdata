@@ -3,7 +3,6 @@ yum -y update
 
 yum -y groupinstall "Development Tools"
 
-scalaVersion="2.10"
 uberdataVersion="0.1.0"
 mySqlConnectorVersion="5.1.34"
 zeppelinVersion="0.6.0"
@@ -38,13 +37,10 @@ cp -f /usr/share/zeppelin/conf/interpreter.json /tmp/notebook
 
 rm -rf /usr/share/zeppelin*
 
-#aws s3 cp s3://uberdata-public/zeppelin/ /tmp/ --recursive --include "zeppelin-*.tar.gz"
-
 wget "http://www-us.apache.org/dist/zeppelin/zeppelin-$zeppelinVersion/zeppelin-$zeppelinVersion-bin-all.tgz" -O "/tmp/zeppelin-$zeppelinVersion.tgz"
 
 tar -xzvf /tmp/zeppelin-*.tgz -C /usr/share
 rm -f /tmp/zeppelin-*.tgz
-rm -f /user/share/zeppelin
 find /usr/share -name zeppelin-* -type d -exec ln -s {} /usr/share/zeppelin \;
 rm -rf /usr/share/zeppelin/notebook/*
 
@@ -60,24 +56,16 @@ mv /tmp/zeppelin-site.xml /usr/share/zeppelin/conf/
 
 mv /tmp/interpreter.sh /usr/share/zeppelin/bin/
 chmod +x /usr/share/zeppelin/bin/interpreter.sh
-#chown iuberdata:iuberdata /usr/share/zeppelin/conf/zeppelin-site.xml
-
-aws s3 cp s3://uberdata-artifactory/iuberdata_addon_zeppelin-${uberdataVersion}.zip /tmp
-unzip -o /tmp/iuberdata_addon_zeppelin*zip
-cp -f /tmp/eleflow.iuberdata_addon_zeppelin-${uberdataVersion}/lib/eleflow.iuberdata_addon_zeppelin*.jar /usr/share/zeppelin/lib/
 
 # install IUberdata
-file="/tmp/eleflow.uberdata.IUberdata-Zeppelin-$uberdataVersion.jar"
-if ! test -f "$file"
-then
-    aws s3 cp s3://uberdata-artifactory/eleflow.uberdata.IUberdata-Zeppelin-$uberdataVersion.jar /tmp
-fi
 cp /tmp/eleflow.uberdata.IUberdata-Zeppelin-$uberdataVersion.jar ./
 
 ln -s /opt/spark/lib/spark-assembly* ./spark-assembly.jar
 ln -s /opt/spark/lib/datanucleus-core*.jar ./datanucleus-core.jar
 ln -s /opt/spark/lib/datanucleus-api*.jar ./datanucleus-api.jar
 ln -s /opt/spark/lib/datanucleus-rdbms*.jar ./datanucleus-rdbms.jar
+
+cp -f /tmp/iuberdata_addon_zeppelin-assembly-$uberdataVersion.jar /usr/share/zeppelin/lib/
 
 #install init.d scripts
 mkdir -p /var/log/iuberdata
@@ -106,8 +94,8 @@ if ! sudo su - iuberdata -c "test $file"
  fi
 
 #download and deploy mysql-connector-java
-wget "http://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-$mySqlConnectorVersion.tar.gz"
-tar -xzvf "mysql-connector-java-$mySqlConnectorVersion.tar.gz" "mysql-connector-java-$mySqlConnectorVersion/mysql-connector-java-$mySqlConnectorVersion-bin.jar"
-mv "mysql-connector-java-$mySqlConnectorVersion/mysql-connector-java-$mySqlConnectorVersion-bin.jar" ./
-rm -rf "mysql-connector-java-$mySqlConnectorVersion"
-rm -f "mysql-connector-java-$mySqlConnectorVersion.tar.gz"
+wget http://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-$mySqlConnectorVersion.tar.gz
+tar -xzvf mysql-connector-java-$mySqlConnectorVersion.tar.gz mysql-connector-java-$mySqlConnectorVersion/mysql-connector-java-$mySqlConnectorVersion-bin.jar
+mv mysql-connector-java-$mySqlConnectorVersion/mysql-connector-java-$mySqlConnectorVersion-bin.jar ./
+rm -rf mysql-connector-java-$mySqlConnectorVersion
+rm -f mysql-connector-java-$mySqlConnectorVersion.tar.gz

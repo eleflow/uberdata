@@ -18,6 +18,7 @@ package eleflow.uberdata.core.data
 import java.net.URI
 import java.sql.Timestamp
 
+
 import eleflow.uberdata.core.{ClusterSettings, IUberdataContext}
 import eleflow.uberdata.core.enums.{DataSetType, DateSplitType}
 import DateSplitType._
@@ -25,6 +26,8 @@ import eleflow.uberdata.core.exception.{InvalidDataException, UnexpectedFileForm
 import eleflow.uberdata.core.util.DateTimeParser
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+
+
 import org.joda.time.{DateTime, DateTimeZone, Days}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{StringType, StructField, StructType, DataType => SqlDataType}
@@ -32,11 +35,11 @@ import org.apache.spark.sql.types.{StringType, StructField, StructType, DataType
 import scala.collection.immutable.TreeSet
 
 /**
-  * SparkNotebook
-  * Copyright (C) 2014 eleflow.
-  * User: paulomagalhaes
-  * Date: 11/4/14 3:44 PM
-  */
+ * SparkNotebook
+ * Copyright (C) 2014 eleflow.
+ * User: paulomagalhaes
+ * Date: 11/4/14 3:44 PM
+ */
 object Dataset {
   implicit def DatasetToDataFrame(dataset: Dataset): DataFrame = dataset.toDataFrame
 
@@ -46,17 +49,23 @@ object Dataset {
 
   implicit def FileDatasetToDataFrame(fileDS: FileDataset): DataFrame = fileDS.toDataFrame
 
+  def apply(uc: IUberdataContext, file: String, dateTimeParser:DateTimeParser) = {
+    new Dataset(new FileDataset(uc, file, ",").dataFrame,dateTimeParser = dateTimeParser)
+  }
+
   def apply(uc: IUberdataContext, file: String, separator: String = ",") = {
     new FileDataset(uc, file, separator)
   }
 }
 
-class Dataset private[data](private val dataFrame: DataFrame, originalDataSet: Option[Dataset] = None, defaultSummarizedColumns:
-Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[String] = Seq.empty) extends Serializable {
+class Dataset private[data](dataFrame: DataFrame, originalDataSet: Option[Dataset] = None, defaultSummarizedColumns:
+Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[String] = Seq.empty,
+                            dateTimeParser:DateTimeParser = DateTimeParser()) extends Serializable {
 
   originalDataSet.map(f => dataFrameName(f.toDataFrame)).getOrElse(dataFrameName(dataFrame)).foreach(dataFrame.registerTempTable)
 
   type DateSplitterColumnSize = (Long, Long, Int) => Int
+
 
   type NoSplitterColumnSize = (Long, Int) => Int
   type DateTimeToInt = DateTime => Int
@@ -70,24 +79,24 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
 
   val dayZero = new DateTime(1970, 1, 1, 0, 0, 0)
   val daysBetween: DateTimeToInt = {
-    case d: DateTime => Days.daysBetween(dayZero, d).getDays
+    d: DateTime => Days.daysBetween(dayZero, d).getDays
   }
   val getDayOfMonth: DateTimeToInt = {
-    case d: DateTime => d.getDayOfMonth
+    d: DateTime => d.getDayOfMonth
   }
   val getMonthOfYear: DateTimeToInt = {
-    case d: DateTime => d.getMonthOfYear
+    d: DateTime => d.getMonthOfYear
   }
   val getYear: DateTimeToInt = {
-    case d: DateTime => d.getYear
+    d: DateTime => d.getYear
   }
   val getDayOfAWeek: DateTimeToInt = {
-    case d: DateTime => d.getDayOfWeek
+    d: DateTime => d.getDayOfWeek
   }
   val getPeriod: DateTimeToInt = {
-    case d: DateTime => DateTimeParser.period(d).id
+    d: DateTime => dateTimeParser.period(d).id
   }
-  lazy val labels = if (label.isEmpty) Seq(this.schema.fieldNames.head) else label
+  lazy val labels = if(label.isEmpty) Seq(this.schema.fieldNames.head) else label
 
   protected def extractFirstCompleteLine(dataRdd: RDD[Row]): Array[String] = {
     dataRdd.filter { value =>
@@ -115,7 +124,7 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
 
   protected def parse(data: String): Option[SqlDataType] = {
     import org.apache.spark.sql.types._
-    DateTimeParser.isValidDate(data) match {
+    dateTimeParser.isValidDate(data) match {
       case true => Some(TimestampType)
       case false => None
     }
@@ -129,7 +138,7 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
     new Dataset(newSchemaRDD, Some(this))
   }
 
-  def applyColumnTypes(columnTypes: Seq[SqlDataType]): Dataset = {
+  def applyColumnTypes(columnTypes: Seq[SqlDataType]):Dataset = {
     val (fields, structFieldNames) = dataFrame.schema.fields.zip(columnTypes).map {
       case (structField, dataType) =>
         (StructField(structField.name, dataType), structField.name)
@@ -143,7 +152,7 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
     new Dataset(newSchemaRDD, Some(this))
   }
 
-  def applyColumnTypes(columnReplacementTypes: Map[String, SqlDataType]): Dataset = {
+  def applyColumnTypes(columnReplacementTypes: Map[String,SqlDataType]):Dataset = {
     val newDataTypes = dataFrame.schema.fields.map {
       structField =>
         columnReplacementTypes.getOrElse(structField.name, structField.dataType)
@@ -169,24 +178,20 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
         case (value: Array[Byte], StructField(_, StringType, _, _)) => new String(value)
         case (value, StructField(_, DecimalType(), _, _)) => BigDecimal(value.toString)
         case (value, StructField(_, FloatType, _, _)) => value.toString.toFloat
-        case (value: Boolean, StructField(_, DoubleType, _, _)) => value match {
-          case true => 1d
-          case false => 0d
-          case a => throw new InvalidDataException(s"$a is an invalid Boolean value")
-        }
+        case (value: Boolean, StructField(_, DoubleType, _, _)) => if(value) 1d else 0d
         case (value, StructField(_, DoubleType, _, _)) => value.toString.toDouble
         case (value: Timestamp, StructField(_, LongType, _, _)) => value.getTime
         case (value, StructField(_, LongType, _, _)) => value.toString.toLong
         case (value, StructField(_, IntegerType, _, _)) => value.toString.toInt
         case (value, StructField(_, ShortType, _, _)) => value.toString.toShort
-        //converter de double
+        //convert from double
         case (value, StructField(_, BooleanType, _, _)) => value.toString match {
           case "1" | "t" | "true" => true
           case "0" | "f" | "false" => false
           case a => throw new InvalidDataException(s"$a is an invalid Boolean value")
         }
         case (value, StructField(_, TimestampType, _, _)) =>
-          new Timestamp(DateTimeParser.parse(value.toString).map(_.toDate.getTime)
+          new Timestamp(dateTimeParser.parse(value.toString).map(_.toDate.getTime)
             .getOrElse(throw new InvalidDataException("Unsupported data format Exception, please specify the date format")))
 
         case (value, StructField(_, StringType, _, _)) => value.toString
@@ -227,7 +232,7 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
 
   def toLabeledPoint = {
 
-    DataTransformer.createLabeledPointFromRDD(dataFrame, Seq(), Seq(), summarizedColumns, DataSetType.Test, columnsSize).values
+    DataTransformer.createLabeledPointFromRDD(dataFrame, Seq(), Seq(), summarizedColumns, DataSetType.Test, columnsSize ).values
   }
 
   def formatDateValues(columnName: String, dateSplitter: Long): DataFrame =
@@ -290,9 +295,9 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
   }
 
   protected def structType(): StructType = {
-    if (columnNames.length != typeLine.length || columnNames.isEmpty) StructType(List.empty[StructField])
+    if (columnNames().length != typeLine.length || columnNames().isEmpty) StructType(List.empty[StructField])
     else {
-      val fields = columnNames.zip(firstLineColumnTypes).map {
+      val fields = columnNames().zip(firstLineColumnTypes).map {
         case (columnName, columnType) => new StructField(columnName, columnType, true)
       }
       StructType(fields)
@@ -412,7 +417,7 @@ class FileDataset protected[data](@transient uc: IUberdataContext, file: String,
   protected def initDataFrame(columnNames: Array[String], originalRdd: RDD[Array[String]]):
   DataFrame = {
 
-    //    import org.apache.spark.sql.types._
+
     val sqlContext = uc.sqlContext
     val colNames = columnNames
     val types = StructType(colNames.map(name => StructField(name, StringType)).toSeq)
@@ -420,17 +425,6 @@ class FileDataset protected[data](@transient uc: IUberdataContext, file: String,
       if (colValues.length != colNames.length) throw new UnexpectedFileFormatException(s"Files should have the same number " +
         s"of columns. Line ${colValues.mkString(",")} \n has #${colValues.length} and Header have " +
         s"#${colNames.length}")
-      //      val columns = colValues.zip(structType.fields).zipWithIndex.map { case ((value, tp), index) =>
-      //        TODO não converter a data aqui
-      //        tp.dataType match {
-      //          case DecimalType() | DoubleType => value.headOption.map(f => BigDecimal(value.trim)).orNull
-      //          case FloatType => value.headOption.map(f => value.trim.toFloat).getOrElse(null)
-      //          case LongType => value.headOption.map(f => value.trim.toLong).getOrElse(null)
-      //          case IntegerType => value.headOption.map(f => value.trim.toInt).getOrElse(null)
-      //          case TimestampType => new Timestamp(DateTimeParser.parse(value).map(_.toDate.getTime).getOrElse(0))
-      //          case _ => if (value.trim.isEmpty) "0" else value
-      //        }
-      //      }
       Row(colValues: _*)
     }
     val dataFrame = sqlContext.createDataFrame(rowRdd, types)
