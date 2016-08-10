@@ -6,6 +6,8 @@ scala:
 jdk:
   - oraclejdk8
 
+sudo: false
+
 before_install:
   - ./install-dependencies.sh
 
