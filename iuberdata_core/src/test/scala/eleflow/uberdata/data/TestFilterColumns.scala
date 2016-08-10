@@ -85,7 +85,5 @@ class TestFilterColumns extends FlatSpec with Matchers with BeforeAndAfterWithCo
     val result = schema.slice(excludes = Seq(0, 3))
     assert(result.collect.deep == Array(new GenericRow(Array(5, "vlr1")),new GenericRow(Array( 1, "vl3")),new GenericRow(Array( 8, "vl3"))).deep)
   }
-
-
 }
 

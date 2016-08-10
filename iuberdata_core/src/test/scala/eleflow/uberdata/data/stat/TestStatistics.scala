@@ -1,6 +1,6 @@
 package eleflow.uberdata.data.stat
 
-import eleflow.uberdata.core.ClusterSettings
+import eleflow.uberdata.core.util.ClusterSettings
 import eleflow.uberdata.core.data.Dataset
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint

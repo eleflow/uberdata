@@ -57,13 +57,13 @@ object DataTransformer {
       train
     } else {
       val trainColumnNames = id ++ target ++ train.columnNames().filter(f => !target.contains(f) && !id.contains(f))
-      new Dataset(train.select(trainColumnNames.head, trainColumnNames.tail: _*))
+      new Dataset(train.select(trainColumnNames.head, trainColumnNames.tail: _*), converted = train.converted)
     }
     val newTest = if (test.columnIndexOf(id.head) == 0) {
       test
     } else {
       val testColumnNames = id ++ test.columnNames().filter(f => !target.contains(f) && !id.contains(f))
-      new Dataset(test.select(testColumnNames.head, testColumnNames.tail: _*))
+      new Dataset(test.select(testColumnNames.head, testColumnNames.tail: _*), converted = test.converted)
     }
     (newTrain, newTest)
   }
