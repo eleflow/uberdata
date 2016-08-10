@@ -8,7 +8,7 @@ object ClusterSettings {
   /**
     * This config will transform every double values from the input to a BigDecimal value
     */
-  var enforceDoublePrecision:Boolean = false
+  var enforceDoubleAsBigDecimal: Boolean = false
   var defaultDecimalScale: Int = 18
   var defaultDecimalPrecision: Int = 38
   var serializer: Option[String] = None
@@ -30,7 +30,7 @@ object ClusterSettings {
   var master: Option[String] = None
   var baseDir: String = "/tmp"
   var localDir: String = "/tmp"
-  val additionalConfs: scala.collection.mutable.Map[String,String] = scala.collection.mutable.Map.empty
+  val additionalConfs: scala.collection.mutable.Map[String, String] = scala.collection.mutable.Map.empty
 
   def setMaster(mas: String) = {
     master = Some(mas)

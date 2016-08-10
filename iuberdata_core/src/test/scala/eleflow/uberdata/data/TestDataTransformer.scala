@@ -6,6 +6,8 @@ import eleflow.uberdata.core.data.{DataTransformer, Dataset}
 import eleflow.uberdata.core.enums.DataSetType
 import eleflow.uberdata.core.util.DateTimeParser
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.types._
 import org.scalatest._
 
@@ -15,7 +17,7 @@ import org.scalatest._
 class TestDataTransformer extends FunSuite with Matchers with BeforeAndAfterWithContext {
   this: Suite =>
 
-  test("correctly load rdd with empty columns at the end") {
+  test("correctly load data with empty columns at the end") {
     val testDataSet = Dataset(context, s"${defaultFilePath}LoadRddDataTransformerTestData.csv")
     val dataset = Dataset(context, s"${defaultFilePath}LoadRddDataTransformerData.csv")
     val (result, _, _) = DataTransformer.createLabeledPointFromRDD(dataset, testDataSet, "t1", "int")
@@ -27,6 +29,30 @@ class TestDataTransformer extends FunSuite with Matchers with BeforeAndAfterWith
     assert(first.features.toArray.deep == Array[Double](0.0, 1.0, 0.0, 0.0, 0.0, 10.5, 0.0, 1.0, 0.0).deep)
     assert(second.label == 4)
     assert(second.features.toArray.deep == Array[Double](1.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 1.0).deep)
+  }
+
+  test("correct enforce double as bigdecimal ") {
+    ClusterSettings.enforceDoubleAsBigDecimal = true
+    @transient val sc = context.sparkContext
+    @transient val sqlContext = context.sqlContext
+
+    val structType = StructType(Seq(StructField("id", IntegerType, nullable = false),
+      StructField("int", IntegerType, nullable = false), StructField("string2", StringType, nullable = false),
+      StructField("double", DoubleType, nullable = false)))
+    val data = List(
+      Row(1, 5, "vlr1", 10.5),
+      Row(2, 1, "vl3", 0.1),
+      Row(3, 8, "vl3", 10.0))
+    val rdd = sc.parallelize(data)
+    val schema = sqlContext.createDataFrame(rdd, structType)
+    val result = schema.slice(Seq(2, 3))
+
+    def createBigDecimal(value:Double) = new java.math.BigDecimal(value.toString)
+      .setScale(ClusterSettings.defaultDecimalScale)
+
+    assert(result.collect.deep == Array(new GenericRow(Array[Any]("vlr1", createBigDecimal(10.5))),
+      new GenericRow(Array[Any]("vl3", createBigDecimal(0.1))), new GenericRow(Array[Any]("vl3",
+        createBigDecimal(10.0)))).deep)
   }
 
   test("Correct handle date values") {

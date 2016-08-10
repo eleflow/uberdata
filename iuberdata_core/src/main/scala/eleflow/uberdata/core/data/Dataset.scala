@@ -110,9 +110,9 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
   private def dataType(data: String): SqlDataType = {
     import org.apache.spark.sql.types._
     data match {
-      case r"""-?\d{9,18}"""  => LongType
+      case r"""-?\d{9,18}""" => LongType
       case r"""-?\d{1,8}""" => LongType // TODO: To return IntType for ints the whole data set (or sample) needs to be analyzed.
-      case r"""[+-]?\d*\.?\d*E?\d{1,4}""" if ClusterSettings.enforceDoublePrecision =>
+      case r"""[+-]?\d*\.?\d*E?\d{1,4}""" if ClusterSettings.enforceDoubleAsBigDecimal =>
         DecimalType(ClusterSettings.defaultDecimalPrecision, ClusterSettings.defaultDecimalScale)
       case r"""[+-]?\d*\.?\d*E?\d{1,4}""" => DoubleType
       case _ => parse(data).getOrElse(StringType)
@@ -138,10 +138,8 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
       case (structField, dataType) =>
         (StructField(structField.name, dataType), structField.name)
     }.unzip
-
     val newRowRDD = if (structFieldNames.size > 1) dataFrame.select(structFieldNames.head, structFieldNames.tail: _*)
     else dataFrame.select(structFieldNames.head)
-
     val newSchemaRDD = convert(newRowRDD, StructType(fields))
 
     new Dataset(newSchemaRDD, Some(this), converted = true)
@@ -159,7 +157,6 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
     import org.apache.spark.sql.types._
 
     val converted = dataFrame.map { row =>
-
       val values = row.toSeq.zip(newSchema.fields).map {
         case (null, _) => null
         case (s: String, tp: StructField) if s.isEmpty && !tp.dataType.isInstanceOf[StringType] => null
@@ -195,7 +192,6 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
       Row(values: _*)
     }
     dataFrame.sqlContext.createDataFrame(converted, newSchema)
-
   }
 
   def columnTypes(): Seq[SqlDataType] = {
