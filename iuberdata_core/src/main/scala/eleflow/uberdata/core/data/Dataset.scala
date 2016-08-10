@@ -18,16 +18,14 @@ package eleflow.uberdata.core.data
 import java.net.URI
 import java.sql.Timestamp
 
-
-import eleflow.uberdata.core.{ClusterSettings, IUberdataContext}
+import eleflow.uberdata.core.IUberdataContext
+import eleflow.uberdata.core.util.ClusterSettings
 import eleflow.uberdata.core.enums.{DataSetType, DateSplitType}
 import DateSplitType._
 import eleflow.uberdata.core.exception.{InvalidDataException, UnexpectedFileFormatException}
 import eleflow.uberdata.core.util.DateTimeParser
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-
-
 import org.joda.time.{DateTime, DateTimeZone, Days}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{StringType, StructField, StructType, DataType => SqlDataType}
@@ -35,11 +33,11 @@ import org.apache.spark.sql.types.{StringType, StructField, StructType, DataType
 import scala.collection.immutable.TreeSet
 
 /**
- * SparkNotebook
- * Copyright (C) 2014 eleflow.
- * User: paulomagalhaes
- * Date: 11/4/14 3:44 PM
- */
+  * SparkNotebook
+  * Copyright (C) 2014 eleflow.
+  * User: paulomagalhaes
+  * Date: 11/4/14 3:44 PM
+  */
 object Dataset {
   implicit def DatasetToDataFrame(dataset: Dataset): DataFrame = dataset.toDataFrame
 
@@ -49,8 +47,8 @@ object Dataset {
 
   implicit def FileDatasetToDataFrame(fileDS: FileDataset): DataFrame = fileDS.toDataFrame
 
-  def apply(uc: IUberdataContext, file: String, dateTimeParser:DateTimeParser) = {
-    new Dataset(new FileDataset(uc, file, ",").dataFrame,dateTimeParser = dateTimeParser)
+  def apply(uc: IUberdataContext, file: String, dateTimeParser: DateTimeParser) = {
+    new Dataset(new FileDataset(uc, file, ",").dataFrame, dateTimeParser = dateTimeParser)
   }
 
   def apply(uc: IUberdataContext, file: String, separator: String = ",") = {
@@ -60,13 +58,11 @@ object Dataset {
 
 class Dataset private[data](dataFrame: DataFrame, originalDataSet: Option[Dataset] = None, defaultSummarizedColumns:
 Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[String] = Seq.empty,
-                            dateTimeParser:DateTimeParser = DateTimeParser()) extends Serializable {
+                            dateTimeParser: DateTimeParser = DateTimeParser(), val converted: Boolean = false) extends Serializable {
 
   originalDataSet.map(f => dataFrameName(f.toDataFrame)).getOrElse(dataFrameName(dataFrame)).foreach(dataFrame.registerTempTable)
 
   type DateSplitterColumnSize = (Long, Long, Int) => Int
-
-
   type NoSplitterColumnSize = (Long, Int) => Int
   type DateTimeToInt = DateTime => Int
   type RowDateSplitter = (Long, DateTimeToInt, Seq[Int]) => Seq[Int]
@@ -96,7 +92,7 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
   val getPeriod: DateTimeToInt = {
     d: DateTime => dateTimeParser.period(d).id
   }
-  lazy val labels = if(label.isEmpty) Seq(this.schema.fieldNames.head) else label
+  lazy val labels = if (label.isEmpty) Seq(this.schema.fieldNames.head) else label
 
   protected def extractFirstCompleteLine(dataRdd: RDD[Row]): Array[String] = {
     dataRdd.filter { value =>
@@ -107,19 +103,20 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
 
   }
 
+  implicit class Regex(sc: StringContext) {
+    def r = new scala.util.matching.Regex(sc.parts.mkString, sc.parts.tail.map(_ => "x"): _*)
+  }
+
   private def dataType(data: String): SqlDataType = {
     import org.apache.spark.sql.types._
-    val double = """[+-]?\d*\.?\d*E?\d{1,4}"""
-    val intNumber = "-?\\d{1,9}" // more then 9 it cannot be int
-    val longNumber = "-?\\d{10,18}" // more then 19 it cannot be long
-    if (data.matches(intNumber))
-      LongType // TODO: To return IntType the whole data set (or sample) needs to be analyzed.
-    else if (data.matches(longNumber))
-      LongType
-    else if (data.matches(double))
-      DecimalType(ClusterSettings.defaultDecimalPrecision, ClusterSettings.defaultDecimalScale)
-    else
-      parse(data).getOrElse(StringType)
+    data match {
+      case r"""-?\d{9,18}"""  => LongType
+      case r"""-?\d{1,8}""" => LongType // TODO: To return IntType for ints the whole data set (or sample) needs to be analyzed.
+      case r"""[+-]?\d*\.?\d*E?\d{1,4}""" if ClusterSettings.enforceDoublePrecision =>
+        DecimalType(ClusterSettings.defaultDecimalPrecision, ClusterSettings.defaultDecimalScale)
+      case r"""[+-]?\d*\.?\d*E?\d{1,4}""" => DoubleType
+      case _ => parse(data).getOrElse(StringType)
+    }
   }
 
   protected def parse(data: String): Option[SqlDataType] = {
@@ -130,15 +127,13 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
     }
   }
 
-  //TODO mudar select
   def applyColumnNames(columnNames: Seq[String]) = {
     require(columnNames.nonEmpty)
-    val newSchemaRDD = if (columnNames.length > 1) dataFrame.select(columnNames.head, columnNames.tail: _*)
-    else dataFrame.select(columnNames.head)
-    new Dataset(newSchemaRDD, Some(this))
+    val filteredDataFrame = dataFrame.select(columnNames.map(dataFrame(_)): _*)
+    new Dataset(filteredDataFrame, Some(this), converted = converted)
   }
 
-  def applyColumnTypes(columnTypes: Seq[SqlDataType]):Dataset = {
+  def applyColumnTypes(columnTypes: Seq[SqlDataType]): Dataset = {
     val (fields, structFieldNames) = dataFrame.schema.fields.zip(columnTypes).map {
       case (structField, dataType) =>
         (StructField(structField.name, dataType), structField.name)
@@ -149,10 +144,10 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
 
     val newSchemaRDD = convert(newRowRDD, StructType(fields))
 
-    new Dataset(newSchemaRDD, Some(this))
+    new Dataset(newSchemaRDD, Some(this), converted = true)
   }
 
-  def applyColumnTypes(columnReplacementTypes: Map[String,SqlDataType]):Dataset = {
+  def applyColumnTypes(columnReplacementTypes: Map[String, SqlDataType]): Dataset = {
     val newDataTypes = dataFrame.schema.fields.map {
       structField =>
         columnReplacementTypes.getOrElse(structField.name, structField.dataType)
@@ -162,6 +157,7 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
 
   private def convert(dataFrame: DataFrame, newSchema: StructType): DataFrame = {
     import org.apache.spark.sql.types._
+
     val converted = dataFrame.map { row =>
 
       val values = row.toSeq.zip(newSchema.fields).map {
@@ -178,7 +174,7 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
         case (value: Array[Byte], StructField(_, StringType, _, _)) => new String(value)
         case (value, StructField(_, DecimalType(), _, _)) => BigDecimal(value.toString)
         case (value, StructField(_, FloatType, _, _)) => value.toString.toFloat
-        case (value: Boolean, StructField(_, DoubleType, _, _)) => if(value) 1d else 0d
+        case (value: Boolean, StructField(_, DoubleType, _, _)) => if (value) 1d else 0d
         case (value, StructField(_, DoubleType, _, _)) => value.toString.toDouble
         case (value: Timestamp, StructField(_, LongType, _, _)) => value.getTime
         case (value, StructField(_, LongType, _, _)) => value.toString.toLong
@@ -199,6 +195,7 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
       Row(values: _*)
     }
     dataFrame.sqlContext.createDataFrame(converted, newSchema)
+
   }
 
   def columnTypes(): Seq[SqlDataType] = {
@@ -225,14 +222,17 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
 
     val newDataFrame = if (filtered.length > 1) dataFrame.select(filtered.head, filtered.tail: _*)
     else dataFrame.select(filtered.head)
-    new Dataset(newDataFrame, None)
+    new Dataset(newDataFrame, None, converted = converted)
   }
 
-  def toDataFrame: DataFrame = convert(dataFrame, dataFrame.schema)
+  lazy val convertedDataFrame = toDataFrame
+
+  def toDataFrame: DataFrame = convert(dataFrame, getDataFrameSchema)
+
+  private def getDataFrameSchema = if (!converted) structType() else dataFrame.schema
 
   def toLabeledPoint = {
-
-    DataTransformer.createLabeledPointFromRDD(dataFrame, Seq(), Seq(), summarizedColumns, DataSetType.Test, columnsSize ).values
+    DataTransformer.createLabeledPointFromRDD(dataFrame, Seq(), Seq(), summarizedColumns, DataSetType.Test, columnsSize).values
   }
 
   def formatDateValues(columnName: String, dateSplitter: Long): DataFrame =
@@ -244,7 +244,7 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
       val formattedDate = splitDateValues(f, index, dateSplitter)
       Row(before ++ formattedDate ++ after.headOption.map(_ => after.tail).getOrElse(Seq.empty): _*)
     }
-    val (beforeFields, afterFields) = dataFrame.schema.fields.splitAt(index)
+    val (beforeFields, afterFields) = getDataFrameSchema.toArray.splitAt(index)
     val dateFields = (1 to determineSizeOfSplitter(dateSplitter)).map(index => new StructField(afterFields.head.name
       + index, org.apache.spark.sql.types.IntegerType, false))
     val fields = beforeFields ++ dateFields ++ afterFields.headOption.map(_ => afterFields.tail).getOrElse(Array
@@ -254,8 +254,7 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
     // TODO: Does convert need to be called here ?
     val newDataFrame = convert(dataFrame.sqlContext.createDataFrame(rdd, newSchema), newSchema)
 
-    //    newSchemaRDD.name = this.name
-    new Dataset(newDataFrame, Some(this))
+    new Dataset(newDataFrame, Some(this), converted = true)
   }
 
   private def determineSizeOfSplitter(dateSplitter: Long) =
@@ -307,17 +306,17 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
   private def dataFrameName(dataFrame: DataFrame) = {
     dataFrame.schema.typeName match {
       case null => None
-      //TODO testar
+      //TODO test
       case _ => Some(dataFrame.schema.typeName)
     }
   }
 
   private def summarizeColumns = {
 
-    val fieldsTuple = dataFrame.dtypes.zipWithIndex.partition(f => f._1._2 == org.apache.spark.sql.types.StringType
+    val fieldsTuple = convertedDataFrame.dtypes.zipWithIndex.partition(f => f._1._2 == org.apache.spark.sql.types.StringType
       .toString)
     val (stringFields, nonStringFields) = (fieldsTuple._1.map(_._2), fieldsTuple._2.map(_._2))
-    val valuex = dataFrame.flatMap {
+    val valuex = convertedDataFrame.flatMap {
       row =>
         stringFields.map {
           sf =>
@@ -326,7 +325,7 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
     }.reduceByKey(_ ++ _)
     val stringFieldsRdd: RDD[(Int, (Int, (Any => Int), (Any => Double)))] = valuex.map {
       case (index, values) =>
-        index ->(values.size, values.zipWithIndex.map {
+        index -> (values.size, values.zipWithIndex.map {
           f => (f._1, f._2)
         }.toMap, (_: Any) => 1.0)
     }
@@ -350,9 +349,9 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
     val summarized = summarizedColumns.sortBy(_._1).map {
       f =>
         f._2._2 match {
-          case m: Map[Any, Int] => (f._1, m.map(value => value._2 ->(fieldNames.value(f._1), value._1.toString)))
+          case m: Map[Any, Int] => (f._1, m.map(value => value._2 -> (fieldNames.value(f._1), value._1.toString)))
           case _: (Any => Int) => (f._1,
-            Map(0 ->(fieldNames.value(f._1), "")))
+            Map(0 -> (fieldNames.value(f._1), "")))
         }
     }.collect
     summarized.foldLeft(Map.empty[Int, (String, String)])((b, a) =>
@@ -429,7 +428,6 @@ class FileDataset protected[data](@transient uc: IUberdataContext, file: String,
     }
     val dataFrame = sqlContext.createDataFrame(rowRdd, types)
     val tableName = extractTableName(file)
-    //    dataFrame.name = tableName
     dataFrame.registerTempTable(tableName)
     dataFrame.repartition(numberOfPartitions)
     dataFrame

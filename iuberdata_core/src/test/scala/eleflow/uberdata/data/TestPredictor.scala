@@ -1,6 +1,6 @@
 package eleflow.uberdata.data
 
-import eleflow.uberdata.core.ClusterSettings
+import eleflow.uberdata.core.util.ClusterSettings
 import eleflow.uberdata.core.data.Dataset
 import eleflow.uberdata.core.exception.InvalidDataException
 import eleflow.uberdata.data.stat.Statistics
