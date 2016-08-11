@@ -18,6 +18,40 @@ import org.apache.spark.mllib.linalg.DenseVector
 class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWithContext {
   this: Suite =>
 
+  lazy val arimaData = List(
+    Row(1d, 500d, 900),
+    Row(1d, 505d, 880),
+    Row(1d, 507d, 1000),
+    Row(1d, 509d, 1500),
+    Row(1d, 510d, 6516),
+    Row(1d, 513d, 1650),
+    Row(1d, 520d, 1050),
+    Row(1d, 540d, 1835),
+    Row(1d, 560d, 1358),
+    Row(1d, 400d, 1688),
+    Row(1d, 450d, 258),
+    Row(1d, 590d, 384),
+    Row(1d, 505d, 1982),
+    Row(1d, 100d, 2880),
+    Row(1d, 800d, 8000),
+    Row(1d, 800d, 3518),
+    Row(2d, 500d, 900),
+    Row(2d, 512d, 8280),
+    Row(2d, 507d, 10000),
+    Row(2d, 509d, 10500),
+    Row(2d, 610d, 616),
+    Row(2d, 513d, 150),
+    Row(2d, 520d, 1050),
+    Row(2d, 540d, 135),
+    Row(2d, 560d, 358),
+    Row(2d, 400d, 688),
+    Row(2d, 450d, 2258),
+    Row(2d, 590d, 3184),
+    Row(2d, 1500d, 982),
+    Row(2d, 5100d, 880),
+    Row(2d, 800d, 800),
+    Row(2d, 800d, 3518)
+  )
   lazy val data = List(
     Row(1d, 500d, 900, true),
     Row(1d, 505d, 880, true),
@@ -88,6 +122,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     Row(2d, 32d, 32, true)
   )
 
+  val testDataWithoutOpen = testData.map(f => Row(f.toSeq.take(3): _*))
   val groupedList = data ++ List(
     Row(3d, 500d, 1900, true),
     Row(3d, 505d, 2880, true),
@@ -123,6 +158,8 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     Row(4d, 800d, 31518, true)
   )
 
+  val groupedArimaList = groupedList.map(f => Row(f.toSeq.take(3): _*))
+
   val groupedTest = testData ++ List(
     Row(3d, 35d, 41, true),
     Row(3d, 36d, 42, true),
@@ -157,6 +194,8 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     Row(4d, 81d, 71, true),
     Row(4d, 82d, 72, true))
 
+  val groupedArimaTest = groupedTest.map(f => Row(f.toSeq.take(3): _*))
+
   "ForecastPredictor" should "execute mean average and return predictions" in {
     @transient val sc = context.sparkContext
     @transient val sqlContext = context.sqlContext
@@ -182,12 +221,13 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     @transient val sqlContext = context.sqlContext
 
     val structType = StructType(Seq(StructField("label", DoubleType), StructField("date", DoubleType),
-      StructField("feat", IntegerType), StructField("Open", BooleanType)))
+      StructField("feat", IntegerType)))
 
-    val rdd = sc.parallelize(data)
+    val rdd = sc.parallelize(arimaData)
     val dataFrame = sqlContext.createDataFrame(rdd, structType)
 
-    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double, Double](featuresCol = "feat", nFutures = 5)
+    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double, Double](featuresCol = "feat",
+      nFutures = 5)
     val model = timeSeriesBestModelFinder.fit(dataFrame)
     val df = model.transform(dataFrame)
     val first = df.first
@@ -202,7 +242,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     val structType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
       StructField("Sales", IntegerType), StructField("Open", BooleanType)))
 
-      val rdd = sc.parallelize(data)
+      val rdd = sc.parallelize(arimaData)
       val dataFrame = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
 
       val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double, Double](labelCol = "Store",
@@ -238,11 +278,11 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
       @transient val sqlContext = context.sqlContext
 
     val structType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
-      StructField("Sales", IntegerType), StructField("Open", BooleanType)))
+      StructField("Sales", IntegerType)))
       val testStructType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
-        StructField("Id", IntegerType), StructField("Open", BooleanType)))
-      val rdd = sc.parallelize(data)
-      val testRdd = sc.parallelize(testData)
+        StructField("Id", IntegerType)))
+      val rdd = sc.parallelize(arimaData)
+      val testRdd = sc.parallelize(testDataWithoutOpen)
       val dataFrame = sqlContext.createDataFrame(rdd, structType)
       val testDataFrame = sqlContext.createDataFrame(testRdd, testStructType)
 
@@ -263,8 +303,8 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
       @transient val sqlContext = context.sqlContext
 
     val structType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
-      StructField("Sales", IntegerType), StructField("Open", BooleanType)))
-      val rdd = sc.parallelize(groupedList)
+      StructField("Sales", IntegerType)))
+      val rdd = sc.parallelize(groupedArimaList)
       val dataFrame = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
 
       val pipeline= ForecastPredictor().prepareBestForecastPipeline[Int, Int]("Store",
