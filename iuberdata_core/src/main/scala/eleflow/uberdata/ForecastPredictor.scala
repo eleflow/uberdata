@@ -123,15 +123,15 @@ class ForecastPredictor extends Serializable with Logging {
     preparePipeline(findBestForecast, Array(transformer))
   }
 
-  def prepareXGBoost[T, L](featuresCol: String, groupByCol: String, validationCol: String, timeCol: String,
+  def prepareXGBoost[T, L](featuresCol: String, groupByCol: String, validationCol: String, timeCol: String, idCol: String,
                            schema: StructType)
                           (implicit kt: ClassTag[T]) = {
     val xgboost = new XGBoostBestModelFinder[T, L]().setTimeSeriesEvaluator(new TimeSeriesEvaluator[T]().setValidationCol(validationCol)
-      .setFeaturesCol(featuresCol).setMetricName("rmspe")).setGroupByCol(groupByCol).setFeaturesCol(featuresCol)
+      .setFeaturesCol(featuresCol).setMetricName("rmspe")).setGroupByCol(groupByCol).setFeaturesCol(featuresCol).setIdCol(idCol)
       .setValidationCol(validationCol)
 
     new Pipeline()
-      .setStages(smallModelPipelineStages(featuresCol, groupByCol, timeCol, schema = schema) :+ xgboost)
+      .setStages(smallModelPipelineStages(featuresCol, groupByCol, timeCol, Some(idCol), schema = schema) :+ xgboost)
   }
 
   def smallModelPipeline(labelCol: String, featuresCol: String, timeCol: String, idCol: String,
@@ -144,7 +144,7 @@ class ForecastPredictor extends Serializable with Logging {
       .map(_.name)
     val allColumns = schema.map(_.name).toArray
     val nonStringColumns = allColumns.filter(f => !stringColumns.contains(f)
-      && f != featuresCol && f != idCol.getOrElse("") && f != groupByCol)
+      && f != featuresCol && f != idCol.getOrElse("") && f != groupByCol && f != timeCol)
     val stringIndexers = stringColumns.map {
       column => new StringIndexer().setInputCol(column).setOutputCol(s"${column}Index")
     }.toArray
@@ -186,7 +186,7 @@ class ForecastPredictor extends Serializable with Logging {
     require(algorithm == XGBoostAlgorithm || algorithm == FindBestForecast, "The accepted algorithms for this method are " +
       "XGBoost or FindBest")
     val pipeline = algorithm match {
-      case XGBoostAlgorithm => prepareXGBoost[L, T](featuresCol, groupByCol, validationCol, timeCol, train.schema)
+      case XGBoostAlgorithm => prepareXGBoost[L, T](featuresCol, groupByCol, validationCol, timeCol, idCol, train.schema)
       //      case FindBestForecast => prepareBestForecastPipeline[L, T](labelCol, featuresCol, validationCol, timeCol, nFutures,
       //        meanAverageWindowSize, paramRange)
       case _ => ???
@@ -195,7 +195,7 @@ class ForecastPredictor extends Serializable with Logging {
     val cachedTest = test.cache()
     val model = pipeline.fit(cachedTrain)
     val result = model.transform(cachedTest).cache
-    val testPipeline = smallModelPipeline(featuresCol, groupByCol, timeCol, idCol, test.schema)
+    /*val testPipeline = smallModelPipeline(featuresCol, groupByCol, timeCol, idCol, test.schema)
     val pipelineModel = testPipeline.fit(test)
     val groupedTest = pipelineModel.transform(test).map {
       row =>
@@ -215,7 +215,12 @@ class ForecastPredictor extends Serializable with Logging {
     val sqlContext = train.sqlContext
     val schema = StructType(Seq(StructField(idCol, DoubleType), StructField("prediction", DoubleType)))
     val df: Dataset = sqlContext.createDataFrame(joined, schema)
-    (df.sort(idCol), model)
+    (df.sort(idCol), model)*/
+    val joined = result.select(idCol, IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME);
+
+    val dfToBeReturned = joined.withColumnRenamed("featuresPrediction", "prediction")
+
+    (dfToBeReturned.sort(idCol), model)
   }
 
   def predictSmallModelFuture[L, T, I](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: String, timeCol: String,
@@ -285,4 +290,5 @@ class ForecastPredictor extends Serializable with Logging {
       case (key, value) => s"$key,$value"
     }.coalesce(1).saveAsTextFile(path)
   }
+
 }
