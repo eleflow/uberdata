@@ -83,10 +83,8 @@ class XGBoostBestModelFinder[T, L](override val uid: String)(implicit kt: ClassT
       .map { vec =>
         LabeledPoint.fromDenseVector(label, vec.toArray.map(DataTransformer.toFloat))
       }
-
     val features = new DMatrix(featuresArray.toIterator)
     log.warn(s"Evaluating forecast for id $id, with xgboost")
-
     val prediction = model.predict(features).flatten
     val (forecastToBeValidated, _) = prediction.splitAt(featuresArray.length)
     val toBeValidated = featuresArray.zip(forecastToBeValidated)

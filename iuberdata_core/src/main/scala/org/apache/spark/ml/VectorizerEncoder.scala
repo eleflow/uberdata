@@ -31,8 +31,8 @@ class VectorizerEncoder(override val uid: String) extends Transformer
     val context = dataSet.sqlContext.sparkContext
     val input = context.broadcast($(inputCols))
     val allColumnNames = dataSet.schema.map(_.name)
-    val nonInputColumnIndexes = context.broadcast(allColumnNames.zipWithIndex.filter(f => !$(inputCols).contains(f._1)
-      || f._1 == $(groupByCol) || f._1 == $(idCol)))
+    val nonInputColumnIndexes = context.broadcast(allColumnNames.zipWithIndex.filter(f =>
+      !$(inputCols).contains(f._1) || f._1 == $(groupByCol) || f._1 == $(idCol)))
     val result = dataSet.map {
       row =>
         val rowSeq = row.toSeq
