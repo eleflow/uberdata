@@ -57,13 +57,13 @@ object DataTransformer {
       train
     } else {
       val trainColumnNames = id ++ target ++ train.columnNames().filter(f => !target.contains(f) && !id.contains(f))
-      new Dataset(train.select(trainColumnNames.head, trainColumnNames.tail: _*), converted = train.converted)
+      new Dataset(train.select(trainColumnNames.head, trainColumnNames.tail: _*))
     }
     val newTest = if (test.columnIndexOf(id.head) == 0) {
       test
     } else {
       val testColumnNames = id ++ test.columnNames().filter(f => !target.contains(f) && !id.contains(f))
-      new Dataset(test.select(testColumnNames.head, testColumnNames.tail: _*), converted = test.converted)
+      new Dataset(test.select(testColumnNames.head, testColumnNames.tail: _*))
     }
     (newTrain, newTest)
   }
@@ -88,13 +88,11 @@ object DataTransformer {
     val normalizedStrings = dataset.sqlContext.sparkContext.broadcast(summarizedColumns.collectAsMap())
     val columnShift = id.size + target.size
 
-
     dataset.rdd.zipWithIndex.map {
       case (row, rowIndex) =>
         val norm = normalizedStrings.value
-
         val normValues = fields.map {
-          case (_, index) => {
+          case (_, index) =>
             val v = norm.get(index - columnShift).map {
               f =>
                 (f._1, f._2.apply(row(index )),
@@ -102,10 +100,8 @@ object DataTransformer {
             }
             v.getOrElse(
               throw new UnexpectedValueException(s"Unexpected String Value exception ${norm.get(index)}$index, ${row(index)}"))
-          }
         }
-
-        val (_, indexes, values) = normValues.tail.scanLeft((normValues.head))((b, a) => (b._1 + a._1, (b._1 + a._2), a._3)).filter(_._3 != 0).unzip3
+        val (_, indexes, values) = normValues.tail.scanLeft(normValues.head)((b, a) => (b._1 + a._1, b._1 + a._2, a._3)).filter(_._3 != 0).unzip3
         val targetIndex = if(targetIndices.isEmpty) 0 else targetIndices.head
         val rowIndexD =  if (targetFieldType.isEmpty || targetFieldType.head._2 ==  "StringType") {
             rowIndex.toDouble + 1

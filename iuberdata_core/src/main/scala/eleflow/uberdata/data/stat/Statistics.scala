@@ -23,7 +23,6 @@ object Statistics {
 
   def correlation(rdd: RDD[LabeledPoint]): Matrix = SparkStatistics.corr(rdd.map(_.features))
 
-
   def correlation(rdd: Dataset, numberOfColumns: Int = 20): Seq[(Double, String)] = {
     val matrix = correlation(rdd.toLabeledPoint)
     val correlat = correlation(matrix, rdd)

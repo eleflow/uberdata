@@ -76,7 +76,7 @@ final class DateTimeParser(offset: Int) extends Serializable {
 
   def parse(dateString: String, dateFormat: String): Option[DateTime] = {
     val formatter = DateTimeFormat.forPattern(dateFormat).withZoneUTC()
-    Some(formatter.parseDateTime(dateString).minusMillis(offset))
+    Some(formatter.parseDateTime(dateString))//.minusMillis(offset))
   }
 
   def parse(dateString: String, dateFormatOption: Option[String]): Option[DateTime] = {
