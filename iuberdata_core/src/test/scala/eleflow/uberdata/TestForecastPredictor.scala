@@ -287,7 +287,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
       val testDataFrame = sqlContext.createDataFrame(testRdd, testStructType)
 
       val (timeSeriesBestModelFinder, model) = ForecastPredictor().predict[Double, Double, Int](dataFrame, testDataFrame,
-        "Store", Seq("Sales"), "data", "Id", SupportedAlgorithm.Arima, 5)
+        "Store", Seq("Sales"), "data", "Id", "Store", SupportedAlgorithm.Arima, 5)
       val first = timeSeriesBestModelFinder.collect
       val arima = model.stages.last.asInstanceOf[ArimaModel[Int]]
       val bestArima = arima.models.sortBy(_._2._2.minBy(_.metricResult).metricResult).first()
@@ -329,7 +329,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
       val testDf = sqlContext.createDataFrame(testRdd, testStructType)
 
       val (result,_) = ForecastPredictor().predict[Double,Int, Int](trainDf, testDf, "Store", Seq("Sales"), "data","Id",
-        SupportedAlgorithm.FindBestForecast, 5, Seq(8,12,16,24,26))
+        "Store", SupportedAlgorithm.FindBestForecast, 5, Seq(8,12,16,24,26))
 
       assert(result.collect().length == 20)
       assert(result.map(_.getAs[String](IUberdataForecastUtil.ALGORITHM)).distinct().count() >1)
@@ -351,7 +351,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
       val testDf = sqlContext.createDataFrame(testRdd, testStructType)
 
       val (result,_) = ForecastPredictor().predictSmallModelFeatureBased[Double,Int, Int](trainDfDouble, testDf,
-        "Sales", Seq("Store"), "data","Id",SupportedAlgorithm.XGBoostAlgorithm, "validationCol")
+        "Sales", Seq("Store"), "data","Id", "Store", SupportedAlgorithm.XGBoostAlgorithm, "validationCol")
 
       assert(result.collect().length == 64)
     }
