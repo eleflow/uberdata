@@ -15,7 +15,8 @@
 */
 package org.apache.spark.rpc.netty
 
-import eleflow.uberdata.core.{ClusterSettings, IUberdataContext}
+import eleflow.uberdata.core.IUberdataContext
+import eleflow.uberdata.core.util.ClusterSettings
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.{SparkConf, SparkEnv}
 import org.scalatest.{BeforeAndAfterEach, Suite}
@@ -51,7 +52,7 @@ trait BeforeAndAfterWithContext extends BeforeAndAfterEach {
     loggers.map {
       loggerName =>
         val logger = Logger.getLogger(loggerName)
-        val prevLevel = logger.getLevel()
+        val prevLevel = logger.getLevel
         logger.setLevel(level)
         loggerName -> prevLevel
     }.toMap
@@ -63,8 +64,8 @@ trait BeforeAndAfterWithContext extends BeforeAndAfterEach {
     if(get!=null) {
       Some(get.rpcEnv)
     }else None
-    context.clearContext
-    rpcEnv.map(_.fileServer.asInstanceOf[org.apache.spark.rpc.netty.HttpBasedFileServer].shutdown())
+    context.clearContext()
+    rpcEnv.foreach(_.fileServer.asInstanceOf[org.apache.spark.rpc.netty.HttpBasedFileServer].shutdown())
 
     System.clearProperty("spark.master.port")
   }

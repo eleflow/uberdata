@@ -609,7 +609,7 @@ IUberSparkInterpreter extends Interpreter {
 
         }
 
-            intp.interpret("import eleflow.uberdata.core.ClusterSettings");
+            intp.interpret("import eleflow.uberdata.core.util.ClusterSettings");
 
 
 
