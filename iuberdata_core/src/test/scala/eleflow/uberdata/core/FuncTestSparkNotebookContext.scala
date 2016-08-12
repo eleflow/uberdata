@@ -76,7 +76,7 @@ class FuncTestSparkNotebookContext extends FlatSpec with BeforeAndAfterWithConte
   it should "Correct handle empty string values" in {
     @transient lazy val context = uberContext
     context.sparkContext
-    val schemaRdd = Dataset(context, s"${defaultFilePath}FuncTestSparkNotebookContextEmpty.csv").dataFrame
+    val schemaRdd = Dataset(context, s"${defaultFilePath}FuncTestSparkNotebookContextEmpty.csv").toDataFrame
     val result = DataTransformer.createLabeledPointFromRDD(schemaRdd, Seq("int"), Seq("id"), DataSetType.Train)
     assert(result.count() == 3)
   }

@@ -35,24 +35,14 @@ class TestDataTransformer extends FunSuite with Matchers with BeforeAndAfterWith
     ClusterSettings.enforceDoubleAsBigDecimal = true
     @transient val sc = context.sparkContext
     @transient val sqlContext = context.sqlContext
-
-    val structType = StructType(Seq(StructField("id", IntegerType, nullable = false),
-      StructField("int", IntegerType, nullable = false), StructField("string2", StringType, nullable = false),
-      StructField("double", DoubleType, nullable = false)))
-    val data = List(
-      Row(1, 5, "vlr1", 10.5),
-      Row(2, 1, "vl3", 0.1),
-      Row(3, 8, "vl3", 10.0))
-    val rdd = sc.parallelize(data)
-    val schema = sqlContext.createDataFrame(rdd, structType)
-    val result = schema.slice(Seq(2, 3))
+    val dataset = Dataset(context, s"${defaultFilePath}LoadRddDataTransformerData.csv")
 
     def createBigDecimal(value:Double) = new java.math.BigDecimal(value.toString)
       .setScale(ClusterSettings.defaultDecimalScale)
-
-    assert(result.collect.deep == Array(new GenericRow(Array[Any]("vlr1", createBigDecimal(10.5))),
-      new GenericRow(Array[Any]("vl3", createBigDecimal(0.1))), new GenericRow(Array[Any]("vl3",
-        createBigDecimal(10.0)))).deep)
+    val result = dataset.toDataFrame
+    assert(result.collect.deep == Array(new GenericRow(Array[Any](3l,5l,"vlr1", createBigDecimal(10.5), "va")),
+      new GenericRow(Array[Any](4l,1l,"vl3", createBigDecimal(0.1),"vb")), new GenericRow(Array[Any](5l,8l,"vlr1",
+        createBigDecimal(10.0),""))).deep)
   }
 
   test("Correct handle date values") {
@@ -65,7 +55,8 @@ class TestDataTransformer extends FunSuite with Matchers with BeforeAndAfterWith
   }
 
   test("create labeledpoint for multiplestrings") {
-    val train = Dataset(context, s"${defaultFilePath}MultipleStringsTest.csv").applyColumnTypes(Seq(LongType, StringType,
+    val train = Dataset(context, s"${defaultFilePath}MultipleStringsTest.csv")
+      train.applyColumnTypes(Seq(LongType, StringType,
       StringType, DecimalType(ClusterSettings.defaultDecimalPrecision, ClusterSettings.defaultDecimalScale), StringType,
       StringType, LongType, StringType))
     val labeledPoint = DataTransformer.createLabeledPointFromRDD(train, Seq("int"), Seq(), DataSetType.Test)

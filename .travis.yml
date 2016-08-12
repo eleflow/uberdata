@@ -6,11 +6,13 @@ scala:
 jdk:
   - oraclejdk8
 
+sudo: false
+
 before_install:
   - ./install-dependencies.sh
 
 script:
-  - sbt clean reload compile
+  - sbt warn clean reload compile coverage test coverageReport
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

@@ -29,8 +29,8 @@ import org.apache.spark.sql._
 import scala.collection.mutable
 
 /**
-  * Created by dirceu on 16/10/14.
-  */
+ * Created by dirceu on 16/10/14.
+ */
 
 object DataTransformer {
 
@@ -57,13 +57,13 @@ object DataTransformer {
       train
     } else {
       val trainColumnNames = id ++ target ++ train.columnNames().filter(f => !target.contains(f) && !id.contains(f))
-      new Dataset(train.select(trainColumnNames.head, trainColumnNames.tail: _*), converted = train.converted)
+      new Dataset(train.select(trainColumnNames.head, trainColumnNames.tail: _*))
     }
     val newTest = if (test.columnIndexOf(id.head) == 0) {
       test
     } else {
       val testColumnNames = id ++ test.columnNames().filter(f => !target.contains(f) && !id.contains(f))
-      new Dataset(test.select(testColumnNames.head, testColumnNames.tail: _*), converted = test.converted)
+      new Dataset(test.select(testColumnNames.head, testColumnNames.tail: _*))
     }
     (newTrain, newTest)
   }
@@ -88,11 +88,9 @@ object DataTransformer {
     val normalizedStrings = dataset.sqlContext.sparkContext.broadcast(summarizedColumns.collectAsMap())
     val columnShift = id.size + target.size
 
-
     dataset.rdd.zipWithIndex.map {
       case (row, rowIndex) =>
         val norm = normalizedStrings.value
-
         val normValues = fields.map {
           case (_, index) =>
             val v = norm.get(index - columnShift).map {
