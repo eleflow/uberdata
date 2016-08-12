@@ -30,33 +30,33 @@ class FuncTestSparkNotebookContext extends FlatSpec with BeforeAndAfterWithConte
 
   val uberContext = context
 
-//  "Functional SparkNotebookContext" should
-//    "correctly load rdd" in {
-//
-//    import Dataset._
-//
-//    val dataset = Dataset(uberContext, s"${defaultFilePath}FuncTestSparkNotebookContextFile1.csv")
-//
-//    val testDataSet = Dataset(uberContext, s"${defaultFilePath}FuncTestSparkNotebookContextFile2.csv")
-//
-//
-//    val (train,test,_) = DataTransformer.createLabeledPointFromRDD(dataset, testDataSet, "int","id")
-//    val all = train.take(3)
-//    val (_, first) = all.head
-//    val (_, second) = all.tail.head
-//    assert(first.label == 5.0)
-//    assert(first.features.toArray.deep == Array[Double](0.0, 1.0, 10.5).deep)
-//    assert(second.label == 1.0)
-//    assert(second.features.toArray.deep == Array[Double](1.0, 0.0, 0.1).deep)
-//
-//    val allTest = test.take(3)
-//    val (_, firstTest) = allTest.head
-//    val (_, secondTest) = allTest.tail.head
-//    assert(firstTest.label == 1.0)
-//    assert(firstTest.features.toArray.deep == Array[Double](0.0, 1.0, 10.5).deep)
-//    assert(secondTest.label == 2.0)
-//    assert(secondTest.features.toArray.deep == Array[Double](1.0, 0.0, 0.1).deep)
-//  }
+  "Functional SparkNotebookContext" should
+    "correctly load rdd" in {
+
+    import Dataset._
+
+    val dataset = Dataset(uberContext, s"${defaultFilePath}FuncTestSparkNotebookContextFile1.csv")
+
+    val testDataSet = Dataset(uberContext, s"${defaultFilePath}FuncTestSparkNotebookContextFile2.csv")
+
+
+    val (train,test,_) = DataTransformer.createLabeledPointFromRDD(dataset, testDataSet, "int","id")
+    val all = train.take(3)
+    val (_, first) = all.head
+    val (_, second) = all.tail.head
+    assert(first.label == 5.0)
+    assert(first.features.toArray.deep == Array[Double](0.0, 1.0, 10.5).deep)
+    assert(second.label == 1.0)
+    assert(second.features.toArray.deep == Array[Double](1.0, 0.0, 0.1).deep)
+
+    val allTest = test.take(3)
+    val (_, firstTest) = allTest.head
+    val (_, secondTest) = allTest.tail.head
+    assert(firstTest.label == 1.0)
+    assert(firstTest.features.toArray.deep == Array[Double](0.0, 1.0, 10.5).deep)
+    assert(secondTest.label == 2.0)
+    assert(secondTest.features.toArray.deep == Array[Double](1.0, 0.0, 0.1).deep)
+  }
 
   it should "Throw an exception when process an empty numeric column" in {
 
