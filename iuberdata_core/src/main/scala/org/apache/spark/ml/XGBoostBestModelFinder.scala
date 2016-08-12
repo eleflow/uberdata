@@ -10,7 +10,7 @@ import org.apache.spark.Logging
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.param.shared.{HasGroupByCol, HasXGBoostParams}
+import org.apache.spark.ml.param.shared.{HasIdCol, HasGroupByCol, HasXGBoostParams}
 import org.apache.spark.ml.regression.XGBoostLinearSummary
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.mllib.linalg.VectorUDT
@@ -29,6 +29,7 @@ class XGBoostBestModelFinder[T, L](override val uid: String)(implicit kt: ClassT
     with DefaultParamsWritable
     with HasXGBoostParams
     with HasGroupByCol
+    with HasIdCol
     with TimeSeriesBestModelFinder with Logging {
   def this()(implicit kt: ClassTag[T]) = this(Identifiable.randomUID("xgboost"))
 
@@ -45,6 +46,8 @@ class XGBoostBestModelFinder[T, L](override val uid: String)(implicit kt: ClassT
   def setLabelCol(label: String) = set(labelCol, label)
 
   def setGroupByCol(input: String) = set(groupByCol, input)
+
+  def setIdCol(input: String) = set(idCol, input)
 
   def setXGBoostParams(params: Map[String, Any]) = set(xGBoostParams, params)
 

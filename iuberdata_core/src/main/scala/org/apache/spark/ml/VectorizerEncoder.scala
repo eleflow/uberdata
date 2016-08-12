@@ -40,7 +40,7 @@ class VectorizerEncoder(override val uid: String) extends Transformer
           case (_, index) => rowSeq(index)
         }
         val size = input.value.length
-        val (values,indices) = input.value.map {
+        val (values,indices) = input.value.filter(col=> row.getAs(col) != null).map {
           column => DataTransformer.toDouble(row.getAs(column))
         }.zipWithIndex.filter(f => f._1 != 0d).unzip
         Row(nonInputColumns :+ org.apache.spark.mllib.linalg.Vectors.sparse(size,indices.toArray,values.toArray): _*)
