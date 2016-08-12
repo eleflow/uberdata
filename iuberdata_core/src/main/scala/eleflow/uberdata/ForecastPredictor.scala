@@ -187,7 +187,7 @@ class ForecastPredictor extends Serializable with Logging {
     require(algorithm == XGBoostAlgorithm || algorithm == FindBestForecast, "The accepted algorithms for this method are " +
       "XGBoost or FindBest")
     val pipeline = algorithm match {
-      case XGBoostAlgorithm => prepareXGBoost[L, T](labelCol, featuresCol, validationCol, timeCol, idCol, train.schema)
+      case XGBoostAlgorithm => prepareXGBoost[L, T](labelCol, featuresCol.head, validationCol, timeCol, idCol, train.schema)
       //      case FindBestForecast => prepareBestForecastPipeline[L, T](labelCol, featuresCol, validationCol, timeCol, nFutures,
       //        meanAverageWindowSize, paramRange)
       case _ => ???
