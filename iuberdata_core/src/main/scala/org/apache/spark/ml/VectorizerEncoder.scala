@@ -13,13 +13,13 @@ import org.apache.spark.sql.types.{StructField, StructType}
   * Created by dirceu on 13/07/16.
   */
 class VectorizerEncoder(override val uid: String) extends Transformer
-  with HasIdCol with HasInputCols with HasGroupByCol with HasFeaturesCol with HasOutputCol with DefaultParamsWritable {
+  with HasIdCol with HasInputCols with HasLabelCol with HasGroupByCol with HasOutputCol with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("vectorizer"))
 
   def setIdCol(input: String) = set(idCol, input)
 
-  def setFeaturesCol(input: String) = set(featuresCol, input)
+  def setLabelCol(input: String) = set(labelCol, input)
 
   def setGroupByCol(toGroupBy: String) = set(groupByCol, toGroupBy)
 
@@ -54,5 +54,5 @@ class VectorizerEncoder(override val uid: String) extends Transformer
   @DeveloperApi
   override def transformSchema(schema: StructType): StructType = StructType(schema.filter(col =>
     !$(inputCols).contains(col.name) || col.name == $(groupByCol) || col.name == $(idCol) ||
-      col.name == $(featuresCol))).add(StructField($(outputCol), new VectorUDT))
+      col.name == $(labelCol))).add(StructField($(outputCol), new VectorUDT))
 }

@@ -28,7 +28,6 @@ class XGBoostBestModelFinder[T, L](override val uid: String)(implicit kt: ClassT
   extends BestModelFinder[T, XGBoostModel[T]]
     with DefaultParamsWritable
     with HasXGBoostParams
-    with HasGroupByCol
     with HasIdCol
     with TimeSeriesBestModelFinder with Logging {
   def this()(implicit kt: ClassTag[T]) = this(Identifiable.randomUID("xgboost"))
@@ -41,11 +40,9 @@ class XGBoostBestModelFinder[T, L](override val uid: String)(implicit kt: ClassT
 
   override def setValidationCol(value: String) = set(validationCol, value)
 
-  def setFeaturesCol(label: String) = set(featuresCol, label)
-
   def setLabelCol(label: String) = set(labelCol, label)
 
-  def setGroupByCol(input: String) = set(groupByCol, input)
+  def setFeaturesCol(input: String) = set(featuresCol, input)
 
   def setIdCol(input: String) = set(idCol, input)
 
@@ -81,7 +78,7 @@ class XGBoostBestModelFinder[T, L](override val uid: String)(implicit kt: ClassT
 
   protected def xGBoostEvaluation(row: Row, model: Booster, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[T]], id: T,
                                   parameters: ParamMap): ModelParamEvaluation[T] = {
-    val label = DataTransformer.toFloat(row.getAs($(featuresCol)))
+    val label = DataTransformer.toFloat(row.getAs($(labelCol)))
     val featuresArray = row.getAs[Array[org.apache.spark.mllib.linalg.Vector]](IUberdataForecastUtil.FEATURES_COL_NAME)
       .map { vec =>
         LabeledPoint.fromDenseVector(label, vec.toArray.map(DataTransformer.toFloat))
@@ -98,7 +95,7 @@ class XGBoostBestModelFinder[T, L](override val uid: String)(implicit kt: ClassT
 
   override protected def train(dataSet: DataFrame): XGBoostModel[T] = {
     val idModels = dataSet.rdd.groupBy { row =>
-      row.getAs[T]($(groupByCol))
+      row.getAs[T]($(featuresCol))
     }.map(f => train(f._1, f._2.toIterator))
     new XGBoostModel[T](uid, modelEvaluation(idModels)).setValidationCol($(validationCol)).asInstanceOf[XGBoostModel[T]]
   }

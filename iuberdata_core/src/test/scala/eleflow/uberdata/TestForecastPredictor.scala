@@ -358,9 +358,10 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 
     it should "execute prediction with rosenn dataset" in {
       val train = Dataset(context, s"$defaultFilePath/data/rosenntraintest.csv")
-          .applyColumnTypes(Seq(IntegerType,IntegerType,TimestampType,IntegerType,IntegerType,IntegerType,IntegerType,
-          StringType,StringType)).formatDateValues ("Date",DayMonthYear).
-        applyColumnTypes(Seq(DoubleType,DoubleType,DoubleType,DoubleType,DoubleType,DoubleType,DoubleType,DoubleType,
+          train.applyColumnTypes(Seq(IntegerType,IntegerType,TimestampType,IntegerType,IntegerType,IntegerType,IntegerType,
+          StringType,StringType))
+            val dataframe = train.formatDateValues ("Date",DayMonthYear)
+        dataframe.applyColumnTypes(Seq(DoubleType,DoubleType,DoubleType,DoubleType,DoubleType,DoubleType,DoubleType,DoubleType,
           DoubleType,StringType,StringType)).select("Store","Sales","DayOfWeek","Date1","Date2","Date3","Open","Promo",
         "StateHoliday","SchoolHoliday").cache
       val test = Dataset(context, s"$defaultFilePath/data/rosenntesttest.csv")

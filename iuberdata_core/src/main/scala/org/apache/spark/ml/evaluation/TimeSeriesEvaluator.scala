@@ -2,7 +2,7 @@ package org.apache.spark.ml.evaluation
 
 import org.apache.spark.annotation.Since
 import org.apache.spark.ml.param.{Param, ParamMap, ParamValidators}
-import org.apache.spark.ml.param.shared.{HasFeaturesCol, HasPredictionCol, HasValidationCol}
+import org.apache.spark.ml.param.shared.{HasFeaturesCol, HasLabelCol, HasPredictionCol, HasValidationCol}
 import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable, _}
 import org.apache.spark.mllib.linalg.{Vector, VectorUDT}
 import org.apache.spark.rdd.RDD
@@ -16,7 +16,7 @@ import scala.reflect.ClassTag
   * Created by dirceu on 26/04/16.
   */
 final class TimeSeriesEvaluator[T](override val uid: String)(implicit kt: ClassTag[T])
-  extends KeyValueEvaluator[T] with HasPredictionCol with HasFeaturesCol with HasValidationCol
+  extends KeyValueEvaluator[T] with HasPredictionCol with HasLabelCol with HasFeaturesCol with HasValidationCol
     with DefaultParamsWritable {
 
   def this()(implicit kt: ClassTag[T]) = this(Identifiable.randomUID("regEval"))
@@ -44,6 +44,7 @@ final class TimeSeriesEvaluator[T](override val uid: String)(implicit kt: ClassT
   def setValidationCol(value: String): this.type = set(validationCol, value)
 
   /** @group setParam */
+  def setLabelCol(value: String): this.type = set(labelCol, value)
   def setFeaturesCol(value: String): this.type = set(featuresCol, value)
 
   setDefault(metricName -> "rmse")
@@ -66,10 +67,10 @@ final class TimeSeriesEvaluator[T](override val uid: String)(implicit kt: ClassT
     val validationColName = $(validationCol)
     val validationColType = schema($(validationCol)).dataType
 
-    val featuresColName = $(featuresCol)
-    val featuresType = schema($(featuresCol)).dataType
+    val labelColName = $(labelCol)
+    val labelType = schema($(labelCol)).dataType
 
-    val predictionAndLabels = (validationColType, featuresType) match {
+    val predictionAndLabels = (validationColType, labelType) match {
       case (p: VectorUDT, f: VectorUDT) =>
         dataSet
           .map { f =>
@@ -79,11 +80,9 @@ final class TimeSeriesEvaluator[T](override val uid: String)(implicit kt: ClassT
           val modelIndex = f.getAs[Int](3)
           (label, modelIndex, feature.toArray.zip(prediction.toArray))
         }
-
-
       case _ =>
         dataSet
-          .select(col(validationColName).cast(DoubleType), col(featuresColName).cast(DoubleType))
+          .select(col(validationColName).cast(DoubleType), col(labelColName).cast(DoubleType))
           .map { row =>
             val label = row.getAs[T](0)
             val prediction = row.getAs[Double](1)

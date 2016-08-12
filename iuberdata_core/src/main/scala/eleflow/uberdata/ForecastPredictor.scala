@@ -123,33 +123,33 @@ class ForecastPredictor extends Serializable with Logging {
     preparePipeline(findBestForecast, Array(transformer))
   }
 
-  def prepareXGBoost[T, L](featuresCol: String, groupByCol: String, validationCol: String, timeCol: String, idCol: String,
+  def prepareXGBoost[T, L](labelCol: String, featuresCol: String, validationCol: String, timeCol: String, idCol: String,
                            schema: StructType)
                           (implicit kt: ClassTag[T]) = {
     val xgboost = new XGBoostBestModelFinder[T, L]().setTimeSeriesEvaluator(new TimeSeriesEvaluator[T]().setValidationCol(validationCol)
-      .setFeaturesCol(featuresCol).setMetricName("rmspe")).setGroupByCol(groupByCol).setFeaturesCol(featuresCol).setIdCol(idCol)
+      .setLabelCol(labelCol).setMetricName("rmspe")).setFeaturesCol(featuresCol).setLabelCol(labelCol).setIdCol(idCol)
       .setValidationCol(validationCol)
 
     new Pipeline()
-      .setStages(smallModelPipelineStages(featuresCol, groupByCol, timeCol, Some(idCol), schema = schema) :+ xgboost)
+      .setStages(smallModelPipelineStages(labelCol, featuresCol, timeCol, Some(idCol), schema = schema) :+ xgboost)
   }
 
   def smallModelPipeline(labelCol: String, featuresCol: String, timeCol: String, idCol: String,
                          schema: StructType) =
     new Pipeline().setStages(smallModelPipelineStages(labelCol, featuresCol, timeCol, Some(idCol), schema))
 
-  def smallModelPipelineStages(featuresCol: String, groupByCol: String, timeCol: String, idCol: Option[String] = None,
+  def smallModelPipelineStages(labelCol: String, groupByCol: String, timeCol: String, idCol: Option[String] = None,
                                schema: StructType): Array[PipelineStage] = {
     val stringColumns = schema.filter(f => f.dataType.isInstanceOf[StringType] && f.name != groupByCol)
       .map(_.name)
     val allColumns = schema.map(_.name).toArray
     val nonStringColumns = allColumns.filter(f => !stringColumns.contains(f)
-      && f != featuresCol && f != idCol.getOrElse("") && f != groupByCol && f != timeCol)
+      && f != labelCol && f != idCol.getOrElse("") && f != groupByCol && f != timeCol)
     val stringIndexers = stringColumns.map {
       column => new StringIndexer().setInputCol(column).setOutputCol(s"${column}Index")
     }.toArray
     val columnIndexers = new VectorizerEncoder().setInputCol(nonStringColumns).setOutputCol("nonStringIndex")
-      .setFeaturesCol(featuresCol).setGroupByCol(groupByCol).setIdCol(idCol.getOrElse(""))
+      .setLabelCol(labelCol).setGroupByCol(groupByCol).setIdCol(idCol.getOrElse(""))
     val assembler = new VectorAssembler()
       .setInputCols(stringColumns.map(f => s"${f}Index").toArray :+ "nonStringIndex")
       .setOutputCol(IUberdataForecastUtil.FEATURES_COL_NAME)
@@ -160,15 +160,16 @@ class ForecastPredictor extends Serializable with Logging {
   // redicao, colocar parametros como argumento
   //retornar o test com mais uma coluna de predicao, mais algoritmo e parametros
   //label, timecol, Id
-  def predict[L, T, I](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: String, timeCol: String,
-                       idCol: String, algorithm: Algorithm = FindBestForecast, nFutures: Int = 6,
+  def predict[L, T, I](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: Seq[String] = Seq.empty[String],
+                       timeCol: String, idCol: String, algorithm: Algorithm = FindBestForecast, nFutures: Int = 6,
                        meanAverageWindowSize: Seq[Int] = Seq(8, 16, 26), paramRange: Array[Int] = defaultRange)
                       (implicit kt: ClassTag[L], ord: Ordering[L] = null, ctLabel: ClassTag[I],
                        ordLabel: Ordering[I] = null) = {
+    require(!featuresCol.isEmpty,"FeaturesCol parameter can't be empty")
     val validationCol = idCol + algorithm.toString
     algorithm match {
       case Arima | HoltWinters | MovingAverage8 | MovingAverage16 | MovingAverage26 | FindBestForecast=> predictSmallModelFuture[L, T, I](
-        train, test, labelCol, featuresCol, timeCol, idCol, algorithm, validationCol, nFutures, meanAverageWindowSize,
+        train, test, labelCol, featuresCol.head, timeCol, idCol, algorithm, validationCol, nFutures, meanAverageWindowSize,
         paramRange)
       case XGBoostAlgorithm => predictSmallModelFeatureBased[L, T, I](train, test, labelCol, featuresCol, timeCol, idCol
         , algorithm, validationCol)
@@ -179,14 +180,14 @@ class ForecastPredictor extends Serializable with Logging {
     }
   }
 
-  def predictSmallModelFeatureBased[L, T, I](train: DataFrame, test: DataFrame, featuresCol: String, groupByCol: String, timeCol: String,
-                                             idCol: String, algorithm: Algorithm = FindBestForecast, validationCol: String)
-                                            (implicit kt: ClassTag[L], ord: Ordering[L] = null, ctLabel: ClassTag[I],
-                                             ordLabel: Ordering[I] = null) = {
+  def predictSmallModelFeatureBased[L, T, I](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: Seq[String],
+                                             timeCol: String, idCol: String, algorithm: Algorithm = FindBestForecast,
+                                             validationCol: String) (implicit kt: ClassTag[L], ord: Ordering[L] = null,
+                                                                     ctLabel: ClassTag[I], ordLabel: Ordering[I] = null) = {
     require(algorithm == XGBoostAlgorithm || algorithm == FindBestForecast, "The accepted algorithms for this method are " +
       "XGBoost or FindBest")
     val pipeline = algorithm match {
-      case XGBoostAlgorithm => prepareXGBoost[L, T](featuresCol, groupByCol, validationCol, timeCol, idCol, train.schema)
+      case XGBoostAlgorithm => prepareXGBoost[L, T](labelCol, featuresCol, validationCol, timeCol, idCol, train.schema)
       //      case FindBestForecast => prepareBestForecastPipeline[L, T](labelCol, featuresCol, validationCol, timeCol, nFutures,
       //        meanAverageWindowSize, paramRange)
       case _ => ???
