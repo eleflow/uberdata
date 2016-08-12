@@ -31,7 +31,7 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{StringType, StructField, StructType, DataType => SqlDataType}
 
 import scala.collection.immutable.TreeSet
-
+import dataset._
 /**
   * SparkNotebook
   * Copyright (C) 2014 eleflow.
@@ -170,16 +170,91 @@ Option[RDD[(Int, (Int, (Any) => Int, (Any) => Double))]] = None, label: Seq[Stri
     summarized.foldLeft(Map.empty[Int, (String, String)])((b, a) =>
       b ++ a._2.map(f => f._1 + b.size -> f._2))
   }
+
+
+  type DateSplitterColumnSize = (Long, Long, Int) => Int
+  type NoSplitterColumnSize = (Long, Int) => Int
+  type RowDateSplitter = (Long, DateTimeToInt, Seq[Int]) => Seq[Int]
+  type DateTimeToInt = DateTime => Int
+  val dayZero = new DateTime(1970, 1, 1, 0, 0, 0)
+  val daysBetween: DateTimeToInt = {
+    d: DateTime => Days.daysBetween(dayZero, d).getDays
+  }
+  val getDayOfMonth: DateTimeToInt = {
+    d: DateTime => d.getDayOfMonth
+  }
+  val getMonthOfYear: DateTimeToInt = {
+    d: DateTime => d.getMonthOfYear
+  }
+  val getYear: DateTimeToInt = {
+    d: DateTime => d.getYear
+  }
+  val getDayOfAWeek: DateTimeToInt = {
+    d: DateTime => d.getDayOfWeek
+  }
+  val getPeriod: DateTimeToInt = {
+    d: DateTime => dateTimeParser.period(d).id
+  }
+
+  def formatDateValues(columnName: String, dateSplitter: Long): Dataset =
+    formatDateValues(columnIndexOf(columnName), dateSplitter)
+
+  def formatDateValues(index: Int, dateSplitter: Long): Dataset = {
+    val (beforeFields, afterFields) = getDataFrameSchema.toArray.splitAt(index)
+    val rdd = dataFrame.map { f =>
+      val (before, after) = f.toSeq.splitAt(index)
+      val formattedDate = splitDateValues(f, index, dateSplitter)
+      Row(before ++ formattedDate ++ after.headOption.map(_ => after.tail).getOrElse(Seq.empty): _*)
+    }
+    val dateFields = (1 to determineSizeOfSplitter(dateSplitter)).map(index => StructField(afterFields.head.name
+      + index, org.apache.spark.sql.types.IntegerType, nullable = false))
+    val fields = beforeFields ++ dateFields ++ afterFields.headOption.map(_ => afterFields.tail).getOrElse(Array
+      .empty[StructField])
+    val newSchema = StructType(fields)
+
+    // TODO: Does convert need to be called here ?
+    val newDataFrame = convert(dataFrame.sqlContext.createDataFrame(rdd, newSchema), newSchema,dateTimeParser)
+
+    new Dataset(newDataFrame, Some(this))
+  }
+  private def determineSizeOfSplitter(dateSplitter: Long) =
+    splitVerifier(dateSplitter, Year, splitVerifier(dateSplitter, MonthOfYear,
+      splitVerifier(dateSplitter, DayOfMonth, splitVerifier(dateSplitter, Period,
+        splitVerifier(dateSplitter, DayOfAWeek, noSplit(dateSplitter, 0))))))
+
+  private def splitVerifier: DateSplitterColumnSize = (dateSplitter: Long, verifier: Long, value: Int) =>
+    if (contains(dateSplitter, verifier)) {
+      value + 1
+    } else value
+
+  private def noSplit: NoSplitterColumnSize = (dateSplitter: Long, value: Int) =>
+    if (contains(dateSplitter, NoSplit)) {
+      0
+    } else value
+
+  protected def splitDateValues(line: Row, index: Int, dateSplitter: Long) = {
+    def splitDateValues: RowDateSplitter = {
+      (verifier: Long, dateTimeFunc: DateTimeToInt, seq: Seq[Int]) =>
+        if (contains(dateSplitter, verifier)) {
+          val dateValue = if (line.isNullAt(index)) dayZero else new DateTime(line(index).asInstanceOf[Timestamp].getTime, DateTimeZone.UTC)
+          seq ++ Seq(dateTimeFunc(dateValue))
+        } else seq
+    }
+    splitDateValues(Year, getYear, splitDateValues(MonthOfYear, getMonthOfYear, splitDateValues(DayOfMonth, getDayOfMonth,
+      splitDateValues(Period, getPeriod, splitDateValues(DayOfAWeek, getDayOfAWeek,
+        splitDateValues(NoSplit, daysBetween, Seq.empty[Int]))))))
+  }
+
 }
 
 class FileDataset protected[data](@transient uc: IUberdataContext, file: String, separator: String = ",",
                                   header: Option[String] = None, dateTimeParser: DateTimeParser = DateTimeParser()
-//                                  , schema2: Option[StructType]
+                                  //                                  , schema2: Option[StructType]
                                  ) extends Serializable {
 
-//  def this(@transient uc: IUberdataContext, file: String, separator: String = ",",
-//           header: Option[String] = None, dateTimeParser: DateTimeParser = DateTimeParser()) = this(uc, file,
-//    separator, header, dateTimeParser, None)
+  //  def this(@transient uc: IUberdataContext, file: String, separator: String = ",",
+  //           header: Option[String] = None, dateTimeParser: DateTimeParser = DateTimeParser()) = this(uc, file,
+  //    separator, header, dateTimeParser, None)
 
   lazy val numberOfPartitions = 4 * ClusterSettings.getNumberOfCores
   lazy val firstLine: String = loadedRDD.first
@@ -225,7 +300,8 @@ class FileDataset protected[data](@transient uc: IUberdataContext, file: String,
     new FileDataset(uc, file, separator, header = Some(newHeader))
   }
 
-  def toDataFrame = convert(dataFrame, schema)
+
+  def toDataFrame = convert(dataFrame, schema,dateTimeParser)
 
   def toDataset: Dataset = {
     new Dataset(dataFrame)
@@ -326,7 +402,12 @@ class FileDataset protected[data](@transient uc: IUberdataContext, file: String,
     }
   }
 
-  private def convert(dataFrame: DataFrame, newSchema: StructType): DataFrame = {
+  private var schema = structType
+  lazy val columnIndexOf = this.schema.fieldNames.zipWithIndex.toSet.toMap
+}
+
+package object dataset {
+  def convert(dataFrame: DataFrame, newSchema: StructType,dateTimeParser: DateTimeParser): DataFrame = {
     import org.apache.spark.sql.types._
 
     val converted = dataFrame.map { row =>
@@ -359,87 +440,10 @@ class FileDataset protected[data](@transient uc: IUberdataContext, file: String,
         case (value, StructField(_, TimestampType, _, _)) =>
           new Timestamp(dateTimeParser.parse(value.toString).map(_.toDate.getTime)
             .getOrElse(throw new InvalidDataException("Unsupported data format Exception, please specify the date format")))
-
         case (value, StructField(_, StringType, _, _)) => value.toString
       }
       Row(values: _*)
     }
     dataFrame.sqlContext.createDataFrame(converted, newSchema)
-  }
-
-  def formatDateValues(columnName: String, dateSplitter: Long): DataFrame =
-    formatDateValues(columnIndexOf(columnName), dateSplitter)
-
-  def formatDateValues(index: Int, dateSplitter: Long): DataFrame = {
-    val rdd = dataFrame.map { f =>
-      val (before, after) = f.toSeq.splitAt(index)
-      val formattedDate = splitDateValues(f, index, dateSplitter)
-      Row(before ++ formattedDate ++ after.headOption.map(_ => after.tail).getOrElse(Seq.empty): _*)
-    }
-    val (beforeFields, afterFields) = schema.toArray.splitAt(index)
-    val dateFields = (1 to determineSizeOfSplitter(dateSplitter)).map(index => StructField(afterFields.head.name
-      + index, org.apache.spark.sql.types.IntegerType, nullable = false))
-    val fields = beforeFields ++ dateFields ++ afterFields.headOption.map(_ => afterFields.tail).getOrElse(Array
-      .empty[StructField])
-    val newSchema = StructType(fields)
-
-    // TODO: Does convert need to be called here ?
-    val newDataFrame = convert(dataFrame.sqlContext.createDataFrame(rdd, newSchema), newSchema)
-
-    new Dataset(newDataFrame, Some(this))
-  }
-
-  private def determineSizeOfSplitter(dateSplitter: Long) =
-    splitVerifier(dateSplitter, Year, splitVerifier(dateSplitter, MonthOfYear,
-      splitVerifier(dateSplitter, DayOfMonth, splitVerifier(dateSplitter, Period,
-        splitVerifier(dateSplitter, DayOfAWeek, noSplit(dateSplitter, 0))))))
-
-  private def splitVerifier: DateSplitterColumnSize = (dateSplitter: Long, verifier: Long, value: Int) =>
-    if (contains(dateSplitter, verifier)) {
-      value + 1
-    } else value
-
-  private def noSplit: NoSplitterColumnSize = (dateSplitter: Long, value: Int) =>
-    if (contains(dateSplitter, NoSplit)) {
-      0
-    } else value
-
-  protected def splitDateValues(line: Row, index: Int, dateSplitter: Long) = {
-    def splitDateValues: RowDateSplitter = {
-      (verifier: Long, dateTimeFunc: DateTimeToInt, seq: Seq[Int]) =>
-        if (contains(dateSplitter, verifier)) {
-          val dateValue = if (line.isNullAt(index)) dayZero else new DateTime(line(index).asInstanceOf[Timestamp].getTime, DateTimeZone.UTC)
-          seq ++ Seq(dateTimeFunc(dateValue))
-        } else seq
-    }
-    splitDateValues(Year, getYear, splitDateValues(MonthOfYear, getMonthOfYear, splitDateValues(DayOfMonth, getDayOfMonth,
-      splitDateValues(Period, getPeriod, splitDateValues(DayOfAWeek, getDayOfAWeek,
-        splitDateValues(NoSplit, daysBetween, Seq.empty[Int]))))))
-  }
-
-  type DateSplitterColumnSize = (Long, Long, Int) => Int
-  type NoSplitterColumnSize = (Long, Int) => Int
-  type RowDateSplitter = (Long, DateTimeToInt, Seq[Int]) => Seq[Int]
-  type DateTimeToInt = DateTime => Int
-  private var schema = structType
-  lazy val columnIndexOf = this.schema.fieldNames.zipWithIndex.toSet.toMap
-  val dayZero = new DateTime(1970, 1, 1, 0, 0, 0)
-  val daysBetween: DateTimeToInt = {
-    d: DateTime => Days.daysBetween(dayZero, d).getDays
-  }
-  val getDayOfMonth: DateTimeToInt = {
-    d: DateTime => d.getDayOfMonth
-  }
-  val getMonthOfYear: DateTimeToInt = {
-    d: DateTime => d.getMonthOfYear
-  }
-  val getYear: DateTimeToInt = {
-    d: DateTime => d.getYear
-  }
-  val getDayOfAWeek: DateTimeToInt = {
-    d: DateTime => d.getDayOfWeek
-  }
-  val getPeriod: DateTimeToInt = {
-    d: DateTime => dateTimeParser.period(d).id
   }
 }

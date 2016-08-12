@@ -165,29 +165,29 @@ class ForecastPredictor extends Serializable with Logging {
                        meanAverageWindowSize: Seq[Int] = Seq(8, 16, 26), paramRange: Array[Int] = defaultRange)
                       (implicit kt: ClassTag[L], ord: Ordering[L] = null, ctLabel: ClassTag[I],
                        ordLabel: Ordering[I] = null) = {
-    require(!featuresCol.isEmpty,"FeaturesCol parameter can't be empty")
+    require(!featuresCol.isEmpty, "FeaturesCol parameter can't be empty")
     val validationCol = idCol + algorithm.toString
     algorithm match {
-      case Arima | HoltWinters | MovingAverage8 | MovingAverage16 | MovingAverage26 | FindBestForecast=> predictSmallModelFuture[L, T, I](
+      case Arima | HoltWinters | MovingAverage8 | MovingAverage16 | MovingAverage26 | FindBestForecast => predictSmallModelFuture[L, T, I](
         train, test, labelCol, featuresCol.head, timeCol, idCol, algorithm, validationCol, nFutures, meanAverageWindowSize,
         paramRange)
       case XGBoostAlgorithm => predictSmallModelFeatureBased[L, T, I](train, test, labelCol, featuresCol, timeCol, idCol
         , algorithm, validationCol)
-        //TODO missing FindBestForecast for both xgboost and arima
-//      case FindBestForecast => prepareBestForecastPipeline[L, T](labelCol, featuresCol, validationCol, timeCol, nFutures,
-//         meanAverageWindowSize, paramRange)
+      //TODO missing FindBestForecast for both xgboost and arima
+      //      case FindBestForecast => prepareBestForecastPipeline[L, T](labelCol, featuresCol, validationCol, timeCol, nFutures,
+      //         meanAverageWindowSize, paramRange)
       case _ => ???
     }
   }
 
   def predictSmallModelFeatureBased[L, T, I](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: Seq[String],
                                              timeCol: String, idCol: String, algorithm: Algorithm = FindBestForecast,
-                                             validationCol: String) (implicit kt: ClassTag[L], ord: Ordering[L] = null,
-                                                                     ctLabel: ClassTag[I], ordLabel: Ordering[I] = null) = {
+                                             validationCol: String)(implicit kt: ClassTag[L], ord: Ordering[L] = null,
+                                                                    ctLabel: ClassTag[I], ordLabel: Ordering[I] = null) = {
     require(algorithm == XGBoostAlgorithm || algorithm == FindBestForecast, "The accepted algorithms for this method are " +
       "XGBoost or FindBest")
     val pipeline = algorithm match {
-      case XGBoostAlgorithm => prepareXGBoost[L, T](labelCol, featuresCol, validationCol, timeCol, idCol, train.schema)
+      case XGBoostAlgorithm => prepareXGBoost[L, T](labelCol, featuresCol.head, validationCol, timeCol, idCol, train.schema)
       //      case FindBestForecast => prepareBestForecastPipeline[L, T](labelCol, featuresCol, validationCol, timeCol, nFutures,
       //        meanAverageWindowSize, paramRange)
       case _ => ???
