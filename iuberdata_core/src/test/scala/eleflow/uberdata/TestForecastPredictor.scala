@@ -453,7 +453,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     val testDf = sqlContext.createDataFrame(testRdd, testStructType)
 
       val (result,_) = ForecastPredictor().predictSmallModelFeatureBased[Double,Int, Int](trainDfDouble, testDf,
-        "Sales", Seq("Store"), "data","Id", "Store", SupportedAlgorithm.XGBoostAlgorithm, "validationCol")
+        "Sales", Seq("Store"), "data", "Id", "Store", SupportedAlgorithm.XGBoostAlgorithm, "validationCol")
 
     assert(result.collect().length == 64)
   }

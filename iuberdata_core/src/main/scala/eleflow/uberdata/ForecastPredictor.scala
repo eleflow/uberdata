@@ -149,7 +149,7 @@ class ForecastPredictor extends Serializable with Logging {
   }
 
   def prepareXGBoost[T, L](labelCol: String, featuresCol: Seq[String], validationCol: String, timeCol: String,
-                           groupByCol: String, idCol: String, schema: StructType)(implicit kt: ClassTag[T]) = {
+                           idCol: String, groupByCol: String, schema: StructType)(implicit kt: ClassTag[T]) = {
 
     val timeSeriesEvaluator: TimeSeriesEvaluator[T] = new TimeSeriesEvaluator[T]()
       .setValidationCol(validationCol)
@@ -160,6 +160,7 @@ class ForecastPredictor extends Serializable with Logging {
       .setTimeSeriesEvaluator(timeSeriesEvaluator)
       .setFeaturesCol(featuresCol.head) //TODO
       .setLabelCol(labelCol)
+      .setGroupByCol(groupByCol)
       .setIdCol(idCol)
       .setValidationCol(validationCol)
 
@@ -170,11 +171,13 @@ class ForecastPredictor extends Serializable with Logging {
   def smallModelPipelineStages(labelCol: String, featuresCol: Seq[String], timeCol: String, groupByCol: String,
                                idCol: Option[String] = None, schema: StructType): Array[PipelineStage] = {
 
+
+    val allColumns = schema.map(_.name).toArray
+    //val allColumns = featuresCol.toArray
+
     val stringColumns = schema
       .filter(f => f.dataType.isInstanceOf[StringType] && f.name != groupByCol)
       .map(_.name)
-
-    val allColumns = schema.map(_.name).toArray
 
     val nonStringColumns = allColumns.filter(f => !stringColumns.contains(f)
       && f != labelCol && f != idCol.getOrElse("") && f != groupByCol && f != timeCol)

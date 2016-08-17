@@ -8,7 +8,7 @@ import ml.dmlc.xgboost4j.{LabeledPoint => XGBLabeledPoint}
 import org.apache.hadoop.fs.Path
 import org.apache.spark.ml.XGBoostModel.XGBoostRegressionModelWriter
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.param.shared.{HasFeaturesCol, HasGroupByCol, HasIdCol}
+import org.apache.spark.ml.param.shared.{HasFeaturesCol, HasGroupByCol, HasIdCol, HasLabelCol}
 import org.apache.spark.ml.util.{DefaultParamsReader, _}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
@@ -25,7 +25,8 @@ class XGBoostModel[T](override val uid: String,
   extends ForecastBaseModel[XGBoostModel[T]]
     with HasGroupByCol
     with HasIdCol
-  with HasFeaturesCol
+    with HasFeaturesCol
+    with HasLabelCol
     with MLWritable with ForecastPipelineStage {
 
   private var trainingSummary: Option[XGBoostTrainingSummary[T]] = None
@@ -33,6 +34,8 @@ class XGBoostModel[T](override val uid: String,
   def setGroupByCol(value: String) = set(groupByCol, value)
 
   def setIdCol(value: String) = set(idCol, value)
+
+  def setLabelCol(value: String) = set(labelCol, value)
 
   def setSummary(summary: XGBoostTrainingSummary[T]) = {
     trainingSummary = Some(summary)
@@ -90,8 +93,12 @@ class XGBoostModel[T](override val uid: String,
   override def copy(extra: ParamMap): XGBoostModel[T] = {
     val newModel = copyValues(new XGBoostModel[T](uid, models), extra)
     trainingSummary.map(summary => newModel.setSummary(summary))
-    newModel.setGroupByCol($(groupByCol)).setIdCol($(idCol))
-      .setValidationCol($(validationCol)).asInstanceOf[XGBoostModel[T]]
+    newModel
+      .setGroupByCol($(groupByCol))
+      .setIdCol($(idCol))
+      .setLabelCol($(labelCol))
+      .setValidationCol($(validationCol))
+      .asInstanceOf[XGBoostModel[T]]
   }
 }
 
