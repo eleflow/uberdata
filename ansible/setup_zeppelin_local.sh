@@ -37,7 +37,7 @@ sudo cp -f /usr/share/zeppelin/conf/interpreter.json /tmp/notebook
 
 sudo rm -rf /usr/share/zeppelin*
 
-wget http://www-us.apache.org/dist/zeppelin/zeppelin-$zeppelinVersion/zeppelin-$zeppelinVersion-bin-all.tgz -O /tmp/zeppelin-$zeppelinVersion.tgz
+wget http://archive.apache.org/dist/zeppelin/zeppelin-$zeppelinVersion/zeppelin-$zeppelinVersion-bin-all.tgz -O /tmp/zeppelin-$zeppelinVersion.tgz
 
 sudo tar -xzvf /tmp/zeppelin-$zeppelinVersion.tgz -C /usr/share
 sudo rm -f /tmp/zeppelin-$zeppelinVersion.tgz
