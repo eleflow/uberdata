@@ -108,7 +108,7 @@ class ForecastPredictor extends Serializable with Logging {
   }
 
   private def createTimeSeriesGenerator[T, U](labelCol: String, featuresCol: String, validationCol: String,
-                                              timeCol: String)(implicit kt: ClassTag[T]) : TimeSeriesGenerator[T, U] = {
+                                              timeCol: String)(implicit kt: ClassTag[T]): TimeSeriesGenerator[T, U] = {
 
     new TimeSeriesGenerator[T, U]()
       .setFeaturesCol(featuresCol)
@@ -206,14 +206,14 @@ class ForecastPredictor extends Serializable with Logging {
                       (implicit kt: ClassTag[L], ord: Ordering[L] = null, ctLabel: ClassTag[I],
                        ordLabel: Ordering[I] = null) = {
 
-    require(!featuresCol.isEmpty,"featuresCol parameter can't be empty")
+    require(!featuresCol.isEmpty, "featuresCol parameter can't be empty")
 
     val validationCol = idCol + algorithm.toString
     algorithm match {
 
-      case Arima | HoltWinters | MovingAverage8 | MovingAverage16 | MovingAverage26 | FindBestForecast=>
+      case Arima | HoltWinters | MovingAverage8 | MovingAverage16 | MovingAverage26 | FindBestForecast =>
         predictSmallModelFuture[L, T, I](train, test, labelCol, featuresCol.head, timeCol, idCol, algorithm,
-          validationCol, nFutures, meanAverageWindowSize,paramRange)
+          validationCol, nFutures, meanAverageWindowSize, paramRange)
 
       case XGBoostAlgorithm =>
         predictSmallModelFeatureBased[L, T, I](train, test, labelCol, featuresCol, timeCol, idCol, groupByCol,
@@ -226,17 +226,18 @@ class ForecastPredictor extends Serializable with Logging {
 
   def predictSmallModelFeatureBased[L, T, I](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: Seq[String],
                                              timeCol: String, idCol: String, groupByCol: String, algorithm: Algorithm = XGBoostAlgorithm,
-                                             validationCol: String) (implicit kt: ClassTag[L], ord: Ordering[L] = null,
-                                                                     ctLabel: ClassTag[I], ordLabel: Ordering[I] = null) = {
+                                             validationCol: String)(implicit kt: ClassTag[L], ord: Ordering[L] = null,
+                                                                    ctLabel: ClassTag[I], ordLabel: Ordering[I] = null) = {
 
     require(algorithm == XGBoostAlgorithm, "The accepted algorithm for this method is XGBoostAlgorithm")
 
-    val pipeline = prepareXGBoost[L, T](labelCol, featuresCol, validationCol, timeCol, idCol, groupByCol, train.schema)
+    val pipeline = prepareXGBoost[L, T](labelCol, featuresCol, validationCol, timeCol, idCol, groupByCol,
+      train.schema)
     val cachedTrain = train.cache
     val cachedTest = test.cache()
     val model = pipeline.fit(cachedTrain)
     val result = model.transform(cachedTest).cache
-
+    val res = result.take(3)
     val joined = result.select(idCol, IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME);
 
     val dfToBeReturned = joined.withColumnRenamed("featuresPrediction", "prediction")

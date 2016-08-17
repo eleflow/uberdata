@@ -298,144 +298,144 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     Row(4d, 82d, 72, true))
 
 
-  "ForecastPredictor" should "execute mean average and return predictions" in {
-    @transient val sc = context.sparkContext
-    @transient val sqlContext = context.sqlContext
-
-    val structType = StructType(Seq(StructField("label", DoubleType), StructField("date", DoubleType),
-      StructField("features", IntegerType), StructField("Open", BooleanType)))
-
-    val rdd = sc.parallelize(data)
-    val dataFrame = sqlContext.createDataFrame(rdd, structType)
-
-    val timeSeriesBestModelFinder = ForecastPredictor().
-      prepareMovingAveragePipeline[Double, Double](windowSize = 6)
-    val model = timeSeriesBestModelFinder.fit(dataFrame)
-    val df = model.transform(dataFrame)
-
-    val first = df.first
-    assert(first.getAs[org.apache.spark.mllib.linalg.Vector](1).toArray.length == 11)
-    assert(first.getAs[Iterable[Double]](2).toArray.length == 11)
-  }
-
-  it should "execute ARIMA and return predictions" in {
-    @transient val sc = context.sparkContext
-    @transient val sqlContext = context.sqlContext
-
-    val structType = StructType(Seq(StructField("label", DoubleType), StructField("date", DoubleType),
-      StructField("feat", IntegerType)))
-
-    val rdd = sc.parallelize(arimaData)
-    val dataFrame = sqlContext.createDataFrame(rdd, structType)
-
-    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double, Double](featuresCol = "feat",
-      nFutures = 5)
-    val model = timeSeriesBestModelFinder.fit(dataFrame)
-    val df = model.transform(dataFrame)
-    val first = df.first
-    assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("validation").toArray.length == 5)
-    assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("featuresPrediction").toArray.length == 16)
-  }
-
-  it should "execute ARIMA without standard field names and return predictions" in {
-    @transient val sc = context.sparkContext
-    @transient val sqlContext = context.sqlContext
-
-    val structType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
-      StructField("Sales", IntegerType), StructField("Open", BooleanType)))
-
-    val rdd = sc.parallelize(arimaData)
-    val dataFrame = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
-
-    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double, Double](labelCol = "Store",
-      timeCol = "data", featuresCol = "Sales", nFutures = 5)
-    val model = timeSeriesBestModelFinder.fit(dataFrame)
-    val df = model.transform(dataFrame)
-    val first = df.first
-    assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("validation").toArray.length == 5)
-    assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("featuresPrediction").toArray.length == 16)
-  }
-
-
-  it should "execute holtWinters and return predictions" in {
-    @transient val sc = context.sparkContext
-    @transient val sqlContext = context.sqlContext
-
-    val structType = StructType(Seq(StructField("label", DoubleType), StructField("date", DoubleType),
-      StructField("features", IntegerType), StructField("Open", BooleanType)))
-
-    val rdd = sc.parallelize(data)
-    val dataFrame = sqlContext.createDataFrame(rdd, structType)
-
-    val timeSeriesBestModelFinder = ForecastPredictor().prepareHOLTWintersPipeline[Double, Double](nFutures = 8)
-    val model = timeSeriesBestModelFinder.fit(dataFrame)
-    val df = model.transform(dataFrame)
-    val first = df.first
-    assert(first.getAs[DenseVector]("validation").toArray.length == 8)
-    assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("features").toArray.length == 16)
-  }
-
-  it should "predict with ARIMA without standard field names and return predictions" in {
-    @transient val sc = context.sparkContext
-    @transient val sqlContext = context.sqlContext
-
-    val structType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
-      StructField("Sales", IntegerType)))
-    val testStructType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
-      StructField("Id", IntegerType)))
-    val rdd = sc.parallelize(arimaData)
-    val testRdd = sc.parallelize(testArimaData)
-    val dataFrame = sqlContext.createDataFrame(rdd, structType)
-    val testDataFrame = sqlContext.createDataFrame(testRdd, testStructType)
-
-    val (timeSeriesBestModelFinder, model) = ForecastPredictor().predict[Double, Double, Int](dataFrame, testDataFrame,
-      "Store", Seq("Sales"), "data", "Id", "Store", SupportedAlgorithm.Arima, 5)
-    val first = timeSeriesBestModelFinder.collect
-    val arima = model.stages.last.asInstanceOf[ArimaModel[Int]]
-    val bestArima = arima.models.sortBy(_._2._2.minBy(_.metricResult).metricResult).first()
-    val min = bestArima._2._2.minBy(_.metricResult)
-    assert(first.length == 10)
-    assert(model.stages.last.isInstanceOf[ArimaModel[Int]])
-    assert(min.metricResult < 1.7d)
-  }
-
-
-  it should "choose the best model for each group" in {
-    @transient val sc = context.sparkContext
-    @transient val sqlContext = context.sqlContext
-
-    val structType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
-      StructField("Sales", IntegerType)))
-    val rdd = sc.parallelize(groupedArimaList)
-    val dataFrame = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
-
-    val pipeline = ForecastPredictor().prepareBestForecastPipeline[Int, Int]("Store",
-      "Sales", "validation", "data", 5, Seq(8, 12, 16, 24, 26), (0 to 2).toArray)
-    val model = pipeline.fit(dataFrame)
-    val result = model.transform(dataFrame)
-    assert(result.collect().length == 4)
-    assert(result.select(IUberdataForecastUtil.ALGORITHM).distinct().count() > 1)
-  }
-
-  it should "choose the best model for each group in predict method" in {
-    @transient val sc = context.sparkContext
-    @transient val sqlContext = context.sqlContext
-
-    val structType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
-      StructField("Sales", IntegerType)))
-    val rdd = sc.parallelize(groupedArimaList)
-    val trainDf = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
-    val testStructType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
-      StructField("Id", IntegerType)))
-    val testRdd = sc.parallelize(groupedArimaTest)
-    val testDf = sqlContext.createDataFrame(testRdd, testStructType)
-
-      val (result,_) = ForecastPredictor().predict[Double,Int, Int](trainDf, testDf, "Store", Seq("Sales"), "data","Id",
-        "Store", SupportedAlgorithm.FindBestForecast, 5, Seq(8,12,16,24,26))
-
-    assert(result.collect().length == 20)
-    assert(result.map(_.getAs[String](IUberdataForecastUtil.ALGORITHM)).distinct().count() > 1)
-  }
+//  "ForecastPredictor" should "execute mean average and return predictions" in {
+//    @transient val sc = context.sparkContext
+//    @transient val sqlContext = context.sqlContext
+//
+//    val structType = StructType(Seq(StructField("label", DoubleType), StructField("date", DoubleType),
+//      StructField("features", IntegerType), StructField("Open", BooleanType)))
+//
+//    val rdd = sc.parallelize(data)
+//    val dataFrame = sqlContext.createDataFrame(rdd, structType)
+//
+//    val timeSeriesBestModelFinder = ForecastPredictor().
+//      prepareMovingAveragePipeline[Double, Double](windowSize = 6)
+//    val model = timeSeriesBestModelFinder.fit(dataFrame)
+//    val df = model.transform(dataFrame)
+//
+//    val first = df.first
+//    assert(first.getAs[org.apache.spark.mllib.linalg.Vector](1).toArray.length == 11)
+//    assert(first.getAs[Iterable[Double]](2).toArray.length == 11)
+//  }
+//
+//  it should "execute ARIMA and return predictions" in {
+//    @transient val sc = context.sparkContext
+//    @transient val sqlContext = context.sqlContext
+//
+//    val structType = StructType(Seq(StructField("label", DoubleType), StructField("date", DoubleType),
+//      StructField("feat", IntegerType)))
+//
+//    val rdd = sc.parallelize(arimaData)
+//    val dataFrame = sqlContext.createDataFrame(rdd, structType)
+//
+//    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double, Double](featuresCol = "feat",
+//      nFutures = 5)
+//    val model = timeSeriesBestModelFinder.fit(dataFrame)
+//    val df = model.transform(dataFrame)
+//    val first = df.first
+//    assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("validation").toArray.length == 5)
+//    assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("featuresPrediction").toArray.length == 16)
+//  }
+//
+//  it should "execute ARIMA without standard field names and return predictions" in {
+//    @transient val sc = context.sparkContext
+//    @transient val sqlContext = context.sqlContext
+//
+//    val structType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
+//      StructField("Sales", IntegerType), StructField("Open", BooleanType)))
+//
+//    val rdd = sc.parallelize(arimaData)
+//    val dataFrame = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
+//
+//    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double, Double](labelCol = "Store",
+//      timeCol = "data", featuresCol = "Sales", nFutures = 5)
+//    val model = timeSeriesBestModelFinder.fit(dataFrame)
+//    val df = model.transform(dataFrame)
+//    val first = df.first
+//    assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("validation").toArray.length == 5)
+//    assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("featuresPrediction").toArray.length == 16)
+//  }
+//
+//
+//  it should "execute holtWinters and return predictions" in {
+//    @transient val sc = context.sparkContext
+//    @transient val sqlContext = context.sqlContext
+//
+//    val structType = StructType(Seq(StructField("label", DoubleType), StructField("date", DoubleType),
+//      StructField("features", IntegerType), StructField("Open", BooleanType)))
+//
+//    val rdd = sc.parallelize(data)
+//    val dataFrame = sqlContext.createDataFrame(rdd, structType)
+//
+//    val timeSeriesBestModelFinder = ForecastPredictor().prepareHOLTWintersPipeline[Double, Double](nFutures = 8)
+//    val model = timeSeriesBestModelFinder.fit(dataFrame)
+//    val df = model.transform(dataFrame)
+//    val first = df.first
+//    assert(first.getAs[DenseVector]("validation").toArray.length == 8)
+//    assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("features").toArray.length == 16)
+//  }
+//
+//  it should "predict with ARIMA without standard field names and return predictions" in {
+//    @transient val sc = context.sparkContext
+//    @transient val sqlContext = context.sqlContext
+//
+//    val structType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
+//      StructField("Sales", IntegerType)))
+//    val testStructType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
+//      StructField("Id", IntegerType)))
+//    val rdd = sc.parallelize(arimaData)
+//    val testRdd = sc.parallelize(testArimaData)
+//    val dataFrame = sqlContext.createDataFrame(rdd, structType)
+//    val testDataFrame = sqlContext.createDataFrame(testRdd, testStructType)
+//
+//    val (timeSeriesBestModelFinder, model) = ForecastPredictor().predict[Double, Double, Int](dataFrame, testDataFrame,
+//      "Store", Seq("Sales"), "data", "Id", "Store", SupportedAlgorithm.Arima, 5)
+//    val first = timeSeriesBestModelFinder.collect
+//    val arima = model.stages.last.asInstanceOf[ArimaModel[Int]]
+//    val bestArima = arima.models.sortBy(_._2._2.minBy(_.metricResult).metricResult).first()
+//    val min = bestArima._2._2.minBy(_.metricResult)
+//    assert(first.length == 10)
+//    assert(model.stages.last.isInstanceOf[ArimaModel[Int]])
+//    assert(min.metricResult < 1.7d)
+//  }
+//
+//
+//  it should "choose the best model for each group" in {
+//    @transient val sc = context.sparkContext
+//    @transient val sqlContext = context.sqlContext
+//
+//    val structType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
+//      StructField("Sales", IntegerType)))
+//    val rdd = sc.parallelize(groupedArimaList)
+//    val dataFrame = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
+//
+//    val pipeline = ForecastPredictor().prepareBestForecastPipeline[Int, Int]("Store",
+//      "Sales", "validation", "data", 5, Seq(8, 12, 16, 24, 26), (0 to 2).toArray)
+//    val model = pipeline.fit(dataFrame)
+//    val result = model.transform(dataFrame)
+//    assert(result.collect().length == 4)
+//    assert(result.select(IUberdataForecastUtil.ALGORITHM).distinct().count() > 1)
+//  }
+//
+//  it should "choose the best model for each group in predict method" in {
+//    @transient val sc = context.sparkContext
+//    @transient val sqlContext = context.sqlContext
+//
+//    val structType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
+//      StructField("Sales", IntegerType)))
+//    val rdd = sc.parallelize(groupedArimaList)
+//    val trainDf = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
+//    val testStructType = StructType(Seq(StructField("Store", DoubleType), StructField("data", DoubleType),
+//      StructField("Id", IntegerType)))
+//    val testRdd = sc.parallelize(groupedArimaTest)
+//    val testDf = sqlContext.createDataFrame(testRdd, testStructType)
+//
+//      val (result,_) = ForecastPredictor().predict[Double,Int, Int](trainDf, testDf, "Store", Seq("Sales"), "data","Id",
+//        "Store", SupportedAlgorithm.FindBestForecast, 5, Seq(8,12,16,24,26))
+//
+//    assert(result.collect().length == 20)
+//    assert(result.map(_.getAs[String](IUberdataForecastUtil.ALGORITHM)).distinct().count() > 1)
+//  }
 
   "XGBoost" should "execute a prediction with a simple dataset" in {
     @transient val sc = context.sparkContext
