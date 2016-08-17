@@ -17,18 +17,18 @@ import scala.reflect.ClassTag
 /**
   * Created by dirceu on 31/05/16.
   */
-class ForecastBestModelFinder[T, M <: ForecastBaseModel[M]](override val uid: String)(implicit kt: ClassTag[T])
-  extends HoltWintersBestModelEvaluation[T, M]
+class ForecastBestModelFinder[I, M <: ForecastBaseModel[M]](override val uid: String)(implicit kt: ClassTag[I])
+  extends HoltWintersBestModelEvaluation[I, M]
     with HoltWintersParams with DefaultParamsWritable
     with HasWindowParams
     with ArimaParams
-    with HasTimeSeriesEvaluator[T]
+    with HasTimeSeriesEvaluator[I]
     with TimeSeriesBestModelFinder
     with Logging {
 
-  def this() (implicit kt: ClassTag[T]) = this(Identifiable.randomUID("BestForecast"))
+  def this() (implicit kt: ClassTag[I]) = this(Identifiable.randomUID("BestForecast"))
 
-  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[T]) = set(timeSeriesEvaluator, eval)
+  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[I]) = set(timeSeriesEvaluator, eval)
 
   def setEstimatorParamMaps(value: Array[ParamMap]): this.type = set(estimatorParamMaps, value)
 
@@ -42,8 +42,8 @@ class ForecastBestModelFinder[T, M <: ForecastBaseModel[M]](override val uid: St
 
   def setWindowParams(params:Seq[Int]) = set(windowParams,params)
 
-  def movingAverageEvaluation(row: Row, model: HOLTWintersModel, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[T]],
-                              id: T) = {
+  def movingAverageEvaluation(row: Row, model: HOLTWintersModel, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[I]],
+                              id: I) = {
     val features = row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
     log.warn(s"Evaluating forecast for id $id, with parameters alpha ${model.alpha}, beta ${model.beta} and gamma ${model.gamma}")
     val expectedResult = row.getAs[org.apache.spark.mllib.linalg.Vector](partialValidationCol)
@@ -55,11 +55,11 @@ class ForecastBestModelFinder[T, M <: ForecastBaseModel[M]](override val uid: St
       val metric = broadcastEvaluator.value.evaluate(toBeValidated)
       val metricName = broadcastEvaluator.value.getMetricName
       val params = ParamMap().put(new ParamPair[Int](windowParam,windowSize))
-      (model, new ModelParamEvaluation[T](id, metric, params, Some(metricName),SupportedAlgorithm.MovingAverage8))
+      (model, new ModelParamEvaluation[I](id, metric, params, Some(metricName),SupportedAlgorithm.MovingAverage8))
     }
   }
 
-  def modelEvaluation(idModels: RDD[(T, Row, Seq[(ParamMap, TimeSeriesModel)])]) = {
+  def modelEvaluation(idModels: RDD[(I, Row, Seq[(ParamMap, TimeSeriesModel)])]) = {
     val eval = $(timeSeriesEvaluator)
     val broadcastEvaluator = idModels.context.broadcast(eval)
 
@@ -86,11 +86,11 @@ class ForecastBestModelFinder[T, M <: ForecastBaseModel[M]](override val uid: St
   override protected def train(dataSet: DataFrame): M = {
     val splitDs = split(dataSet, $(nFutures))
     val idModels = splitDs.rdd.map(train)
-    new ForecastBestModel[T](uid, modelEvaluation(idModels)).setValidationCol($(validationCol)).asInstanceOf[M]
+    new ForecastBestModel[I](uid, modelEvaluation(idModels)).setValidationCol($(validationCol)).asInstanceOf[M]
   }
 
-  def train(row: Row): (T, Row, Seq[(ParamMap, TimeSeriesModel)]) = {
-    val id = row.getAs[T]($(labelCol))
+  def train(row: Row): (I, Row, Seq[(ParamMap, TimeSeriesModel)]) = {
+    val id = row.getAs[I]($(labelCol))
 
     val holtWintersResults = try {
       val holtWinters = HOLTWinters.fitModel(row.getAs($(featuresCol)), $(nFutures))

@@ -15,8 +15,8 @@ import scala.reflect.ClassTag
 /**
   * Created by dirceu on 31/05/16.
   */
-abstract class BestModelFinder[T, M <: ForecastBaseModel[M]](implicit kt: ClassTag[T], ord: Ordering[T] = null) extends Estimator[M]
-  with PredictorParams with HasTimeSeriesEvaluator[T] with HasEstimatorParams
+abstract class BestModelFinder[I, M <: ForecastBaseModel[M]](implicit kt: ClassTag[I], ord: Ordering[I] = null) extends Estimator[M]
+  with PredictorParams with HasTimeSeriesEvaluator[I] with HasEstimatorParams
   with HasNFutures with HasValidationCol {
 
   lazy val partialValidationCol = s"partial${$(validationCol)}"
@@ -56,15 +56,15 @@ abstract class BestModelFinder[T, M <: ForecastBaseModel[M]](implicit kt: ClassT
   }
 
   override def copy(extra: ParamMap): Estimator[M] = {
-    val that = this.getClass.getConstructor(classOf[String], classOf[scala.reflect.ClassTag[T]],
-      classOf[scala.math.Ordering[T]]).
+    val that = this.getClass.getConstructor(classOf[String], classOf[scala.reflect.ClassTag[I]],
+      classOf[scala.math.Ordering[I]]).
       newInstance(uid, kt, ord)
       .setValidationCol($(validationCol))
     copyValues(that, extra)
   }
 
-  protected def arimaEvaluation(row: Row, model: UberArimaModel, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[T]], id: T,
-                                parameters: ParamMap): (UberArimaModel, ModelParamEvaluation[T]) = {
+  protected def arimaEvaluation(row: Row, model: UberArimaModel, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[I]],
+                                id: I, parameters: ParamMap): (UberArimaModel, ModelParamEvaluation[I]) = {
     val features = row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
     log.warn(s"Evaluating forecast for id $id, with parameters p ${model.p}, d ${model.d} and q ${model.q}")
 
@@ -72,6 +72,6 @@ abstract class BestModelFinder[T, M <: ForecastBaseModel[M]](implicit kt: ClassT
     val toBeValidated = features.toArray.zip(forecastToBeValidated)
     val metric = broadcastEvaluator.value.evaluate(toBeValidated)
     val metricName = broadcastEvaluator.value.getMetricName
-    (model, new ModelParamEvaluation[T](id, metric, parameters, Some(metricName), SupportedAlgorithm.Arima))
+    (model, new ModelParamEvaluation[I](id, metric, parameters, Some(metricName), SupportedAlgorithm.Arima))
   }
 }

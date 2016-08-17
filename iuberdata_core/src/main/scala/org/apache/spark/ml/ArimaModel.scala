@@ -20,16 +20,16 @@ import scala.reflect.ClassTag
   * Created by dirceu on 12/04/16.
   * Conter o melhor modelo para cada loja assim como os parametros de avaliaçãod e todos os modelos
   */
-class ArimaModel[T](override val uid: String,
-                    val models: RDD[(T, (UberArimaModel, Seq[(ModelParamEvaluation[T])]))])(implicit kt: ClassTag[T], ord: Ordering[T] = null)
-  extends ForecastBaseModel[ArimaModel[T]]
+class ArimaModel[L](override val uid: String,
+                    val models: RDD[(L, (UberArimaModel, Seq[(ModelParamEvaluation[L])]))])(implicit kt: ClassTag[L], ord: Ordering[L] = null)
+  extends ForecastBaseModel[ArimaModel[L]]
     with ArimaParams
     with HasNFutures
     with MLWritable with ForecastPipelineStage {
 
-  private var trainingSummary: Option[ArimaTrainingSummary[T]] = None
+  private var trainingSummary: Option[ArimaTrainingSummary[L]] = None
 
-  def setSummary(summary: ArimaTrainingSummary[T]) = {
+  def setSummary(summary: ArimaTrainingSummary[L]) = {
     trainingSummary = Some(summary)
     this
   }
@@ -43,7 +43,7 @@ class ArimaModel[T](override val uid: String,
     val scContext = dataSet.sqlContext.sparkContext
     //TODO fazer com que os modelos invalidos voltem numeros absurdos
 
-    val joined = models.join(dataSet.map(r => (r.getAs[T]($(labelCol)), r)))
+    val joined = models.join(dataSet.map(r => (r.getAs[L]($(labelCol)), r)))
 
     val featuresColName = dataSet.sqlContext.sparkContext.broadcast($(featuresCol))
     val nFut = scContext.broadcast($(nFutures))
@@ -59,11 +59,11 @@ class ArimaModel[T](override val uid: String,
   override def transformSchema(schema: StructType) = super.transformSchema(schema).
     add(StructField(IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME, new VectorUDT))
 
-  override def copy(extra: ParamMap): ArimaModel[T] = {
-    val newModel = copyValues(new ArimaModel[T](uid, models), extra)
+  override def copy(extra: ParamMap): ArimaModel[L] = {
+    val newModel = copyValues(new ArimaModel[L](uid, models), extra)
     trainingSummary.map(summary => newModel.setSummary(summary))
     newModel
-      .setValidationCol($(validationCol)).asInstanceOf[ArimaModel[T]]
+      .setValidationCol($(validationCol)).asInstanceOf[ArimaModel[L]]
   }
 
 }

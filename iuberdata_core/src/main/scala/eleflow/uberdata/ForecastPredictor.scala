@@ -148,15 +148,16 @@ class ForecastPredictor extends Serializable with Logging {
     preparePipeline(findBestForecast, Array(transformer))
   }
 
-  def prepareXGBoost[T, L](labelCol: String, featuresCol: Seq[String], validationCol: String, timeCol: String,
-                           idCol: String, groupByCol: String, schema: StructType)(implicit kt: ClassTag[T]) = {
+  def prepareXGBoost[L, I](labelCol: String, featuresCol: Seq[String], validationCol: String, timeCol: String,
+                           idCol: String, groupByCol: String, schema: StructType)(implicit ki: ClassTag[I],
+                                                                                  kl: ClassTag[L]) = {
 
-    val timeSeriesEvaluator: TimeSeriesEvaluator[T] = new TimeSeriesEvaluator[T]()
+    val timeSeriesEvaluator: TimeSeriesEvaluator[L] = new TimeSeriesEvaluator[L]()
       .setValidationCol(validationCol)
       .setLabelCol(labelCol)
       .setMetricName("rmspe")
 
-    val xgboost = new XGBoostBestModelFinder[T, L]()
+    val xgboost = new XGBoostBestModelFinder[L, L]()
       .setTimeSeriesEvaluator(timeSeriesEvaluator)
       .setFeaturesCol(featuresCol.head) //TODO
       .setLabelCol(labelCol)
@@ -180,7 +181,8 @@ class ForecastPredictor extends Serializable with Logging {
       .map(_.name)
 
     val nonStringColumns = allColumns.filter(f => !stringColumns.contains(f)
-      && f != labelCol && f != idCol.getOrElse("") && f != groupByCol && f != timeCol)
+      && f != labelCol
+      && f != idCol.getOrElse("") && f != groupByCol && f != timeCol)
 
     val stringIndexers = stringColumns.map { column =>
       new StringIndexer()
@@ -202,12 +204,12 @@ class ForecastPredictor extends Serializable with Logging {
     stringIndexers :+ columnIndexers :+ assembler
   }
 
-  //label, timecol, Id
-  def predict[L, T, I](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: Seq[String] = Seq.empty[String],
-                       timeCol: String, idCol: String, groupByCol: String, algorithm: Algorithm = FindBestForecast, nFutures: Int = 6,
-                       meanAverageWindowSize: Seq[Int] = Seq(8, 16, 26), paramRange: Array[Int] = defaultRange)
-                      (implicit kt: ClassTag[L], ord: Ordering[L] = null, ctLabel: ClassTag[I],
-                       ordLabel: Ordering[I] = null) = {
+  //label, timecol, Id, GroupBy
+  def predict[L, T, I, G](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: Seq[String] = Seq.empty[String],
+                          timeCol: String, idCol: String, groupByCol: String, algorithm: Algorithm = FindBestForecast, nFutures: Int = 6,
+                          meanAverageWindowSize: Seq[Int] = Seq(8, 16, 26), paramRange: Array[Int] = defaultRange)
+                         (implicit kt: ClassTag[L], ord: Ordering[L] = null, ctLabel: ClassTag[I],
+                          ordLabel: Ordering[I] = null) = {
 
     require(!featuresCol.isEmpty, "featuresCol parameter can't be empty")
 
@@ -219,7 +221,7 @@ class ForecastPredictor extends Serializable with Logging {
           validationCol, nFutures, meanAverageWindowSize, paramRange)
 
       case XGBoostAlgorithm =>
-        predictSmallModelFeatureBased[L, T, I](train, test, labelCol, featuresCol, timeCol, idCol, groupByCol,
+        predictSmallModelFeatureBased[L, I, G](train, test, labelCol, featuresCol, timeCol, idCol, groupByCol,
           algorithm, validationCol)
 
       case _ => ???
@@ -227,14 +229,14 @@ class ForecastPredictor extends Serializable with Logging {
     }
   }
 
-  def predictSmallModelFeatureBased[L, T, I](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: Seq[String],
-                                             timeCol: String, idCol: String, groupByCol: String, algorithm: Algorithm = XGBoostAlgorithm,
-                                             validationCol: String)(implicit kt: ClassTag[L], ord: Ordering[L] = null,
-                                                                    ctLabel: ClassTag[I], ordLabel: Ordering[I] = null) = {
+  def predictSmallModelFeatureBased[L, I, G](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: Seq[String],
+                                                timeCol: String, idCol: String, groupByCol: String, algorithm: Algorithm = XGBoostAlgorithm,
+                                                validationCol: String)(implicit kt: ClassTag[L], ord: Ordering[L] = null,
+                                                                       ctLabel: ClassTag[I], ordLabel: Ordering[I] = null) = {
 
     require(algorithm == XGBoostAlgorithm, "The accepted algorithm for this method is XGBoostAlgorithm")
 
-    val pipeline = prepareXGBoost[L, T](labelCol, featuresCol, validationCol, timeCol, idCol, groupByCol,
+    val pipeline = prepareXGBoost[L, I](labelCol, featuresCol, validationCol, timeCol, idCol, groupByCol,
       train.schema)
     val cachedTrain = train.cache
     val cachedTest = test.cache()

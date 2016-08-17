@@ -13,15 +13,15 @@ import scala.reflect.ClassTag
 /**
   * Created by dirceu on 19/05/16.
   */
-class HoltWintersBestModelFinder[T](override val uid: String)(implicit kt: ClassTag[T])
-  extends HoltWintersBestModelEvaluation[T, HoltWintersModel[T]]
+class HoltWintersBestModelFinder[L](override val uid: String)(implicit kt: ClassTag[L])
+  extends HoltWintersBestModelEvaluation[L, HoltWintersModel[L]]
     with DefaultParamsWritable
     with TimeSeriesBestModelFinder
     with Logging {
 
   import org.apache.spark.sql.DataFrame
 
-  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[T]) = set(timeSeriesEvaluator, eval)
+  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[L]) = set(timeSeriesEvaluator, eval)
 
   def setEstimatorParamMaps(value: Array[ParamMap]): this.type = set(estimatorParamMaps, value)
 
@@ -34,9 +34,9 @@ class HoltWintersBestModelFinder[T](override val uid: String)(implicit kt: Class
   def setLabelCol(label: String) = set(labelCol, label)
 
 
-  def this()(implicit kt: ClassTag[T]) = this(Identifiable.randomUID("arima"))
+  def this()(implicit kt: ClassTag[L]) = this(Identifiable.randomUID("arima"))
 
-  def modelEvaluation(idModels: RDD[(T, Row, Option[HOLTWintersModel])]): RDD[(T, (HOLTWintersModel, ModelParamEvaluation[T]))] = {
+  def modelEvaluation(idModels: RDD[(L, Row, Option[HOLTWintersModel])]): RDD[(L, (HOLTWintersModel, ModelParamEvaluation[L]))] = {
     val eval = $(timeSeriesEvaluator)
     val broadcastEvaluator = idModels.context.broadcast(eval)
     idModels.filter(_._3.isDefined).map {
@@ -50,15 +50,15 @@ class HoltWintersBestModelFinder[T](override val uid: String)(implicit kt: Class
     }
   }
 
-  override protected def train(dataSet: DataFrame): HoltWintersModel[T] = {
+  override protected def train(dataSet: DataFrame): HoltWintersModel[L] = {
     val splitDs = split(dataSet, $(nFutures))
     val idModels = splitDs.rdd.map(train)
-    new HoltWintersModel[T](uid, modelEvaluation(idModels)).setValidationCol($(validationCol)).
-      asInstanceOf[HoltWintersModel[T]]
+    new HoltWintersModel[L](uid, modelEvaluation(idModels)).setValidationCol($(validationCol)).
+      asInstanceOf[HoltWintersModel[L]]
   }
 
-  def train(row: Row): (T, Row, Option[HOLTWintersModel]) = {
-    val id = row.getAs[T]($(labelCol))
+  def train(row: Row): (L, Row, Option[HOLTWintersModel]) = {
+    val id = row.getAs[L]($(labelCol))
 
     val result = try {
       Some(HOLTWinters.fitModel(row.getAs($(featuresCol)), $(nFutures)))

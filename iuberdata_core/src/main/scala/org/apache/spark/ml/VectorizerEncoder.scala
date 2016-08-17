@@ -53,6 +53,7 @@ class VectorizerEncoder(override val uid: String) extends Transformer
 
   @DeveloperApi
   override def transformSchema(schema: StructType): StructType = StructType(schema.filter(col =>
-    !$(inputCols).contains(col.name) || col.name == $(groupByCol) || col.name == $(idCol) ||
-      col.name == $(labelCol))).add(StructField($(outputCol), new VectorUDT))
+    !$(inputCols).contains(col.name) || col.name == $(groupByCol) || col.name == $(idCol)
+      || col.name == $(labelCol)
+  )).add(StructField($(outputCol), new VectorUDT))
 }

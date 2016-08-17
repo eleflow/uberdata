@@ -20,16 +20,16 @@ import scala.reflect.ClassTag
 /**
   * Created by dirceu on 30/06/16.
   */
-class XGBoostModel[T](override val uid: String,
-                      val models: RDD[(T, (UberXGBOOSTModel, Seq[(ModelParamEvaluation[T])]))])(implicit kt: ClassTag[T], ord: Ordering[T] = null)
-  extends ForecastBaseModel[XGBoostModel[T]]
+class XGBoostModel[I](override val uid: String,
+                      val models: RDD[(I, (UberXGBOOSTModel, Seq[(ModelParamEvaluation[I])]))])(implicit kt: ClassTag[I], ord: Ordering[I] = null)
+  extends ForecastBaseModel[XGBoostModel[I]]
     with HasGroupByCol
     with HasIdCol
     with HasFeaturesCol
     with HasLabelCol
     with MLWritable with ForecastPipelineStage {
 
-  private var trainingSummary: Option[XGBoostTrainingSummary[T]] = None
+  private var trainingSummary: Option[XGBoostTrainingSummary[I]] = None
 
   def setGroupByCol(value: String) = set(groupByCol, value)
 
@@ -37,7 +37,7 @@ class XGBoostModel[T](override val uid: String,
 
   def setLabelCol(value: String) = set(labelCol, value)
 
-  def setSummary(summary: XGBoostTrainingSummary[T]) = {
+  def setSummary(summary: XGBoostTrainingSummary[I]) = {
     trainingSummary = Some(summary)
     this
   }
@@ -48,25 +48,28 @@ class XGBoostModel[T](override val uid: String,
     val schema = dataSet.schema
     val predSchema = transformSchema(schema)
 
-    val joined = models.join(dataSet.map(r => (r.getAs[T]($(groupByCol)), r)))
+    val joined = models.join(dataSet.map(r => (r.getAs[I]($(groupByCol)), r)))
 
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
         val features = row.getAs[org.apache.spark.mllib.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
-        val idColumn = row.getAs[Long]($(idCol))
-        val groupedFeatures = row.getAs[Double]($(groupByCol))
+        val idColumnIndex = row.fieldIndex($(idCol))
+        val featuresIndex = row.fieldIndex(IUberdataForecastUtil.FEATURES_COL_NAME)
+        val groupByColumnIndex = row.fieldIndex($(groupByCol))
+        val rowValues = row.toSeq.zipWithIndex.filter { case (_, index) => index == idColumnIndex || index == featuresIndex ||
+          index == groupByColumnIndex
+        }.map(_._1)
         val featuresAsFloat = features.toArray.map(_.toFloat)
         //val labeledPoints = Iterator(ml.dmlc.xgboost4j.LabeledPoint.fromDenseVector(featuresAsFloat.head,
         //  featuresAsFloat.tail))
         val labeledPoints = Iterator(XGBLabeledPoint.fromDenseVector(0, featuresAsFloat))
         val forecast = bestModel.boosterInstance.predict(new DMatrix(labeledPoints, null))
           .flatMap(_.map(_.toDouble))
-        /*Row(groupedFeatures, features, SupportedAlgorithm.XGBoostAlgorithm.toString ,
+        /*Row(groupByColumnIndex, features, SupportedAlgorithm.XGBoostAlgorithm.toString ,
           bestModel.params.map(f => f._1 -> f._2.toString)
           , forecast.head)*/
-        Row(idColumn, groupedFeatures, features, SupportedAlgorithm.XGBoostAlgorithm.toString ,
-          bestModel.params.map(f => f._1 -> f._2.toString)
-          , forecast.head)
+        Row(rowValues :+ SupportedAlgorithm.XGBoostAlgorithm.toString :+
+          bestModel.params.map(f => f._1 -> f._2.toString) :+ forecast.head: _*)
     }
     dataSet.sqlContext.createDataFrame(predictions, predSchema).cache
   }
@@ -84,21 +87,21 @@ class XGBoostModel[T](override val uid: String,
       IUberdataForecastUtil.PARAMS).contains(f.name))).add(StructField(IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME,
     DoubleType))*/
 
-    override def transformSchema(schema: StructType) = StructType(super.transformSchema(schema).filter(f =>
-        Seq($(idCol), IUberdataForecastUtil.FEATURES_COL_NAME, $(featuresCol), $(groupByCol),IUberdataForecastUtil.ALGORITHM,
-            IUberdataForecastUtil.PARAMS).contains(f.name))).add(StructField(IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME,
+  override def transformSchema(schema: StructType) = StructType(super.transformSchema(schema).filter(f =>
+    Seq($(idCol), IUberdataForecastUtil.FEATURES_COL_NAME, $(featuresCol), $(groupByCol), IUberdataForecastUtil.ALGORITHM,
+      IUberdataForecastUtil.PARAMS).contains(f.name))).add(StructField(IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME,
     DoubleType))
 
 
-  override def copy(extra: ParamMap): XGBoostModel[T] = {
-    val newModel = copyValues(new XGBoostModel[T](uid, models), extra)
+  override def copy(extra: ParamMap): XGBoostModel[I] = {
+    val newModel = copyValues(new XGBoostModel[I](uid, models), extra)
     trainingSummary.map(summary => newModel.setSummary(summary))
     newModel
       .setGroupByCol($(groupByCol))
       .setIdCol($(idCol))
       .setLabelCol($(labelCol))
       .setValidationCol($(validationCol))
-      .asInstanceOf[XGBoostModel[T]]
+      .asInstanceOf[XGBoostModel[I]]
   }
 }
 

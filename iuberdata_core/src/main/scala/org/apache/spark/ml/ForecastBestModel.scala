@@ -15,16 +15,16 @@ import scala.reflect.ClassTag
 /**
   * Created by dirceu on 01/06/16.
   */
-class ForecastBestModel[T](override val uid: String,
-                           val models: RDD[(T, (TimeSeriesModel, Seq[(TimeSeriesModel, ModelParamEvaluation[T])]))]
+class ForecastBestModel[L](override val uid: String,
+                           val models: RDD[(L, (TimeSeriesModel, Seq[(TimeSeriesModel, ModelParamEvaluation[L])]))]
                           )
-                          (implicit kt: ClassTag[T])
-  extends ForecastBaseModel[ForecastBestModel[T]]
+                          (implicit kt: ClassTag[L])
+  extends ForecastBaseModel[ForecastBestModel[L]]
     with HasLabelCol with HasFeaturesCol
     with ForecastPipelineStage {
 
-  override def copy(extra: ParamMap): ForecastBestModel[T] = {
-    val newModel = copyValues(new ForecastBestModel[T](uid, models), extra)
+  override def copy(extra: ParamMap): ForecastBestModel[L] = {
+    val newModel = copyValues(new ForecastBestModel[L](uid, models), extra)
     newModel.setParent(parent)
   }
 
@@ -32,7 +32,7 @@ class ForecastBestModel[T](override val uid: String,
     super.transformSchema(schema).add(StructField("featuresValidation", new VectorUDT))
   }
 
-  def evaluateParams(models: Seq[(TimeSeriesModel, ModelParamEvaluation[T])], features: Vector,
+  def evaluateParams(models: Seq[(TimeSeriesModel, ModelParamEvaluation[L])], features: Vector,
                      nFut: Broadcast[Int]): Seq[Object] = {
     val (bestModel, modelParamEvaluation) = models.head
     try {
@@ -73,7 +73,7 @@ class ForecastBestModel[T](override val uid: String,
     val scContext = dataSet.sqlContext.sparkContext
     //TODO fazer com que os modelos invalidos voltem numeros absurdos
 
-    val joined = models.join(dataSet.map(r => (r.getAs[T]($(labelCol)), r)))
+    val joined = models.join(dataSet.map(r => (r.getAs[L]($(labelCol)), r)))
 
     val featuresColName = dataSet.sqlContext.sparkContext.broadcast($(featuresCol))
     val nFut = scContext.broadcast($(nFutures))

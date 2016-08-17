@@ -18,14 +18,14 @@ import scala.reflect.ClassTag
   * Treina e executa a validacao do melhor modelo, retornando o melhor modelo mas os parametros de avaliação de
   * todos os modelos.
   */
-class ArimaBestModelFinder[T](override val uid: String)(implicit kt: ClassTag[T])
-  extends BestModelFinder[T,ArimaModel[T]]
+class ArimaBestModelFinder[L](override val uid: String)(implicit kt: ClassTag[L])
+  extends BestModelFinder[L,ArimaModel[L]]
     with ArimaParams with DefaultParamsWritable
      with HasNFutures
     with TimeSeriesBestModelFinder with Logging {
-  def this()(implicit kt: ClassTag[T]) = this(Identifiable.randomUID("arima"))
+  def this()(implicit kt: ClassTag[L]) = this(Identifiable.randomUID("arima"))
 
-  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[T]) = set(timeSeriesEvaluator, eval)
+  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[L]) = set(timeSeriesEvaluator, eval)
 
   def setEstimatorParamMaps(value: Array[ParamMap]): this.type = set(estimatorParamMaps, value)
 
@@ -44,8 +44,8 @@ class ArimaBestModelFinder[T](override val uid: String)(implicit kt: ClassTag[T]
     }
   }
 
-  def modelEvaluation(idModels: RDD[(T, Row, Seq[(ParamMap, UberArimaModel)])]):
-  RDD[(T, (UberArimaModel, Seq[ModelParamEvaluation[T]]))] = {
+  def modelEvaluation(idModels: RDD[(L, Row, Seq[(ParamMap, UberArimaModel)])]):
+  RDD[(L, (UberArimaModel, Seq[ModelParamEvaluation[L]]))] = {
     val eval = $(timeSeriesEvaluator)
     val broadcastEvaluator = idModels.context.broadcast(eval)
     val ordering = TimeSeriesEvaluator.ordering(eval.getMetricName)
@@ -64,14 +64,14 @@ class ArimaBestModelFinder[T](override val uid: String)(implicit kt: ClassTag[T]
     }
   }
 
-  override protected def train(dataSet: DataFrame): ArimaModel[T] = {
+  override protected def train(dataSet: DataFrame): ArimaModel[L] = {
     val splitDs = split(dataSet, $(nFutures))
     val idModels = splitDs.rdd.map(train)
-    new ArimaModel[T](uid, modelEvaluation(idModels)).setValidationCol($(validationCol)).asInstanceOf[ArimaModel[T]]
+    new ArimaModel[L](uid, modelEvaluation(idModels)).setValidationCol($(validationCol)).asInstanceOf[ArimaModel[L]]
   }
 
-  def train(row: Row): (T, Row, Seq[(ParamMap, UberArimaModel)]) = {
-    val id = row.getAs[T]($(labelCol))
+  def train(row: Row): (L, Row, Seq[(ParamMap, UberArimaModel)]) = {
+    val id = row.getAs[L]($(labelCol))
     val result =  $(estimatorParamMaps).flatMap {
         params =>
 
@@ -90,7 +90,7 @@ class ArimaBestModelFinder[T](override val uid: String)(implicit kt: ClassTag[T]
     (id, row,result)
   }
 }
-case class ModelParamEvaluation[T](id: T, metricResult: Double, params: ParamMap, metricName: Option[String] = None, algorithm:Algorithm)
+case class ModelParamEvaluation[I](id: I, metricResult: Double, params: ParamMap, metricName: Option[String] = None, algorithm:Algorithm)
 
 object ArimaBestModelFinder extends DefaultParamsReadable[ArimaBestModelFinder[_]] {
 
@@ -98,11 +98,11 @@ object ArimaBestModelFinder extends DefaultParamsReadable[ArimaBestModelFinder[_
 }
 
 
-class ArimaTrainingSummary[T](predictions: DataFrame,
+class ArimaTrainingSummary[L](predictions: DataFrame,
                               predictionCol: String,
                               labelCol: String,
-                              model: ArimaModel[T],
+                              model: ArimaModel[L],
                               diagInvAtWA: Array[Double],
                               val featuresCol: String,
                               val objectiveHistory: Array[Double])
-  extends ARIMALinearSummary[T](predictions, predictionCol, labelCol, model, diagInvAtWA)
+  extends ARIMALinearSummary[L](predictions, predictionCol, labelCol, model, diagInvAtWA)

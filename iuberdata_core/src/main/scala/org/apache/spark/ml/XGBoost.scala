@@ -20,20 +20,20 @@ import scala.reflect.ClassTag
 /**
   * Created by dirceu on 29/06/16.
   */
-class XGBoost[T](override val uid: String, val models: RDD[(T, (UberXGBOOSTModel, Seq[(ModelParamEvaluation[T])]))])
-                (implicit kt: ClassTag[T], ord: Ordering[T] = null) extends ForecastBaseModel[XGBoostModel[T]]
+class XGBoost[I](override val uid: String, val models: RDD[(I, (UberXGBOOSTModel, Seq[(ModelParamEvaluation[I])]))])
+                (implicit kt: ClassTag[I], ord: Ordering[I] = null) extends ForecastBaseModel[XGBoostModel[I]]
   with HasInputCol with HasOutputCol with DefaultParamsWritable with HasFeaturesCol with HasNFutures
 with HasGroupByCol {
 
-  def this(models: RDD[(T, (UberXGBOOSTModel, Seq[(ModelParamEvaluation[T])]))])(implicit kt: ClassTag[T],
-                                                                                 ord: Ordering[T] = null) =
+  def this(models: RDD[(I, (UberXGBOOSTModel, Seq[(ModelParamEvaluation[I])]))])(implicit kt: ClassTag[I],
+                                                                                 ord: Ordering[I] = null) =
     this(Identifiable.randomUID("xgboost"), models)
 
   override def transform(dataSet: DataFrame): DataFrame = {
     val schema = dataSet.schema
     val predSchema = transformSchema(schema)
 
-    val joined = models.join(dataSet.map(r => (r.getAs[T]($(groupByCol)), r)))
+    val joined = models.join(dataSet.map(r => (r.getAs[I]($(groupByCol)), r)))
 
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
@@ -57,5 +57,5 @@ with HasGroupByCol {
     schema.add(StructField($(outputCol), ArrayType(DoubleType)))
   }
 
-  override def copy(extra: ParamMap): XGBoostModel[T] = defaultCopy(extra)
+  override def copy(extra: ParamMap): XGBoostModel[I] = defaultCopy(extra)
 }

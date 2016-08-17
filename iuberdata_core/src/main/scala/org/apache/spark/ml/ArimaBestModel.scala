@@ -13,10 +13,10 @@ import org.apache.spark.sql.types.StructType
   * Chama o bestmodelfinder para achar o melhor modelo
   * e retreina o dataset com todos os dados no melhor modelo
   */
-class ArimaBestModel[T, M <: TimeSeriesModel](override val uid: String,
-                                              val bestPrediction: RDD[(T, M)]
-                                              , val validationMetrics: RDD[(T, Seq[ModelParamEvaluation[T]])])
-  extends Model[ArimaBestModel[T, M]] with TimeSeriesBestModelFinderParam[T] {
+class ArimaBestModel[I, M <: TimeSeriesModel](override val uid: String,
+                                              val bestPrediction: RDD[(I, M)]
+                                              , val validationMetrics: RDD[(I, Seq[ModelParamEvaluation[I]])])
+  extends Model[ArimaBestModel[I, M]] with TimeSeriesBestModelFinderParam[I] {
 
   //TODO avaliar necessidade
   override def transform(dataset: DataFrame): DataFrame = {
@@ -29,8 +29,8 @@ class ArimaBestModel[T, M <: TimeSeriesModel](override val uid: String,
     schema
   }
 
-  override def copy(extra: ParamMap): ArimaBestModel[T, M] = {
-    val copied = new ArimaBestModel[T, M](
+  override def copy(extra: ParamMap): ArimaBestModel[I, M] = {
+    val copied = new ArimaBestModel[I, M](
       uid,
       bestPrediction,
       validationMetrics

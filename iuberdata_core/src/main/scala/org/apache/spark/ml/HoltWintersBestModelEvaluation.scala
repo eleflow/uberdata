@@ -13,11 +13,11 @@ import scala.reflect.ClassTag
 /**
   * Created by dirceu on 02/06/16.
   */
-abstract  class HoltWintersBestModelEvaluation[T, M <: ForecastBaseModel[M]](implicit kt: ClassTag[T], ord: Ordering[T] = null)
-  extends BestModelFinder[T,M] with HoltWintersParams{
+abstract  class HoltWintersBestModelEvaluation[I, M <: ForecastBaseModel[M]](implicit kt: ClassTag[I], ord: Ordering[I] = null)
+  extends BestModelFinder[I,M] with HoltWintersParams{
 
-  protected def holtWintersEvaluation(row: Row, model: HOLTWintersModel, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[T]],
-                                      id: T): (HOLTWintersModel, ModelParamEvaluation[T]) = {
+  protected def holtWintersEvaluation(row: Row, model: HOLTWintersModel, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[I]],
+                                      id: I): (HOLTWintersModel, ModelParamEvaluation[I]) = {
     val features = row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
     log.warn(s"Evaluating forecast for id $id, with parameters alpha ${model.alpha}, beta ${model.beta} and gamma ${model.gamma}")
     val expectedResult = row.getAs[org.apache.spark.mllib.linalg.Vector](partialValidationCol)
@@ -27,6 +27,6 @@ abstract  class HoltWintersBestModelEvaluation[T, M <: ForecastBaseModel[M]](imp
     val metric = broadcastEvaluator.value.evaluate(toBeValidated)
     val metricName = broadcastEvaluator.value.getMetricName
     val params = ParamMap().put(ParamPair(gamma,model.gamma),ParamPair(beta,model.beta),ParamPair(alpha,model.alpha))
-    (model, new ModelParamEvaluation[T](id, metric, params, Some(metricName), SupportedAlgorithm.HoltWinters))
+    (model, new ModelParamEvaluation[I](id, metric, params, Some(metricName), SupportedAlgorithm.HoltWinters))
   }
 }
