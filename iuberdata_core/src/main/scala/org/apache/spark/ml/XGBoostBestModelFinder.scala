@@ -29,6 +29,7 @@ class XGBoostBestModelFinder[T, L](override val uid: String)(implicit kt: ClassT
     with DefaultParamsWritable
     with HasXGBoostParams
     with HasIdCol
+    with HasGroupByCol
     with TimeSeriesBestModelFinder with Logging {
   def this()(implicit kt: ClassTag[T]) = this(Identifiable.randomUID("xgboost"))
 
@@ -43,6 +44,8 @@ class XGBoostBestModelFinder[T, L](override val uid: String)(implicit kt: ClassT
   def setLabelCol(label: String) = set(labelCol, label)
 
   def setFeaturesCol(input: String) = set(featuresCol, input)
+
+  def setGroupByCol(toGroupBy: String) = set(groupByCol, toGroupBy)
 
   def setIdCol(input: String) = set(idCol, input)
 
