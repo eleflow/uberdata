@@ -18,7 +18,6 @@ cd ../..
 
 echo "clonning and building spark-timeseries"
 git clone https://github.com/sryza/spark-timeseries.git
-sudo chmod 777 +x spark-timeseries
 cd spark-timeseries
 mvn package install -DskipTests -Dgpg.skip
 
@@ -72,7 +71,8 @@ echo "preparing uberdata"
 sudo cp -f ../iuberdata_zeppelin/target/scala-2.10/eleflow.uberdata.IUberdata-Zeppelin-0.1.0.jar $zeppelinInterpreterUberdataDir
 sudo cp -f ../iuberdata_addon_zeppelin/target/scala-2.10/iuberdata_addon_zeppelin-assembly-0.1.0.jar /usr/share/zeppelin/lib/
 
-sudo unzip shell.zip -d /usr/share/zeppelin/notebook
+sudo unzip notebook.zip -d /usr/share/zeppelin/notebook
+sudo cp -f /usr/share/zeppelin/notebook/interpreter.json /usr/share/zeppelin/conf/
 
 sudo cp -f /tmp/notebook/interpreter.json /usr/share/zeppelin/conf/
 sudo rm -f /tmp/notebook/interpreter.json

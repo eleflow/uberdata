@@ -37,7 +37,7 @@ cp -f /usr/share/zeppelin/conf/interpreter.json /tmp/notebook
 
 rm -rf /usr/share/zeppelin*
 
-wget "http://www-us.apache.org/dist/zeppelin/zeppelin-$zeppelinVersion/zeppelin-$zeppelinVersion-bin-all.tgz" -O "/tmp/zeppelin-$zeppelinVersion.tgz"
+wget http://archive.apache.org/dist/zeppelin/zeppelin-$zeppelinVersion/zeppelin-$zeppelinVersion-bin-all.tgz -O /tmp/zeppelin-$zeppelinVersion.tgz
 
 tar -xzvf /tmp/zeppelin-*.tgz -C /usr/share
 rm -f /tmp/zeppelin-*.tgz
@@ -75,7 +75,8 @@ chown iuberdata:iuberdata /etc/default/iuberdata
 mkdir -p /var/run/iuberdata
 chown iuberdata:iuberdata /var/run/iuberdata
 
-unzip /tmp/shell.zip -d /usr/share/zeppelin/notebook
+sudo unzip notebook.zip -d /usr/share/zeppelin/notebook
+sudo cp -f /usr/share/zeppelin/notebook/interpreter.json /usr/share/zeppelin/conf/
 
 cp -f /tmp/notebook/interpreter.json /usr/share/zeppelin/conf/
 rm -f /tmp/notebook/interpreter.json
