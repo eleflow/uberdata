@@ -133,6 +133,7 @@ object DataTransformer {
       case v: Timestamp => (v.getTime / 3600000).toFloat
       case v: String => v.toFloat
       case v: Byte => v.toFloat
+      case v: Short => v.toFloat
       case v: Boolean => v match {
         case true => 1f
         case false => 0f
