@@ -12,7 +12,7 @@ import org.apache.spark.sql.types.{StructField, StructType}
 /**
   * Created by dirceu on 13/07/16.
   */
-class VectorizerEncoder(override val uid: String) extends Transformer
+class VectorizeEncoder(override val uid: String) extends Transformer
   with HasIdCol with HasInputCols with HasLabelCol with HasGroupByCol with HasOutputCol with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("vectorizer"))

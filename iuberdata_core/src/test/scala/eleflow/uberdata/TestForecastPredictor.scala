@@ -302,14 +302,14 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     @transient val sc = context.sparkContext
     @transient val sqlContext = context.sqlContext
 
-    val structType = StructType(Seq(StructField("label", DoubleType), StructField("date", DoubleType),
+    val structType = StructType(Seq(StructField("label", DoubleType), StructField("Date", DoubleType),
       StructField("features", IntegerType), StructField("Open", BooleanType)))
 
     val rdd = sc.parallelize(data)
     val dataFrame = sqlContext.createDataFrame(rdd, structType)
 
     val timeSeriesBestModelFinder = ForecastPredictor().
-      prepareMovingAveragePipeline[Double, Double](windowSize = 6)
+      prepareMovingAveragePipeline[Double](windowSize = 6)
     val model = timeSeriesBestModelFinder.fit(dataFrame)
     val df = model.transform(dataFrame)
 
@@ -322,13 +322,13 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     @transient val sc = context.sparkContext
     @transient val sqlContext = context.sqlContext
 
-    val structType = StructType(Seq(StructField("label", DoubleType), StructField("date", DoubleType),
+    val structType = StructType(Seq(StructField("label", DoubleType), StructField("Date", DoubleType),
       StructField("feat", IntegerType)))
 
     val rdd = sc.parallelize(arimaData)
     val dataFrame = sqlContext.createDataFrame(rdd, structType)
 
-    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double, Double](featuresCol = "feat",
+    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double](featuresCol = "feat",
       nFutures = 5)
     val model = timeSeriesBestModelFinder.fit(dataFrame)
     val df = model.transform(dataFrame)
@@ -347,8 +347,8 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     val rdd = sc.parallelize(arimaData)
     val dataFrame = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
 
-    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double, Double](labelCol = "Store",
-      timeCol = "data", featuresCol = "Sales", nFutures = 5)
+    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double](labelCol = "Store",
+      featuresCol = "Sales", timeCol = "data", nFutures = 5)
     val model = timeSeriesBestModelFinder.fit(dataFrame)
     val df = model.transform(dataFrame)
     val first = df.first
@@ -356,18 +356,17 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("featuresPrediction").toArray.length == 16)
   }
 
-
   it should "execute holtWinters and return predictions" in {
     @transient val sc = context.sparkContext
     @transient val sqlContext = context.sqlContext
 
-    val structType = StructType(Seq(StructField("label", DoubleType), StructField("date", DoubleType),
+    val structType = StructType(Seq(StructField("label", DoubleType), StructField("Date", DoubleType),
       StructField("features", IntegerType), StructField("Open", BooleanType)))
 
     val rdd = sc.parallelize(data)
     val dataFrame = sqlContext.createDataFrame(rdd, structType)
 
-    val timeSeriesBestModelFinder = ForecastPredictor().prepareHOLTWintersPipeline[Double, Double](nFutures = 8)
+    val timeSeriesBestModelFinder = ForecastPredictor().prepareHOLTWintersPipeline[Double](nFutures = 8)
     val model = timeSeriesBestModelFinder.fit(dataFrame)
     val df = model.transform(dataFrame)
     val first = df.first
@@ -387,18 +386,16 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     val testRdd = sc.parallelize(testArimaData)
     val dataFrame = sqlContext.createDataFrame(rdd, structType)
     val testDataFrame = sqlContext.createDataFrame(testRdd, testStructType)
-
-    val (timeSeriesBestModelFinder, model) = ForecastPredictor().predict[Double, Double, Int,Double](dataFrame, testDataFrame,
+    val (timeSeriesBestModelFinder, model) = ForecastPredictor().predict[Double, Double](dataFrame, testDataFrame,
       "Store", Seq("Sales"), "data", "Id", "Store", SupportedAlgorithm.Arima, 5)
     val first = timeSeriesBestModelFinder.collect
     val arima = model.stages.last.asInstanceOf[ArimaModel[Int]]
     val bestArima = arima.models.sortBy(_._2._2.minBy(_.metricResult).metricResult).first()
     val min = bestArima._2._2.minBy(_.metricResult)
     assert(first.length == 10)
-    assert(model.stages.last.isInstanceOf[ArimaModel[Int]])
+    assert(model.stages.last.isInstanceOf[ArimaModel[_]])
     assert(min.metricResult < 1.7d)
   }
-
 
   it should "choose the best model for each group" in {
     @transient val sc = context.sparkContext
@@ -409,8 +406,8 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     val rdd = sc.parallelize(groupedArimaList)
     val dataFrame = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
 
-    val pipeline = ForecastPredictor().prepareBestForecastPipeline[Int, Int]("Store",
-      "Sales", "validation", "data", 5, Seq(8, 12, 16, 24, 26), (0 to 2).toArray)
+    val pipeline = ForecastPredictor().prepareBestForecastPipeline[Int]("Store",
+      "Sales", "validation","data", 5, Seq(8, 12, 16, 24, 26), (0 to 2).toArray)
     val model = pipeline.fit(dataFrame)
     val result = model.transform(dataFrame)
     assert(result.collect().length == 4)
@@ -430,8 +427,8 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     val testRdd = sc.parallelize(groupedArimaTest)
     val testDf = sqlContext.createDataFrame(testRdd, testStructType)
 
-      val (result,_) = ForecastPredictor().predict[Double,Int, Int,Double](trainDf, testDf, "Store", Seq("Sales"), "data","Id",
-        "Store", SupportedAlgorithm.FindBestForecast, 5, Seq(8,12,16,24,26))
+    val (result, _) = ForecastPredictor().predict[Double, Double](trainDf, testDf, "Store", Seq("Sales"), "data", "Id",
+      "Store", SupportedAlgorithm.FindBestForecast, 5, Seq(8, 12, 16, 24, 26))
 
     assert(result.collect().length == 20)
     assert(result.map(_.getAs[String](IUberdataForecastUtil.ALGORITHM)).distinct().count() > 1)
@@ -451,20 +448,19 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
       StructField("Id", IntegerType), StructField("Open", BooleanType)))
     val testRdd = sc.parallelize(groupedTest)
     val testDf = sqlContext.createDataFrame(testRdd, testStructType)
-
-      val (result,_) = ForecastPredictor().predictSmallModelFeatureBased[Double,Int, Int](trainDfDouble, testDf,
-        "Sales", Seq("Store"), "data", "Id", "Store", SupportedAlgorithm.XGBoostAlgorithm, "validationCol")
+    val (result, _) = ForecastPredictor().predictSmallModelFeatureBased[Double, Int](trainDfDouble, testDf,
+      "Sales", Seq("Store"), "data", "Id", "Store", SupportedAlgorithm.XGBoostAlgorithm, "validationCol")
 
     assert(result.collect().length == 64)
   }
 
-  it should "execute prediction with rosenn dataset" in {
-    val train = Dataset(context, s"$defaultFilePath/data/rosenntraintest.csv")
+  it should "execute prediction with Rossmann dataset" in {
+    val train = Dataset(context, s"$defaultFilePath/data/RossmannTrain.csv")
     train.applyColumnTypes(Seq(DoubleType, DoubleType, TimestampType, IntegerType, DoubleType, DoubleType, DoubleType,
       StringType, StringType))
     val trainData = train.formatDateValues("Date", DayMonthYear).select("Store", "Sales", "DayOfWeek", "Date1",
       "Date2", "Date3", "Open", "Promo", "StateHoliday", "SchoolHoliday").cache
-    val test = Dataset(context, s"$defaultFilePath/data/rosenntesttest.csv")
+    val test = Dataset(context, s"$defaultFilePath/data/RossmannTest.csv")
     test.applyColumnTypes(Seq(LongType, DoubleType, DoubleType, TimestampType, DoubleType, DoubleType, StringType, StringType))
     val testData = test.formatDateValues("Date", DayMonthYear)
 
@@ -490,8 +486,50 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
       Row(newSeq: _*)
     }, trainSchema)
     val (bestDf, _) = eleflow.uberdata.ForecastPredictor().
-      predictSmallModelFeatureBased[Int, java.sql.Timestamp, Double](convertedTrain, convertedTest, "Sales", Seq("Store"),
-      "Date1", "Id","Store", XGBoostAlgorithm, "validacaocoluna")
+      predictSmallModelFeatureBased[Int, Double](convertedTrain, convertedTest, "Sales", Seq("Store"),
+      "Date1", "Id", "Store", XGBoostAlgorithm, "validacaocoluna")
+
+    val cachedDf = bestDf.cache
+
+    assert(cachedDf.count == 288)
+    assert(train.count == 9420)
+    assert(test.count == 288)
+  }
+
+  it should "accept different kind of data into it's columns " in {
+    val train = Dataset(context, s"$defaultFilePath/data/RossmannTrain.csv")
+    train.applyColumnTypes(Seq(ShortType, ByteType, TimestampType, IntegerType, DoubleType, BooleanType, BooleanType,
+      StringType, StringType))
+    val trainData = train.formatDateValues("Date", DayMonthYear).select("Store", "Sales", "DayOfWeek", "Date1",
+      "Date2", "Date3", "Open", "Promo", "StateHoliday", "SchoolHoliday").cache
+    val test = Dataset(context, s"$defaultFilePath/data/RossmannTest.csv")
+    test.applyColumnTypes(Seq(DoubleType, ShortType, ByteType, TimestampType, DoubleType, DoubleType, StringType, StringType))
+    val testData = test.formatDateValues("Date", DayMonthYear)
+
+    val trainSchema = trainData.schema
+    val testSchema = testData.schema
+    val sqlContext = context.sqlContext
+    val convertedTest = sqlContext.createDataFrame(testData.map { row =>
+      val seq = row.toSeq
+      val newSeq = if (seq.contains(null)) {
+        if (row.getAs[String]("StateHoliday") == "1.0")
+          seq.updated(6, 0d)
+        else seq.updated(6, 1d)
+      } else seq
+      Row(newSeq: _*)
+    }, testSchema)
+    val convertedTrain = sqlContext.createDataFrame(trainData.map { row =>
+      val seq = row.toSeq
+      val newSeq = if (seq.contains(null)) {
+        if (row.getAs[String]("StateHoliday") == "1.0")
+          seq.updated(6, 0d)
+        else seq.updated(6, 1d)
+      } else seq
+      Row(newSeq: _*)
+    }, trainSchema)
+    val (bestDf, _) = eleflow.uberdata.ForecastPredictor().
+      predictSmallModelFeatureBased[Int, Short](convertedTrain, convertedTest, "Sales",
+      Seq("DayOfWeek"), "Date1", "Id", "Store", XGBoostAlgorithm, "validacaocoluna")
 
     val cachedDf = bestDf.cache
 

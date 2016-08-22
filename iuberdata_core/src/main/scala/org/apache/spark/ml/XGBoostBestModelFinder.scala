@@ -24,16 +24,16 @@ import scala.reflect.ClassTag
 /**
   * Created by dirceu on 30/06/16.
   */
-class XGBoostBestModelFinder[L, I](override val uid: String)(implicit kt: ClassTag[I])
-  extends BestModelFinder[I, XGBoostModel[I]]
+class XGBoostBestModelFinder[L, G](override val uid: String)(implicit gt: ClassTag[G])
+  extends BestModelFinder[G, XGBoostModel[G]]
     with DefaultParamsWritable
     with HasXGBoostParams
     with HasIdCol
     with HasGroupByCol
     with TimeSeriesBestModelFinder with Logging {
-  def this()(implicit kt: ClassTag[I]) = this(Identifiable.randomUID("xgboost"))
+  def this()(implicit gt: ClassTag[G]) = this(Identifiable.randomUID("xgboost"))
 
-  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[I]) = set(timeSeriesEvaluator, eval)
+  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[G]) = set(timeSeriesEvaluator, eval)
 
   def setEstimatorParamMaps(value: Array[ParamMap]): this.type = set(estimatorParamMaps, value)
 
@@ -58,8 +58,8 @@ class XGBoostBestModelFinder[L, I](override val uid: String)(implicit kt: ClassT
     }
   }
 
-  def modelEvaluation(idModels: RDD[(I, Row, Seq[(ParamMap, UberXGBOOSTModel)])]):
-  RDD[(I, (UberXGBOOSTModel, Seq[ModelParamEvaluation[I]]))] = {
+  def modelEvaluation(idModels: RDD[(G, Row, Seq[(ParamMap, UberXGBOOSTModel)])]):
+  RDD[(G, (UberXGBOOSTModel, Seq[ModelParamEvaluation[G]]))] = {
     val eval = $(timeSeriesEvaluator)
     val broadcastEvaluator = idModels.context.broadcast(eval)
     val ordering = TimeSeriesEvaluator.ordering(eval.getMetricName)
@@ -79,8 +79,8 @@ class XGBoostBestModelFinder[L, I](override val uid: String)(implicit kt: ClassT
   }
 
 
-  protected def xGBoostEvaluation(row: Row, model: Booster, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[I]], id: I,
-                                  parameters: ParamMap): ModelParamEvaluation[I] = {
+  protected def xGBoostEvaluation(row: Row, model: Booster, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[G]],
+                                  id: G, parameters: ParamMap): ModelParamEvaluation[G] = {
     val featuresColValue = DataTransformer.toFloat(row.getAs($(featuresCol)))
     val featuresArray = row.getAs[Array[org.apache.spark.mllib.linalg.Vector]](IUberdataForecastUtil.FEATURES_COL_NAME)
       .map { vec =>
@@ -93,17 +93,17 @@ class XGBoostBestModelFinder[L, I](override val uid: String)(implicit kt: ClassT
     val toBeValidated = featuresArray.zip(forecastToBeValidated)
     val metric = broadcastEvaluator.value.evaluate(toBeValidated.map(f => (f._1.label.toDouble, f._2.toDouble)))
     val metricName = broadcastEvaluator.value.getMetricName
-    new ModelParamEvaluation[I](id, metric, parameters, Some(metricName), SupportedAlgorithm.XGBoostAlgorithm)
+    new ModelParamEvaluation[G](id, metric, parameters, Some(metricName), SupportedAlgorithm.XGBoostAlgorithm)
   }
 
-  override protected def train(dataSet: DataFrame): XGBoostModel[I] = {
+  override protected def train(dataSet: DataFrame): XGBoostModel[G] = {
     val idModels = dataSet.rdd.groupBy { row =>
-      row.getAs[I]($(featuresCol))
+      row.getAs[G]($(groupByCol))
     }.map(f => train(f._1, f._2.toIterator))
-    new XGBoostModel[I](uid, modelEvaluation(idModels)).setValidationCol($(validationCol)).asInstanceOf[XGBoostModel[I]]
+    new XGBoostModel[G](uid, modelEvaluation(idModels)).setValidationCol($(validationCol)).asInstanceOf[XGBoostModel[G]]
   }
 
-  def train(id: I, rows: Iterator[Row]): (I, Row, Seq[(ParamMap, UberXGBOOSTModel)]) = {
+  def train(id: G, rows: Iterator[Row]): (G, Row, Seq[(ParamMap, UberXGBOOSTModel)]) = {
     val (matrixRow, result) = try {
       val array = rows.toArray
       val values = array.map { row =>
@@ -138,11 +138,11 @@ object XGBoostBestModelFinder extends DefaultParamsReadable[XGBoostBestModelFind
 }
 
 
-class XGBoostTrainingSummary[I](predictions: DataFrame,
+class XGBoostTrainingSummary[G](predictions: DataFrame,
                                 predictionCol: String,
                                 labelCol: String,
-                                model: XGBoostModel[I],
+                                model: XGBoostModel[G],
                                 diagInvAtWA: Array[Double],
                                 val featuresCol: String,
                                 val objectiveHistory: Array[Double])
-  extends XGBoostLinearSummary[I](predictions, predictionCol, labelCol, model, diagInvAtWA)
+  extends XGBoostLinearSummary[G](predictions, predictionCol, labelCol, model, diagInvAtWA)

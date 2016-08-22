@@ -16,10 +16,10 @@ import scala.reflect.ClassTag
 /**
   * Created by celio on 05/05/16.
   */
-class TimeSeriesGenerator[T, U](override val uid: String)(implicit ct: ClassTag[T])
+class TimeSeriesGenerator[L](override val uid: String)(implicit ct: ClassTag[L])
   extends BaseTimeSeriesGenerator {
 
-  def this()(implicit ct: ClassTag[T]) =
+  def this()(implicit ct: ClassTag[L]) =
     this(Identifiable.randomUID("TimeSeriesGenerator"))
 
   def setLabelCol(value: String) = set(labelCol, value)
@@ -46,7 +46,7 @@ class TimeSeriesGenerator[T, U](override val uid: String)(implicit ct: ClassTag[
         val timeColRow = IUberdataForecastUtil.convertColumnToLong(row, index.value)
         convertColumnToDouble(timeColRow, featuresColIndex)
     }.groupBy { row =>
-      row.getAs[T](labelColIndex.value)
+      row.getAs[L](labelColIndex.value)
     }.map {
       case (key, values) =>
         val toBeUsed = values.toArray.sortBy(row =>
@@ -67,14 +67,14 @@ class TimeSeriesGenerator[T, U](override val uid: String)(implicit ct: ClassTag[
     StructType(Seq(schema.fields(labelIndex), StructField($(outputCol), new org.apache.spark.mllib.linalg.VectorUDT)))
   }
 
-  override def copy(extra: ParamMap): TimeSeriesGenerator[T, U] = defaultCopy(extra)
+  override def copy(extra: ParamMap): TimeSeriesGenerator[L] = defaultCopy(extra)
 
 }
 
 
 @Since("1.6.0")
-object TimeSeriesGenerator extends DefaultParamsReadable[TimeSeriesGenerator[_, _]] {
+object TimeSeriesGenerator extends DefaultParamsReadable[TimeSeriesGenerator[_]] {
 
   @Since("1.6.0")
-  override def load(path: String): TimeSeriesGenerator[_, _] = super.load(path)
+  override def load(path: String): TimeSeriesGenerator[_] = super.load(path)
 }

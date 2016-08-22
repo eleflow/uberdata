@@ -66,12 +66,12 @@ class ArimaBestModelFinder[L](override val uid: String)(implicit kt: ClassTag[L]
 
   override protected def train(dataSet: DataFrame): ArimaModel[L] = {
     val splitDs = split(dataSet, $(nFutures))
-    val idModels = splitDs.rdd.map(train)
-    new ArimaModel[L](uid, modelEvaluation(idModels)).setValidationCol($(validationCol)).asInstanceOf[ArimaModel[L]]
+    val labelModel = splitDs.rdd.map(train)
+    new ArimaModel[L](uid, modelEvaluation(labelModel)).setValidationCol($(validationCol)).asInstanceOf[ArimaModel[L]]
   }
 
   def train(row: Row): (L, Row, Seq[(ParamMap, UberArimaModel)]) = {
-    val id = row.getAs[L]($(labelCol))
+    val label = row.getAs[L]($(labelCol))
     val result =  $(estimatorParamMaps).flatMap {
         params =>
 
@@ -83,14 +83,14 @@ class ArimaBestModelFinder[L](override val uid: String)(implicit kt: ClassTag[L]
           } catch {
             case e: Exception =>
               log.error(s"Got the following Exception ${e.getLocalizedMessage} when using params P $p, Q$q and D$d " +
-                s"in id $id")
+                s"in label $label")
               None
           }
       }.toSeq
-    (id, row,result)
+    (label, row,result)
   }
 }
-case class ModelParamEvaluation[I](id: I, metricResult: Double, params: ParamMap, metricName: Option[String] = None, algorithm:Algorithm)
+case class ModelParamEvaluation[L](id: L, metricResult: Double, params: ParamMap, metricName: Option[String] = None, algorithm:Algorithm)
 
 object ArimaBestModelFinder extends DefaultParamsReadable[ArimaBestModelFinder[_]] {
 
