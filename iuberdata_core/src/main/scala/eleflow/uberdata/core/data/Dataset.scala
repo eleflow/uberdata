@@ -422,6 +422,7 @@ package object dataset {
         case (value: Int, StructField(_, IntegerType, _, _)) => value
         case (value: Short, StructField(_, ShortType, _, _)) => value
         case (value: Boolean, StructField(_, BooleanType, _, _)) => value
+        case (value: Byte, StructField(_, ByteType, _, _)) => value
         case (value: Array[Byte], StructField(_, StringType, _, _)) => new String(value)
         case (value, StructField(_, DecimalType(), _, _)) => BigDecimal(value.toString)
         case (value, StructField(_, FloatType, _, _)) => value.toString.toFloat
@@ -431,6 +432,7 @@ package object dataset {
         case (value, StructField(_, LongType, _, _)) => value.toString.toLong
         case (value, StructField(_, IntegerType, _, _)) => value.toString.toInt
         case (value, StructField(_, ShortType, _, _)) => value.toString.toShort
+        case (value, StructField(_, ByteType, _, _)) => value.toString.toByte
         //convert from double
         case (value, StructField(_, BooleanType, _, _)) => value.toString match {
           case "1" | "t" | "true" => true
