@@ -2,6 +2,7 @@ package eleflow.uberdata
 
 import java.sql.Timestamp
 
+import eleflow.uberdata.core.exception.UnexpectedValueException
 import eleflow.uberdata.enums.SupportedAlgorithm._
 import org.apache.spark.Logging
 import org.apache.spark.ml._
@@ -41,7 +42,7 @@ class ForecastPredictor extends Serializable with Logging {
     f.get[Int](estimator.arimaQ).getOrElse(0) != 0)
 
   def prepareARIMAPipeline[L](labelCol: String = "label", featuresCol: String = "features",
-                              validationCol: String="validation", timeCol: String = "Date", nFutures: Int,
+                              validationCol: String = "validation", timeCol: String = "Date", nFutures: Int,
                               paramRange: Array[Int] = defaultRange)(implicit kt: ClassTag[L]): Pipeline = {
 
     val transformer = createTimeSeriesGenerator[L](labelCol, featuresCol, timeCol)
@@ -135,14 +136,13 @@ class ForecastPredictor extends Serializable with Logging {
 
   def prepareXGBoost[L, G](labelCol: String, featuresCol: Seq[String], validationCol: String, timeCol: String,
                            idCol: String, groupByCol: String, schema: StructType)(implicit kl: ClassTag[L],
-                                                                                  kg: ClassTag[G]) = {
+                                                                                  kg: ClassTag[G]): Pipeline = {
     val timeSeriesEvaluator: TimeSeriesEvaluator[G] = new TimeSeriesEvaluator[G]()
       .setValidationCol(validationCol)
       .setLabelCol(labelCol)
       .setMetricName("rmspe")
     val xgboost = new XGBoostBestModelFinder[L, G]()
       .setTimeSeriesEvaluator(timeSeriesEvaluator)
-      .setFeaturesCol(featuresCol.head)
       .setLabelCol(labelCol)
       .setGroupByCol(groupByCol)
       .setIdCol(idCol)
@@ -161,12 +161,11 @@ class ForecastPredictor extends Serializable with Logging {
     //val allColumns = featuresCol.toArray
 
     val stringColumns = schema
-      .filter(f => f.dataType.isInstanceOf[StringType] && f.name != groupByCol)
+      .filter(f => f.dataType.isInstanceOf[StringType] && featuresCol.contains(f.name))
       .map(_.name)
 
     val nonStringColumns = allColumns.filter(f => !stringColumns.contains(f)
-      && f != labelCol
-      && f != idCol.getOrElse("") && f != groupByCol && f != timeCol)
+      && featuresCol.contains(f))
 
     val stringIndexers = stringColumns.map { column =>
       new StringIndexer()
@@ -192,7 +191,7 @@ class ForecastPredictor extends Serializable with Logging {
   def predict[L, G](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: Seq[String] = Seq.empty[String],
                     timeCol: String, idCol: String, groupByCol: String, algorithm: Algorithm = FindBestForecast, nFutures: Int = 6,
                     meanAverageWindowSize: Seq[Int] = Seq(8, 16, 26), paramRange: Array[Int] = defaultRange)
-                   (implicit kt: ClassTag[L], ord: Ordering[L] = null, gt: ClassTag[G]) = {
+                   (implicit kt: ClassTag[L], ord: Ordering[L] = null, gt: ClassTag[G]): (DataFrame, PipelineModel) = {
     require(featuresCol.nonEmpty, "featuresCol parameter can't be empty")
     val validationCol = idCol + algorithm.toString
     algorithm match {
@@ -202,15 +201,14 @@ class ForecastPredictor extends Serializable with Logging {
       case XGBoostAlgorithm =>
         predictSmallModelFeatureBased[L, G](train, test, labelCol, featuresCol, timeCol, idCol, groupByCol,
           algorithm, validationCol)
-      case _ => ???
+      case _ => throw new UnexpectedValueException(s"Algorithm $algorithm can't be used to predict a Forecast")
     }
   }
 
   def predictSmallModelFeatureBased[L, G](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: Seq[String],
                                           timeCol: String, idCol: String, groupByCol: String, algorithm: Algorithm = XGBoostAlgorithm,
                                           validationCol: String)(implicit kt: ClassTag[L], ord: Ordering[L] = null
-                                                                 , gt: ClassTag[G]) = {
-
+                                                                 , gt: ClassTag[G]): (DataFrame, PipelineModel) = {
     require(algorithm == XGBoostAlgorithm, "The accepted algorithm for this method is XGBoostAlgorithm")
     val pipeline = prepareXGBoost[L, G](labelCol, featuresCol, validationCol, timeCol, idCol, groupByCol,
       train.schema)
@@ -227,7 +225,7 @@ class ForecastPredictor extends Serializable with Logging {
   def predictSmallModelFuture[L](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: String, timeCol: String,
                                  idCol: String, algorithm: Algorithm = FindBestForecast, validationCol: String, nFutures: Int = 6,
                                  meanAverageWindowSize: Seq[Int] = Seq(8, 16, 26), paramRange: Array[Int] = defaultRange)
-                                (implicit kt: ClassTag[L], ord: Ordering[L] = null) = {
+                                (implicit kt: ClassTag[L], ord: Ordering[L] = null): (DataFrame, PipelineModel) = {
     require(algorithm != XGBoostAlgorithm, "The accepted algorithms for this method doesn't include XGBoost")
     val pipeline = algorithm match {
       case Arima =>
@@ -238,7 +236,7 @@ class ForecastPredictor extends Serializable with Logging {
       case MovingAverage26 => prepareMovingAveragePipeline[L](labelCol, featuresCol, validationCol, timeCol, 26)
       case FindBestForecast => prepareBestForecastPipeline[L](labelCol, featuresCol, validationCol, timeCol,
         nFutures, meanAverageWindowSize, paramRange)
-      case _ => ???
+      case _ => throw new UnexpectedValueException(s"Algorithm $algorithm can't be used to predict a Forecast")
     }
     val cachedTrain = train.cache
     val model = pipeline.fit(cachedTrain)
