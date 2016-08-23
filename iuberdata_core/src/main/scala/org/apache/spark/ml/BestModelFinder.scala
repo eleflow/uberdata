@@ -6,7 +6,6 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared._
-import org.apache.spark.ml.util.SchemaUtils
 import org.apache.spark.mllib.linalg.{VectorUDT, Vectors}
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -16,20 +15,14 @@ import scala.reflect.ClassTag
 /**
   * Created by dirceu on 31/05/16.
   */
-abstract class BestModelFinder[T, M <: ForecastBaseModel[M]](implicit kt: ClassTag[T], ord: Ordering[T] = null) extends Estimator[M]
-  with PredictorParams with HasTimeSeriesEvaluator[T] with HasEstimatorParams
+abstract class BestModelFinder[L, M <: ForecastBaseModel[M]](implicit kt: ClassTag[L], ord: Ordering[L] = null) extends Estimator[M]
+  with PredictorParams with HasTimeSeriesEvaluator[L] with HasEstimatorParams
   with HasNFutures with HasValidationCol {
 
   lazy val partialValidationCol = s"partial${$(validationCol)}"
   lazy val inputOutputDataType = new VectorUDT
 
-  def setValidationCol(value: String) = set(validationCol, value)
-
-  def setLabelCol(label: String) = set(labelCol, label)
-
-  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[T]) = set(timeSeriesEvaluator, eval)
-
-  def setEstimatorParamMaps(value: Array[ParamMap]): this.type = set(estimatorParamMaps, value)
+  def setValidationCol(colName:String) = set(validationCol,colName)
 
   protected def train(dataSet: DataFrame): M
 
@@ -54,24 +47,24 @@ abstract class BestModelFinder[T, M <: ForecastBaseModel[M]](implicit kt: ClassT
     }
     val context = dataSet.sqlContext
     context.createDataFrame(data, dataSet.schema.add(
-      new StructField(partialValidationCol, new VectorUDT)
+      StructField(partialValidationCol, new VectorUDT)
     )).cache
   }
 
   def transformSchema(schema: StructType): StructType = {
-    SchemaUtils.checkColumnType(schema, $(featuresCol), inputOutputDataType)
     schema
   }
 
   override def copy(extra: ParamMap): Estimator[M] = {
-    val that = this.getClass.getConstructor(classOf[String], classOf[scala.reflect.ClassTag[T]],
-      classOf[scala.math.Ordering[T]]).
-      newInstance(uid, kt, ord).setValidationCol($(validationCol))
+    val that = this.getClass.getConstructor(classOf[String], classOf[scala.reflect.ClassTag[L]],
+      classOf[scala.math.Ordering[L]]).
+      newInstance(uid, kt, ord)
+      .setValidationCol($(validationCol))
     copyValues(that, extra)
   }
 
-  protected def arimaEvaluation(row: Row, model: UberArimaModel, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[T]], id: T,
-                                parameters: ParamMap): (UberArimaModel, ModelParamEvaluation[T]) = {
+  protected def arimaEvaluation(row: Row, model: UberArimaModel, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[L]],
+                                id: L, parameters: ParamMap): (UberArimaModel, ModelParamEvaluation[L]) = {
     val features = row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
     log.warn(s"Evaluating forecast for id $id, with parameters p ${model.p}, d ${model.d} and q ${model.q}")
 
@@ -79,6 +72,6 @@ abstract class BestModelFinder[T, M <: ForecastBaseModel[M]](implicit kt: ClassT
     val toBeValidated = features.toArray.zip(forecastToBeValidated)
     val metric = broadcastEvaluator.value.evaluate(toBeValidated)
     val metricName = broadcastEvaluator.value.getMetricName
-    (model, new ModelParamEvaluation[T](id, metric, parameters, Some(metricName), SupportedAlgorithm.Arima))
+    (model, new ModelParamEvaluation[L](id, metric, parameters, Some(metricName), SupportedAlgorithm.Arima))
   }
 }

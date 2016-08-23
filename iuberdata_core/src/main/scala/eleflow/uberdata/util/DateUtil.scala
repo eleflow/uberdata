@@ -29,14 +29,10 @@ import org.apache.spark.SparkFiles
 import scala.collection.JavaConversions._
 import java.nio.file.{FileSystems, Files}
 import java.text.ParseException
-import java.util.{Locale, Calendar, Date, TimeZone}
 
-import PeriodOfDay.PeriodOfDay
-import org.apache.spark.sql.Row
 import org.joda.time.{DateTimeZone, DateTime}
 import org.joda.time.format.DateTimeFormat
 
-import scala.Option
 import scala.util.{Success, Try}
 
 /**
@@ -46,7 +42,7 @@ import scala.util.{Success, Try}
  * @see http://balusc.blogspot.com/2007/09/dateutil.html
  * @see CalendarUtil
  */
-final object DateUtil extends Serializable {
+object DateUtil extends Serializable {
 
   /**
    * Parse the given date string to date object and return a date instance based on the given
@@ -97,7 +93,7 @@ final object DateUtil extends Serializable {
 
   def parse(dateString: String, dateFormat: String, timeZone:DateTimeZone): Option[DateTime] = {
     val formatter = DateTimeFormat.forPattern(dateFormat).withZone(timeZone)
-    return Some(formatter.parseDateTime(dateString))
+    Some(formatter.parseDateTime(dateString))
   }
 
   /**
@@ -144,12 +140,10 @@ final object DateUtil extends Serializable {
   def isValidDate(dateString: String, dateFormat: String): Boolean = {
     try {
       parse(dateString, dateFormat)
-      return true
+       true
     }
     catch {
-      case e: ParseException => {
-        return false
-      }
+      case e: ParseException => false
     }
   }
 
@@ -197,10 +191,10 @@ final object DateUtil extends Serializable {
     """^\d{1,2}\s[a-z]{4,}\s\d{4}\s\d{1,2}:\d{2}:\d{2}$""" -> "dd MMMM yyyy HH:mm:ss")
 
   def period(date: DateTime): PeriodOfDay.PeriodOfDay = {
-    date.getHourOfDay() match {
-      case hour if (hour < 6) => PeriodOfDay.Dawn
-      case hour if (hour < 12) => PeriodOfDay.Morning
-      case hour if (hour < 18) => PeriodOfDay.Afternoon
+    date.getHourOfDay match {
+      case hour if hour < 6 => PeriodOfDay.Dawn
+      case hour if hour < 12 => PeriodOfDay.Morning
+      case hour if hour < 18 => PeriodOfDay.Afternoon
       case _ => PeriodOfDay.Evening
     }
   }
@@ -208,7 +202,7 @@ final object DateUtil extends Serializable {
 
 
 
-  lazy val dateFormatFilePath = FileSystems.getDefault().getPath(SparkNotebookConfig.tempFolder, SparkNotebookConfig.propertyFolder,
+  lazy val dateFormatFilePath = FileSystems.getDefault.getPath(SparkNotebookConfig.tempFolder, SparkNotebookConfig.propertyFolder,
     SparkNotebookConfig.dateFormatFileName)
 
   private lazy val propertyFolderPath = FileSystems.getDefault.getPath(SparkNotebookConfig.tempFolder, SparkNotebookConfig.propertyFolder)

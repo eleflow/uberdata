@@ -26,7 +26,8 @@ lazy val iuberdata_core = project settings (
       , "org.scalatest" %% "scalatest" % "2.2.4"
       , "org.easymock" % "easymock" % "3.4" % "test"
       , "com.typesafe.play" %% "play-json" % "2.4.6"
-      , "com.cloudera.sparkts" % "sparkts" % "0.3.0" % "provided"
+    , "com.cloudera.sparkts" % "sparkts" % "0.3.0" % "provided"
+    , "ml.dmlc" % "xgboost4j" % "0.5"  % "provided"
       , "mysql" % "mysql-connector-java" % mysqlV % "runtime"
   )) settings (dependencyOverrides ++= Set(
     "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.4"

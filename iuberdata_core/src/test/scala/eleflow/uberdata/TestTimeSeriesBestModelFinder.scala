@@ -70,13 +70,13 @@ class TestTimeSeriesBestModelFinder extends FlatSpec with Matchers with BeforeAn
     @transient val sc = context.sparkContext
     @transient val sqlContext = context.sqlContext
 
-    val structType = StructType(Seq(StructField("label", DoubleType), StructField("date", DoubleType),
+    val structType = StructType(Seq(StructField("label", DoubleType), StructField("Date", DoubleType),
       StructField("features", IntegerType)))
 
     val rdd = sc.parallelize(data)
     val dataFrame = sqlContext.createDataFrame(rdd, structType)
 
-    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double, Double](nFutures = 6)
+    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double](nFutures = 6)
     val model = timeSeriesBestModelFinder.fit(dataFrame)
 
     val head = model.stages.last
@@ -96,7 +96,7 @@ class TestTimeSeriesBestModelFinder extends FlatSpec with Matchers with BeforeAn
     val rdd = sc.parallelize(groupedData)
     val dataFrame = sqlContext.createDataFrame(rdd, structType)
 
-    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double, Double](labelCol = "sale",
+    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double](labelCol = "sale",
       featuresCol = "sales", nFutures = 6)
     intercept[IllegalArgumentException] {
       timeSeriesBestModelFinder.fit(dataFrame)
@@ -115,7 +115,7 @@ class TestTimeSeriesBestModelFinder extends FlatSpec with Matchers with BeforeAn
     val rdd = sc.parallelize(groupedData)
     val dataFrame = sqlContext.createDataFrame(rdd, structType)
 
-    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double, Double](labelCol = "store",
+    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double](labelCol = "store",
       featuresCol = "sales", nFutures = 6)
     intercept[IllegalArgumentException] {
       timeSeriesBestModelFinder.fit(dataFrame)
@@ -136,7 +136,7 @@ class TestTimeSeriesBestModelFinder extends FlatSpec with Matchers with BeforeAn
     val rdd = sc.parallelize(groupedData)
     val dataFrame = sqlContext.createDataFrame(rdd, structType)
 
-    val timeSeriesBestModelFinder = ForecastPredictor().prepareHOLTWintersPipeline[Double, Double](labelCol = "store",
+    val timeSeriesBestModelFinder = ForecastPredictor().prepareHOLTWintersPipeline[Double](labelCol = "store",
       featuresCol = "sales", nFutures = 6)
     intercept[IllegalArgumentException] {
       timeSeriesBestModelFinder.fit(dataFrame)
@@ -147,12 +147,12 @@ class TestTimeSeriesBestModelFinder extends FlatSpec with Matchers with BeforeAn
     @transient val sc = context.sparkContext
     @transient val sqlContext = context.sqlContext
 
-    val structType = StructType(Seq(StructField("label", DoubleType), StructField("date", DoubleType), StructField("features", IntegerType)))
+    val structType = StructType(Seq(StructField("label", DoubleType), StructField("Date", DoubleType), StructField("features", IntegerType)))
 
     val rdd = sc.parallelize(data)
     val dataFrame = sqlContext.createDataFrame(rdd, structType)
 
-    val timeSeriesBestModelFinder = ForecastPredictor().prepareHOLTWintersPipeline[Double, Double](nFutures = 6)
+    val timeSeriesBestModelFinder = ForecastPredictor().prepareHOLTWintersPipeline[Double](nFutures = 6)
     val model = timeSeriesBestModelFinder.fit(dataFrame)
 
     val head = model.stages.last

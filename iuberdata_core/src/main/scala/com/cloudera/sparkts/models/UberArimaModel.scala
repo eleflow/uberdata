@@ -8,7 +8,7 @@ import org.apache.spark.mllib.linalg.Vector
 class UberArimaModel(override val p: scala.Int, override val d: scala.Int, override val q: scala.Int,
                      override val coefficients: scala.Array[scala.Double],
                      override val hasIntercept: scala.Boolean = true) extends ARIMAModel(p, q, d, coefficients, hasIntercept) {
-  lazy val params = Map("ArimaP" ->p.toDouble, "ArimaD" -> d.toDouble, "ArimaQ" -> q.toDouble)
+  lazy val params = Map("ArimaP" ->p.toString, "ArimaD" -> d.toString, "ArimaQ" -> q.toString)
 
 }
 

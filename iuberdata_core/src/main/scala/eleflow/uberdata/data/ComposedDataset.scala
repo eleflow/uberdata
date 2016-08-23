@@ -18,6 +18,6 @@ class ComposedDataset(train: Dataset, test: Dataset, result: Option[RDD[(Double,
       res => res.coalesce(1).map {
         case (id, value) => s"${BigDecimal(id.toString).toString},${formatter.format(value)}"
       }.saveAsTextFile(path)
-    ) getOrElse (println("No result to export"))
+    ) getOrElse println("No result to export")
   }
 }

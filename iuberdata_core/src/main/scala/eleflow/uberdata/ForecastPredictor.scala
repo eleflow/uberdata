@@ -2,13 +2,15 @@ package eleflow.uberdata
 
 import java.sql.Timestamp
 
+import eleflow.uberdata.core.exception.UnexpectedValueException
 import eleflow.uberdata.enums.SupportedAlgorithm._
 import org.apache.spark.Logging
 import org.apache.spark.ml._
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
+import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
 import org.apache.spark.ml.tuning.ParamGridBuilder
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.types.{LongType, StructField}
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row}
 
 import scala.reflect.ClassTag
@@ -39,108 +41,206 @@ class ForecastPredictor extends Serializable with Logging {
     .build().filter(f => f.get[Int](estimator.arimaP).getOrElse(0) != 0 ||
     f.get[Int](estimator.arimaQ).getOrElse(0) != 0)
 
-  def prepareARIMAPipeline[T, U](labelCol: String = "label", featuresCol: String = "features",
-                                 validationCol: String = "validation", timeCol: String = "date", nFutures: Int = 6, paramRange: Array[Int] = defaultRange)
-                                (implicit kt: ClassTag[T]): Pipeline = {
-    val transformer = createTimeSeriesGenerator(labelCol, featuresCol, validationCol, timeCol, nFutures)
-    prepareARIMAPipeline[T](labelCol, featuresCol, validationCol, nFutures, Array(transformer), paramRange)
+  def prepareARIMAPipeline[L](labelCol: String = "label", featuresCol: String = "features",
+                              validationCol: String = "validation", timeCol: String = "Date", nFutures: Int,
+                              paramRange: Array[Int] = defaultRange)(implicit kt: ClassTag[L]): Pipeline = {
+
+    val transformer = createTimeSeriesGenerator[L](labelCol, featuresCol, timeCol)
+    prepareARIMAPipelineInt[L](labelCol, featuresCol, validationCol, nFutures, paramRange, Array(transformer))
   }
 
-  /**
-    * Testing purpose
-    *
-    * @return
-    */
-  protected def prepareARIMAPipeline[T](labelCol: String, featuresCol: String, validationCol: String, nFutures: Int,
-                                        transformer: Array[Transformer] = Array.empty[Transformer], paramRange: Array[Int])
-                                       (implicit kt: ClassTag[T]) = {
-    val arima = new ArimaBestModelFinder[T]().setTimeSeriesEvaluator(
-      new TimeSeriesEvaluator[T]().setValidationCol(validationCol)
-        .setFeaturesCol(featuresCol).setMetricName("rmspe")).setLabelCol(labelCol).setValidationCol(validationCol)
-      .setNFutures(nFutures).asInstanceOf[ArimaBestModelFinder[T]]
-
-    val paramGrid = defaultARIMAParamMap[ArimaBestModelFinder[T]](arima, paramRange)
-    preparePipeline(arima.setEstimatorParamMaps(paramGrid).asInstanceOf[ArimaBestModelFinder[T]],
-      preTransformers = transformer)
+  protected def prepareARIMAPipelineInt[L](labelCol: String, featuresCol: String, validationCol: String, nFutures: Int
+                                           , paramRange: Array[Int], transformer: Array[Transformer])
+                                          (implicit kt: ClassTag[L]) = {
+    val timeSeriesEvaluator: TimeSeriesEvaluator[L] = new TimeSeriesEvaluator[L]()
+      .setValidationCol(validationCol)
+      .setFeaturesCol(featuresCol)
+      .setMetricName("rmspe")
+    val arima = new ArimaBestModelFinder[L]()
+      .setTimeSeriesEvaluator(timeSeriesEvaluator)
+      .setLabelCol(labelCol)
+      .setValidationCol(validationCol)
+      .setNFutures(nFutures)
+    val paramGrid = defaultARIMAParamMap[ArimaBestModelFinder[L]](arima, paramRange)
+    val arimaBestModelFinder: ArimaBestModelFinder[L] = arima.setEstimatorParamMaps(paramGrid)
+    preparePipeline(arimaBestModelFinder, preTransformers = transformer)
   }
 
+  def prepareHOLTWintersPipeline[T](labelCol: String = "label", featuresCol: String = "features",
+                                    validationCol: String = "validation", timeCol: String = "Date", nFutures: Int = 6)
+                                   (implicit kt: ClassTag[T]): Pipeline = {
+    val transformer = createTimeSeriesGenerator(labelCol, featuresCol, timeCol)
+    val timeSeriesEvaluator: TimeSeriesEvaluator[T] = new TimeSeriesEvaluator[T]()
+      .setValidationCol(validationCol)
+      .setFeaturesCol(featuresCol)
+      .setMetricName("rmspe")
+    val holtWinters = new HoltWintersBestModelFinder[T]()
+      .setTimeSeriesEvaluator(timeSeriesEvaluator)
+      .setLabelCol(labelCol)
+      .setValidationCol(validationCol)
+      .setNFutures(nFutures)
+      .asInstanceOf[HoltWintersBestModelFinder[Double]]
 
-  def prepareHOLTWintersPipeline[T, U](labelCol: String = "label", featuresCol: String = "features",
-                                       validationCol: String = "validation", timeCol: String = "date", nFutures: Int = 6)
-                                      (implicit kt: ClassTag[T]): Pipeline = {
-    val transformer = createTimeSeriesGenerator(labelCol, featuresCol, validationCol, timeCol, nFutures)
-    val holtWinters = new HoltWintersBestModelFinder[T]().setTimeSeriesEvaluator(
-      new TimeSeriesEvaluator[T]().setValidationCol(validationCol)
-        .setFeaturesCol(featuresCol).setMetricName("rmspe")).setLabelCol(labelCol).setValidationCol(validationCol)
-      .setNFutures(nFutures).asInstanceOf[HoltWintersBestModelFinder[Double]]
     preparePipeline(holtWinters, preTransformers = Array(transformer))
   }
 
-  def checkWindowSizeNFutures(nFutures: Int, windowSize: Int) =
-    require(windowSize >= nFutures, "Window Size can't be lower than nFutures")
-
-  def prepareMovingAveragePipeline[T, U](labelCol: String = "label", featuresCol: String = "features",
-                                         validationCol: String = "validation", timeCol: String = "date", nFutures: Int = 6,
-                                         windowSize: Int = 8)
-                                        (implicit kt: ClassTag[T]): Pipeline = {
-    checkWindowSizeNFutures(nFutures, windowSize)
-    val transformer = createTimeSeriesGenerator(labelCol, featuresCol, validationCol, timeCol, nFutures)
-    val movingAverage = new MovingAverage[T]().setLabelCol(labelCol).setOutputCol(validationCol).setInputCol(featuresCol)
+  def prepareMovingAveragePipeline[L](labelCol: String = "label", featuresCol: String = "features",
+                                      validationCol: String = "validation", timeCol: String = "Date", windowSize: Int = 8)
+                                     (implicit kt: ClassTag[L]): Pipeline = {
+    val transformer = createTimeSeriesGenerator(labelCol, featuresCol, timeCol)
+    val movingAverage = new MovingAverage[L]()
+      .setLabelCol(labelCol)
+      .setOutputCol(validationCol)
+      .setInputCol(featuresCol)
       .setWindowSize(windowSize)
+
     new Pipeline()
       .setStages(Array(transformer, movingAverage))
-
   }
 
-  private def createTimeSeriesGenerator[T, U](labelCol: String, featuresCol: String, validationCol: String,
-                                              timeCol: String, nFutures: Int)(implicit kt: ClassTag[T])
-  : TimeSeriesGenerator[T, U] = {
-    new TimeSeriesGenerator[T, U]().setFeaturesCol(featuresCol).setLabelCol(labelCol).setTimeCol(timeCol)
+  private def createTimeSeriesGenerator[L](labelCol: String, featuresCol: String, timeCol: String)
+                                          (implicit kt: ClassTag[L]): TimeSeriesGenerator[L] = {
+    new TimeSeriesGenerator[L]()
+      .setFeaturesCol(featuresCol)
+      .setLabelCol(labelCol)
+      .setTimeCol(timeCol)
       .setOutputCol("features")
   }
 
   private def preparePipeline(timeSeriesBestModelFinder: TimeSeriesBestModelFinder,
                               preTransformers: Array[_ <: Transformer]): Pipeline = {
+
     new Pipeline()
       .setStages(preTransformers ++ Array(timeSeriesBestModelFinder))
   }
 
-  def prepareBestForecastPipeline[T, U](labelCol: String, featuresCol: String, validationCol: String, timeCol: String,
-                                        nFutures: Int, meanAverageWindowSize: Seq[Int], paramRange: Array[Int])
-                                       (implicit kt: ClassTag[T]): Pipeline = {
-    val transformer = createTimeSeriesGenerator[T, U](labelCol, featuresCol, validationCol, timeCol, nFutures)
-    val findBestForecast = new ForecastBestModelFinder[T, ForecastBestModel[T]].setWindowParams(meanAverageWindowSize)
-      .setTimeSeriesEvaluator(new TimeSeriesEvaluator[T]().setValidationCol(validationCol).setFeaturesCol(featuresCol)
-        .setMetricName("rmspe")).setLabelCol(labelCol).setValidationCol(validationCol).setNFutures(nFutures)
-      .asInstanceOf[ForecastBestModelFinder[T, ForecastBestModel[T]]]
-
-    val paramGrid = defaultARIMAParamMap[ForecastBestModelFinder[T, ForecastBestModel[T]]](findBestForecast, paramRange)
+  def prepareBestForecastPipeline[L](labelCol: String, featuresCol: String, validationCol: String, timeCol: String,
+                                     nFutures: Int, meanAverageWindowSize: Seq[Int], paramRange: Array[Int])
+                                    (implicit kt: ClassTag[L]): Pipeline = {
+    val transformer = createTimeSeriesGenerator[L](labelCol, featuresCol, timeCol)
+    val timeSeriesEvaluator: TimeSeriesEvaluator[L] = new TimeSeriesEvaluator[L]()
+      .setValidationCol(validationCol)
+      .setFeaturesCol(featuresCol)
+      .setMetricName("rmspe")
+    val findBestForecast = new ForecastBestModelFinder[L, ForecastBestModel[L]]
+      .setWindowParams(meanAverageWindowSize)
+      .setTimeSeriesEvaluator(timeSeriesEvaluator)
+      .setLabelCol(labelCol)
+      .setValidationCol(validationCol)
+      .setNFutures(nFutures)
+      .asInstanceOf[ForecastBestModelFinder[L, ForecastBestModel[L]]]
+    val paramGrid = defaultARIMAParamMap[ForecastBestModelFinder[L, ForecastBestModel[L]]](findBestForecast, paramRange)
     findBestForecast.setEstimatorParamMaps(paramGrid)
     preparePipeline(findBestForecast, Array(transformer))
   }
 
-  //retornar data, label, predicao, colocar parametros como argumento
-  //retornar o test com mais uma coluna de predicao, mais algoritmo e parametros
-  //label, timecol, Id
-  def predict[L, T, I](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: String, timeCol: String,
-                       idCol: String, algorithm: Algorithm = FindBestForecast, nFutures: Int = 6,
-                       meanAverageWindowSize: Seq[Int] = Seq(8, 16, 26), paramRange: Array[Int] = defaultRange)
-                      (implicit kt: ClassTag[L], ord: Ordering[L] = null, ctLabel: ClassTag[I],
-                       ordLabel: Ordering[I] = null) = {
+  def prepareXGBoost[L, G](labelCol: String, featuresCol: Seq[String], validationCol: String, timeCol: String,
+                           idCol: String, groupByCol: String, schema: StructType)(implicit kl: ClassTag[L],
+                                                                                  kg: ClassTag[G]): Pipeline = {
+    val timeSeriesEvaluator: TimeSeriesEvaluator[G] = new TimeSeriesEvaluator[G]()
+      .setValidationCol(validationCol)
+      .setLabelCol(labelCol)
+      .setMetricName("rmspe")
+    val xgboost = new XGBoostBestModelFinder[L, G]()
+      .setTimeSeriesEvaluator(timeSeriesEvaluator)
+      .setLabelCol(labelCol)
+      .setGroupByCol(groupByCol)
+      .setIdCol(idCol)
+      .setValidationCol(validationCol)
+
+    new Pipeline()
+      .setStages(smallModelPipelineStages(labelCol, featuresCol, timeCol, groupByCol, Some(idCol), schema = schema)
+        :+ xgboost)
+  }
+
+  def smallModelPipelineStages(labelCol: String, featuresCol: Seq[String], timeCol: String, groupByCol: String,
+                               idCol: Option[String] = None, schema: StructType): Array[PipelineStage] = {
+
+
+    val allColumns = schema.map(_.name).toArray
+    //val allColumns = featuresCol.toArray
+
+    val stringColumns = schema
+      .filter(f => f.dataType.isInstanceOf[StringType] && featuresCol.contains(f.name))
+      .map(_.name)
+
+    val nonStringColumns = allColumns.filter(f => !stringColumns.contains(f)
+      && featuresCol.contains(f))
+
+    val stringIndexers = stringColumns.map { column =>
+      new StringIndexer()
+        .setInputCol(column)
+        .setOutputCol(s"${column}Index")
+    }.toArray
+
+    val columnIndexers = new VectorizeEncoder()
+      .setInputCol(nonStringColumns)
+      .setOutputCol("nonStringIndex")
+      .setLabelCol(labelCol)
+      .setGroupByCol(groupByCol)
+      .setIdCol(idCol.getOrElse(""))
+
+    val assembler = new VectorAssembler()
+      .setInputCols(stringColumns.map(f => s"${f}Index").toArray :+ "nonStringIndex")
+      .setOutputCol(IUberdataForecastUtil.FEATURES_COL_NAME)
+
+    stringIndexers :+ columnIndexers :+ assembler
+  }
+
+  //label, GroupBy
+  def predict[L, G](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: Seq[String] = Seq.empty[String],
+                    timeCol: String, idCol: String, groupByCol: String, algorithm: Algorithm = FindBestForecast, nFutures: Int = 6,
+                    meanAverageWindowSize: Seq[Int] = Seq(8, 16, 26), paramRange: Array[Int] = defaultRange)
+                   (implicit kt: ClassTag[L], ord: Ordering[L] = null, gt: ClassTag[G]): (DataFrame, PipelineModel) = {
+    require(featuresCol.nonEmpty, "featuresCol parameter can't be empty")
     val validationCol = idCol + algorithm.toString
+    algorithm match {
+      case Arima | HoltWinters | MovingAverage8 | MovingAverage16 | MovingAverage26 | FindBestForecast =>
+        predictSmallModelFuture[L](train, test, labelCol, featuresCol.head, timeCol, idCol, algorithm,
+          validationCol, nFutures, meanAverageWindowSize, paramRange)
+      case XGBoostAlgorithm =>
+        predictSmallModelFeatureBased[L, G](train, test, labelCol, featuresCol, timeCol, idCol, groupByCol,
+          algorithm, validationCol)
+      case _ => throw new UnexpectedValueException(s"Algorithm $algorithm can't be used to predict a Forecast")
+    }
+  }
+
+  def predictSmallModelFeatureBased[L, G](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: Seq[String],
+                                          timeCol: String, idCol: String, groupByCol: String, algorithm: Algorithm = XGBoostAlgorithm,
+                                          validationCol: String)(implicit kt: ClassTag[L], ord: Ordering[L] = null
+                                                                 , gt: ClassTag[G]): (DataFrame, PipelineModel) = {
+    require(algorithm == XGBoostAlgorithm, "The accepted algorithm for this method is XGBoostAlgorithm")
+    val pipeline = prepareXGBoost[L, G](labelCol, featuresCol, validationCol, timeCol, idCol, groupByCol,
+      train.schema)
+    val cachedTrain = train.cache
+    val cachedTest = test.cache()
+    val model = pipeline.fit(cachedTrain)
+    val result = model.transform(cachedTest).cache
+    val joined = result.select(idCol, IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME)
+    val dfToBeReturned = joined.withColumnRenamed("featuresPrediction", "prediction")
+
+    (dfToBeReturned.sort(idCol), model)
+  }
+
+  def predictSmallModelFuture[L](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: String, timeCol: String,
+                                 idCol: String, algorithm: Algorithm = FindBestForecast, validationCol: String, nFutures: Int = 6,
+                                 meanAverageWindowSize: Seq[Int] = Seq(8, 16, 26), paramRange: Array[Int] = defaultRange)
+                                (implicit kt: ClassTag[L], ord: Ordering[L] = null): (DataFrame, PipelineModel) = {
+    require(algorithm != XGBoostAlgorithm, "The accepted algorithms for this method doesn't include XGBoost")
     val pipeline = algorithm match {
       case Arima =>
-        prepareARIMAPipeline[L, T](labelCol, featuresCol, validationCol, timeCol, nFutures, paramRange)
-      case HoltWinters => prepareHOLTWintersPipeline[L, T](labelCol, featuresCol, validationCol, timeCol, nFutures)
-      case MovingAverage8 => prepareMovingAveragePipeline[L, T](labelCol, featuresCol, validationCol, timeCol, nFutures, 8)
-      case MovingAverage16 => prepareMovingAveragePipeline[L, T](labelCol, featuresCol, validationCol, timeCol, nFutures, 16)
-      case MovingAverage26 => prepareMovingAveragePipeline[L, T](labelCol, featuresCol, validationCol, timeCol, nFutures, 26)
-      case FindBestForecast => prepareBestForecastPipeline[L, T](labelCol, featuresCol, validationCol, timeCol, nFutures,
-        meanAverageWindowSize, paramRange)
-      case _ => ???
+        prepareARIMAPipeline[L](labelCol, featuresCol, validationCol, timeCol, nFutures, paramRange)
+      case HoltWinters => prepareHOLTWintersPipeline[L](labelCol, featuresCol, validationCol, timeCol, nFutures)
+      case MovingAverage8 => prepareMovingAveragePipeline[L](labelCol, featuresCol, validationCol, timeCol, 8)
+      case MovingAverage16 => prepareMovingAveragePipeline[L](labelCol, featuresCol, validationCol, timeCol, 16)
+      case MovingAverage26 => prepareMovingAveragePipeline[L](labelCol, featuresCol, validationCol, timeCol, 26)
+      case FindBestForecast => prepareBestForecastPipeline[L](labelCol, featuresCol, validationCol, timeCol,
+        nFutures, meanAverageWindowSize, paramRange)
+      case _ => throw new UnexpectedValueException(s"Algorithm $algorithm can't be used to predict a Forecast")
     }
-    val model = pipeline.fit(train)
-    val result = model.transform(train)
+    val cachedTrain = train.cache
+    val model = pipeline.fit(cachedTrain)
+    val result = model.transform(cachedTrain)
     val timeColIndex = test.columns.indexOf(timeCol)
     val sparkContext = train.sqlContext.sparkContext
     val timeColIndexBc = sparkContext.broadcast(timeColIndex)
@@ -152,17 +252,15 @@ class ForecastPredictor extends Serializable with Logging {
     val featuresValidationColIndexBc = sparkContext.broadcast(result.columns.indexOf("featuresValidation"))
     val groupedTest = test.rdd.groupBy(row => row.getAs[L](labelColBc.value)).map { case (key, values) =>
       val sort = values.toArray.map {
-        row => IUberdataForecastUtil.convertColumnToLong2(row, timeColIndexBc.value)
+        row => IUberdataForecastUtil.convertColumnToLongAddAtEnd(row, timeColIndexBc.value)
       }.sortBy(row => row.getAs[Long](row.size - 1))
       (key, sort)
     }.cache
-    val keyValueResult = result.rdd.map(row => (row.getAs[L](labelColBc.value), (row
-      .getAs[org.apache.spark.mllib.linalg.Vector](validationColBc.value).toArray, row)
-      )).cache
-
+    val keyValueResult = result.rdd.map(row =>
+      (row.getAs[L](labelColBc.value), (row.getAs[org.apache.spark.mllib.linalg.Vector](validationColBc.value).toArray,
+        row))).cache
     val forecastResult = keyValueResult.join(groupedTest).flatMap {
       case (key, ((predictions, row), ids)) =>
-
         val filteredRow = row.schema.zipWithIndex.filter { case (value, index) => index != validationColIndexBc.value &&
           index != labelColIndexBc.value && index != featuresColIndexBc.value &&
           index != featuresValidationColIndexBc.value && value.name != "featuresPrediction"
@@ -177,11 +275,9 @@ class ForecastPredictor extends Serializable with Logging {
     val sqlContext = train.sqlContext
     val schema = result.schema.fields.filter(f => f.name != validationCol && f.name != labelCol && f.name != "features"
       && f.name != "featuresValidation" && f.name != "featuresPrediction").foldLeft(test.schema) {
-      case (schema, field) => schema.add(field)
+      case (testSchema, field) => testSchema.add(field)
     }.add(StructField("prediction", LongType))
-
     val df = sqlContext.createDataFrame(forecastResult, schema)
-
     (df.sort(idCol), model)
   }
 

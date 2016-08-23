@@ -66,7 +66,7 @@ class HOLTWintersModel(
                         val beta: Double,
                         val gamma: Double) extends TimeSeriesModel {
 
-  lazy val params = Map("alpha" -> alpha,"beta" -> beta,"gamma" -> gamma)
+  lazy val params = Map("alpha" -> alpha.toString,"beta" -> beta.toString,"gamma" -> gamma.toString)
 
   /**
     * Calculates sum of squared errors, used to estimate the alpha and beta parameters

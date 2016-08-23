@@ -14,6 +14,6 @@ trait ForecastPipelineStage extends PipelineStage with HasNFutures with HasPredi
 
   override def transformSchema(schema: StructType): StructType = {
     schema.add(StructField($(validationCol), new VectorUDT)).add(StructField(IUberdataForecastUtil.ALGORITHM,StringType)).
-      add(StructField(IUberdataForecastUtil.PARAMS,MapType(StringType,DoubleType)))
+      add(StructField(IUberdataForecastUtil.PARAMS,MapType(StringType,StringType)))
   }
 }

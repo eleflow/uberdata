@@ -1,6 +1,6 @@
 package org.apache.spark.ml.regression
 
-import org.apache.spark.ml.{ArimaModel}
+import org.apache.spark.ml.ArimaModel
 import org.apache.spark.sql.DataFrame
 
 /**
