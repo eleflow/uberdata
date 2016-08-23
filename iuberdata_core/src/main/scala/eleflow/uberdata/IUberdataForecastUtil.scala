@@ -7,6 +7,8 @@ import org.apache.spark.sql.Row
   */
 object IUberdataForecastUtil {
 
+  lazy val FEATURES_PREDICTION_COL_NAME = "featuresPrediction"
+  lazy val FEATURES_COL_NAME = "features"
   lazy val ALGORITHM = "algorithm"
   lazy val PARAMS = "parameters"
 
@@ -32,10 +34,9 @@ object IUberdataForecastUtil {
     }
   }
 
-  def convertColumnToLong2(row: Row, columnIndex: Int): Row = {
+  def convertColumnToLongAddAtEnd(row: Row, columnIndex: Int): Row = {
     val result = row.get(columnIndex) match {
       case s: java.sql.Timestamp =>
-//        val (prior, after) = row.toSeq.splitAt(columnIndex)
         val result = row.toSeq :+ s.getTime
         Row(result: _*)
       case d: Double =>

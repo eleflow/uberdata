@@ -17,7 +17,7 @@ class HoltWintersBestModel[T, M <: TimeSeriesModel](override val uid: String,
                                                     , val validationMetrics: RDD[(T, ModelParamEvaluation[T])])
   extends Model[HoltWintersBestModel[T, M]] with TimeSeriesBestModelFinderParam[T] {
 
-  //TODO avaliar necessidade
+  //TODO look for this method usage to see if it can be removed
   override def transform(dataset: DataFrame): DataFrame = {
     transformSchema(dataset.schema, logging = true)
     dataset

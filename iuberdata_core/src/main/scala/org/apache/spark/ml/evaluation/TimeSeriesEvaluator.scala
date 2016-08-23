@@ -4,23 +4,22 @@ import org.apache.spark.annotation.Since
 import org.apache.spark.ml.param.{Param, ParamMap, ParamValidators}
 import org.apache.spark.ml.param.shared.{HasFeaturesCol, HasLabelCol, HasPredictionCol, HasValidationCol}
 import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable, _}
-import org.apache.spark.mllib.evaluation.RegressionMetrics
 import org.apache.spark.mllib.linalg.{Vector, VectorUDT}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{DoubleType, LongType}
+import org.apache.spark.sql.types.DoubleType
 
 import scala.reflect.ClassTag
 
 /**
   * Created by dirceu on 26/04/16.
   */
-final class TimeSeriesEvaluator[T](override val uid: String)(implicit kt: ClassTag[T])
-  extends KeyValueEvaluator[T] with HasPredictionCol with HasFeaturesCol with HasValidationCol
+final class TimeSeriesEvaluator[L](override val uid: String)(implicit kt: ClassTag[L])
+  extends KeyValueEvaluator[L] with HasPredictionCol with HasLabelCol with HasFeaturesCol with HasValidationCol
     with DefaultParamsWritable {
 
-  def this()(implicit kt: ClassTag[T]) = this(Identifiable.randomUID("regEval"))
+  def this()(implicit kt: ClassTag[L]) = this(Identifiable.randomUID("regEval"))
 
   /**
     * param for metric name in evaluation (supports `"rmse"` (default), `"mse"`, `"r2"`, and `"mae"`)
@@ -45,11 +44,12 @@ final class TimeSeriesEvaluator[T](override val uid: String)(implicit kt: ClassT
   def setValidationCol(value: String): this.type = set(validationCol, value)
 
   /** @group setParam */
+  def setLabelCol(value: String): this.type = set(labelCol, value)
   def setFeaturesCol(value: String): this.type = set(featuresCol, value)
 
   setDefault(metricName -> "rmse")
 
-  override def evaluate(dataSet: (T, (Int, Vector))): RDD[(T, (Int, Double))] = ???
+  override def evaluate(dataSet: (L, (Int, Vector))): RDD[(L, (Int, Double))] = ???
 
   def evaluate(dataSet: Array[(Double, Double)]) = {
     val metrics = new TimeSeriesSmallModelRegressionMetrics(dataSet)
@@ -62,31 +62,29 @@ final class TimeSeriesEvaluator[T](override val uid: String)(implicit kt: ClassT
     }
   }
 
-  def evaluate(dataSet: DataFrame): RDD[(T, (Int, Double))] = {
+  def evaluate(dataSet: DataFrame): RDD[(L, (Int, Double))] = {
     val schema = dataSet.schema
     val validationColName = $(validationCol)
     val validationColType = schema($(validationCol)).dataType
 
-    val featuresColName = $(featuresCol)
-    val featuresType = schema($(featuresCol)).dataType
+    val labelColName = $(labelCol)
+    val labelType = schema($(labelCol)).dataType
 
-    val predictionAndLabels = (validationColType, featuresType) match {
-      case (p: VectorUDT, f: VectorUDT) => {
+    val predictionAndLabels = (validationColType, labelType) match {
+      case (p: VectorUDT, f: VectorUDT) =>
         dataSet
           .map { f =>
-          val label = f.getAs[T](0)
+          val label = f.getAs[L](0)
           val prediction = f.getAs[org.apache.spark.mllib.linalg.Vector](1)
           val feature = f.getAs[org.apache.spark.mllib.linalg.Vector](2)
           val modelIndex = f.getAs[Int](3)
-          (label, modelIndex, (feature.toArray.zip(prediction.toArray)))
+          (label, modelIndex, feature.toArray.zip(prediction.toArray))
         }
-      }
-
       case _ =>
         dataSet
-          .select(col(validationColName).cast(DoubleType), col(featuresColName).cast(DoubleType))
+          .select(col(validationColName).cast(DoubleType), col(labelColName).cast(DoubleType))
           .map { row =>
-            val label = row.getAs[T](0)
+            val label = row.getAs[L](0)
             val prediction = row.getAs[Double](1)
             val feature = row.getAs[Double](2)
             val modelIndex = row.getAs[Int](3)
@@ -94,7 +92,7 @@ final class TimeSeriesEvaluator[T](override val uid: String)(implicit kt: ClassT
           }
     }
 
-    val metrics = new TimeSeriesRegressionMetrics[T](predictionAndLabels, isLargerBetter)
+    val metrics = new TimeSeriesRegressionMetrics[L](predictionAndLabels, isLargerBetter)
     val metric = $(metricName) match {
       case "rmse" => metrics.rootMeanSquaredError
       case "mse" => metrics.meanSquaredError
@@ -107,7 +105,7 @@ final class TimeSeriesEvaluator[T](override val uid: String)(implicit kt: ClassT
   @Since("1.4.0")
   override def isLargerBetter: Boolean = $(metricName) == "r2"
 
-  override def copy(extra: ParamMap): TimeSeriesEvaluator[T] = defaultCopy(extra)
+  override def copy(extra: ParamMap): TimeSeriesEvaluator[L] = defaultCopy(extra)
 }
 
 object TimeSeriesEvaluator extends DefaultParamsReadable[TimeSeriesEvaluator[_]] {

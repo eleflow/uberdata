@@ -20,4 +20,5 @@ object SupportedAlgorithm extends Enumeration {
   val MovingAverage16 = Value(12)
   val MovingAverage26 = Value(13)
   val FindBestForecast = Value(14)
+  val XGBoostAlgorithm = Value(15)
 }

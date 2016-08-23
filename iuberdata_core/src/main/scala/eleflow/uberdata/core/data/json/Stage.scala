@@ -27,13 +27,13 @@ case class Stage(appId: String,
 
   def buildAccumulableInfoMap(accumulables: Map[Long, AccumulableInfo]): Map[Long, Map[String, Any]] = {
     accumulables.map {
-      case (id, accumulable) => (id -> Map(
+      case (id, accumulable) => id -> Map(
         "id" -> accumulable.id,
         "name" -> accumulable.name,
         "update" -> accumulable.update,
         "value" -> accumulable.value,
         "internal" -> accumulable.internal
-      ))
+      )
     }
   }
 }
@@ -45,11 +45,11 @@ case class AccumulableInfo(appId: String, stageId: Int, id: Long, name: String, 
   )
 }
 
-case class StorageLvl(val useDisk: Boolean,
-                      val useMemory: Boolean,
-                      val useOffHeap: Boolean,
-                      val deserialized: Boolean,
-                      val replication: Int = 1) {
+case class StorageLvl(useDisk: Boolean,
+                      useMemory: Boolean,
+                      useOffHeap: Boolean,
+                      deserialized: Boolean,
+                      replication: Int = 1) {
   def this(storage: StorageLevel) =
     this(storage.useDisk, storage.useMemory, storage.useOffHeap,
       storage.deserialized, storage.replication)
@@ -59,17 +59,17 @@ case class StorageLvl(val useDisk: Boolean,
   }
 }
 
-case class UberRDDInfo(val id: Int,
-                       val name: String,
-                       val numPartitions: Int,
+case class UberRDDInfo(id: Int,
+                       name: String,
+                       numPartitions: Int,
                        var storageLevel: StorageLvl,
-                       val parentIds: Seq[Int],
-                       val scope: Option[String] = None,
+                       parentIds: Seq[Int],
+                       scope: Option[String] = None,
                        numCachedPartitions: Int = 0,
-                       val memSize: Long = 0L,
-                       val diskSize: Long = 0L,
-                       val externalBlockStoreSize: Long = 0L,
-                       val isCached: Boolean) {
+                       memSize: Long = 0L,
+                       diskSize: Long = 0L,
+                       externalBlockStoreSize: Long = 0L,
+                       isCached: Boolean) {
   def this(rddInfo: RDDInfo) = this(rddInfo.id, rddInfo.name, rddInfo.numPartitions, StorageLvl(rddInfo.storageLevel.useDisk,
     rddInfo.storageLevel.useMemory, rddInfo.storageLevel.useOffHeap, rddInfo.storageLevel.deserialized, rddInfo.storageLevel.replication)
     , rddInfo.parentIds, rddInfo.scope.map(_.toJson), rddInfo.numCachedPartitions, rddInfo.memSize

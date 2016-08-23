@@ -12,7 +12,7 @@ abstract class Mappable {
         case s: String => s
         case Some(s) => matching(s)
         case None => null
-        case a: AnyRef => a.toString()
+        case a: AnyRef => a.toString
       }
     }
     (Map[String, String]() /: this.getClass.getDeclaredFields) { (a, f) =>
