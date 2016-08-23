@@ -10,10 +10,10 @@ import org.apache.spark.Logging
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.param.shared.{HasIdCol, HasGroupByCol, HasXGBoostParams}
+import org.apache.spark.ml.param.shared.{HasGroupByCol, HasIdCol, HasXGBoostParams}
 import org.apache.spark.ml.regression.XGBoostLinearSummary
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
-import org.apache.spark.mllib.linalg.VectorUDT
+import org.apache.spark.mllib.linalg.{VectorUDT, Vectors}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.types.{ArrayType, FloatType, StructField, StructType}
@@ -37,17 +37,13 @@ class XGBoostBestModelFinder[L, G](override val uid: String)(implicit gt: ClassT
 
   def setEstimatorParamMaps(value: Array[ParamMap]): this.type = set(estimatorParamMaps, value)
 
-  def setNFutures(value: Int) = set(nFutures, value)
-
   override def setValidationCol(value: String) = set(validationCol, value)
 
   def setLabelCol(label: String) = set(labelCol, label)
 
-  def setFeaturesCol(input: String) = set(featuresCol, input)
-
   def setGroupByCol(toGroupBy: String) = set(groupByCol, toGroupBy)
 
-  def setIdCol(input: String) = set(idCol, input)
+  def setIdCol(id: String) = set(idCol, id)
 
   def setXGBoostParams(params: Map[String, Any]) = set(xGBoostParams, params)
 
@@ -81,10 +77,10 @@ class XGBoostBestModelFinder[L, G](override val uid: String)(implicit gt: ClassT
 
   protected def xGBoostEvaluation(row: Row, model: Booster, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[G]],
                                   id: G, parameters: ParamMap): ModelParamEvaluation[G] = {
-    val featuresColValue = DataTransformer.toFloat(row.getAs($(featuresCol)))
     val featuresArray = row.getAs[Array[org.apache.spark.mllib.linalg.Vector]](IUberdataForecastUtil.FEATURES_COL_NAME)
       .map { vec =>
-        LabeledPoint.fromDenseVector(featuresColValue, vec.toArray.map(DataTransformer.toFloat))
+        val values = vec.toArray.map(DataTransformer.toFloat)
+        LabeledPoint.fromDenseVector(values.head, values.tail)
       }
     val features = new DMatrix(featuresArray.toIterator)
     log.warn(s"Evaluating forecast for id $id, with xgboost")
@@ -100,7 +96,8 @@ class XGBoostBestModelFinder[L, G](override val uid: String)(implicit gt: ClassT
     val idModels = dataSet.rdd.groupBy { row =>
       row.getAs[G]($(groupByCol))
     }.map(f => train(f._1, f._2.toIterator))
-    new XGBoostModel[G](uid, modelEvaluation(idModels)).setValidationCol($(validationCol)).asInstanceOf[XGBoostModel[G]]
+    new XGBoostModel[G](uid, modelEvaluation(idModels)).setIdCol($(idCol)).setValidationCol($(validationCol))
+      .asInstanceOf[XGBoostModel[G]]
   }
 
   def train(id: G, rows: Iterator[Row]): (G, Row, Seq[(ParamMap, UberXGBOOSTModel)]) = {
@@ -113,12 +110,14 @@ class XGBoostBestModelFinder[L, G](override val uid: String)(implicit gt: ClassT
         LabeledPoint.fromDenseVector(label, values.map(_.toFloat))
       }.toIterator
       val valuesVector = array.map { row =>
-        row.getAs[org.apache.spark.mllib.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
+        val vector = row.getAs[org.apache.spark.mllib.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
+        Vectors.dense(DataTransformer.toDouble(row.getAs($(labelCol))) +: vector.toArray)
       }
       val schema = StructType(Seq(
-        StructField($(featuresCol), FloatType),
+        StructField($(groupByCol), FloatType),
         StructField(IUberdataForecastUtil.FEATURES_COL_NAME, ArrayType(new VectorUDT))))
       val matrixRow = new GenericRowWithSchema(Array(id, valuesVector), schema)
+
       val matrix = new DMatrix(values)
       val booster = UberXGBOOSTModel.fitModel(matrix, $(xGBoostParams), $(xGBoostRounds))
       (matrixRow, Seq((new ParamMap(), new UberXGBOOSTModel($(xGBoostParams), $(xGBoostRounds), booster))))

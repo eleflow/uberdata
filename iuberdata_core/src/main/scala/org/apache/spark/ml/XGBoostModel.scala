@@ -81,7 +81,6 @@ class XGBoostModel[G](override val uid: String,
     newModel
       .setGroupByCol($(groupByCol))
       .setIdCol($(idCol))
-      .setLabelCol($(labelCol))
       .setValidationCol($(validationCol))
       .asInstanceOf[XGBoostModel[G]]
   }

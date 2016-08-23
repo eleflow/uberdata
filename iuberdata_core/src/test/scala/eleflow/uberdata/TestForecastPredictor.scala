@@ -299,7 +299,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 
 
   "ForecastPredictor" should "execute mean average and return predictions" in {
-    @transient val sc = context.sparkContext
+    @transient val sc = context.sparkContext//    val rdd = sc.parallelizeext.sparkContext
     @transient val sqlContext = context.sqlContext
 
     val structType = StructType(Seq(StructField("label", DoubleType), StructField("Date", DoubleType),
@@ -529,7 +529,8 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     }, trainSchema)
     val (bestDf, _) = eleflow.uberdata.ForecastPredictor().
       predictSmallModelFeatureBased[Int, Short](convertedTrain, convertedTest, "Sales",
-      Seq("DayOfWeek"), "Date1", "Id", "Store", XGBoostAlgorithm, "validacaocoluna")
+      Seq("DayOfWeek","Date2","Date3","Open", "Promo", "StateHoliday", "SchoolHoliday"), "Date1", "Id", "Store",
+      XGBoostAlgorithm, "validacaocoluna")
 
     val cachedDf = bestDf.cache
 
