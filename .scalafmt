@@ -1,0 +1,4 @@
+-s IntelliJ
+--maxColumn 100
+--formatSbtFiles true
+--danglingParentheses true
