@@ -58,7 +58,7 @@ class ForecastBestModelFinder[I, M <: ForecastBaseModel[M]](override val uid: St
 
   def setWindowParams(params:Seq[Int]) = set(windowParams,params)
 
-  def movingAverageEvaluation(row: Row, model: HOLTWintersModel, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[I]],
+  def movingAverageEvaluation(row: Row, model: UberHoltWintersModel, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[I]],
                               id: I) = {
     val features = row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
     log.warn(s"Evaluating forecast for id $id, with parameters alpha ${model.alpha}, beta ${model.beta} and gamma ${model.gamma}")
@@ -85,7 +85,7 @@ class ForecastBestModelFinder[I, M <: ForecastBaseModel[M]](override val uid: St
         val evaluatedModels = models.flatMap {
           case (parameters, model: UberArimaModel) =>
             Seq(arimaEvaluation(row, model, broadcastEvaluator, id, parameters))
-          case (parameters, model: HOLTWintersModel) =>
+          case (parameters, model: UberHoltWintersModel) =>
             Seq(holtWintersEvaluation(row, model, broadcastEvaluator, id)) ++
               movingAverageEvaluation(row, model, broadcastEvaluator, id)
         }
@@ -109,7 +109,7 @@ class ForecastBestModelFinder[I, M <: ForecastBaseModel[M]](override val uid: St
     val id = row.getAs[I]($(labelCol))
 
     val holtWintersResults = try {
-      val holtWinters = HOLTWinters.fitModel(row.getAs($(featuresCol)), $(nFutures))
+      val holtWinters = UberHoltWintersModel.fitModel(row.getAs($(featuresCol)), $(nFutures))
       val params = ParamMap().put(ParamPair(alpha, holtWinters.alpha)).put(ParamPair(beta, holtWinters.beta)).put(ParamPair(gamma, holtWinters.gamma))
       Some((params, holtWinters))
     } catch {

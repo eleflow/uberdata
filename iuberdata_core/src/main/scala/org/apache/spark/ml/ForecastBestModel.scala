@@ -16,7 +16,7 @@
 
 package org.apache.spark.ml
 
-import com.cloudera.sparkts.models.{HOLTWintersModel, TimeSeriesModel, UberArimaModel}
+import com.cloudera.sparkts.models.{UberHoltWintersModel, TimeSeriesModel, UberArimaModel}
 import eleflow.uberdata.enums.SupportedAlgorithm
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.param.ParamMap
@@ -59,18 +59,20 @@ class ForecastBestModel[L](override val uid: String,
           Seq(Vectors.dense(forecastPrediction), SupportedAlgorithm.Arima.toString,
             a.params, Vectors.dense(featuresPrediction))
         case SupportedAlgorithm.HoltWinters =>
-          val h = bestModel.asInstanceOf[HOLTWintersModel]
+          val h = bestModel.asInstanceOf[UberHoltWintersModel]
           val forecast = Vectors.dense(new Array[Double](nFut.value))
           h.forecast(features, forecast)
           Seq(forecast, SupportedAlgorithm.HoltWinters.toString,
             h.params, features)
         case SupportedAlgorithm.MovingAverage8 =>
-          val windowSize = modelParamEvaluation.params.toSeq.map(f => (f.param.name, f.value.asInstanceOf[Int])).toMap
-          val h = bestModel.asInstanceOf[HOLTWintersModel]
+          val windowSize = modelParamEvaluation.params.toSeq.map(f => (f.param.name,
+            f.value.asInstanceOf[Int])).toMap
+          val h = bestModel.asInstanceOf[UberHoltWintersModel]
           val forecast = Vectors.dense(new Array[Double](windowSize.values.head))
           h.forecast(features, forecast)
-          val movingAverageForecast = Vectors.dense(MovingAverageCalc.simpleMovingAverageArray(forecast.toArray,
-            windowSize.values.head))
+          val movingAverageForecast = Vectors.dense(
+            MovingAverageCalc.simpleMovingAverageArray(forecast.toArray,
+              windowSize.values.head))
           Seq(movingAverageForecast, SupportedAlgorithm.MovingAverage8.toString,
             windowSize.map(f => (f._1, f._2.toString)), features)
       }

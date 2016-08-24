@@ -16,7 +16,7 @@
 
 package org.apache.spark.ml
 
-import com.cloudera.sparkts.models.HOLTWintersModel
+import com.cloudera.sparkts.models.UberHoltWintersModel
 import eleflow.uberdata.enums.SupportedAlgorithm
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
@@ -32,8 +32,8 @@ import scala.reflect.ClassTag
 abstract  class HoltWintersBestModelEvaluation[L, M <: ForecastBaseModel[M]](implicit kt: ClassTag[L], ord: Ordering[L] = null)
   extends BestModelFinder[L,M] with HoltWintersParams{
 
-  protected def holtWintersEvaluation(row: Row, model: HOLTWintersModel, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[L]],
-                                      id: L): (HOLTWintersModel, ModelParamEvaluation[L]) = {
+  protected def holtWintersEvaluation(row: Row, model: UberHoltWintersModel, broadcastEvaluator: Broadcast[TimeSeriesEvaluator[L]],
+                                      id: L): (UberHoltWintersModel, ModelParamEvaluation[L]) = {
     val features = row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
     log.warn(s"Evaluating forecast for id $id, with parameters alpha ${model.alpha}, beta ${model.beta} and gamma ${model.gamma}")
     val expectedResult = row.getAs[org.apache.spark.mllib.linalg.Vector](partialValidationCol)

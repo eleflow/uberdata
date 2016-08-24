@@ -16,7 +16,7 @@
 
 package org.apache.spark.ml
 
-import com.cloudera.sparkts.models.HOLTWintersModel
+import com.cloudera.sparkts.models.UberHoltWintersModel
 import eleflow.uberdata.enums.SupportedAlgorithm
 import org.apache.hadoop.fs.Path
 import org.apache.spark.Logging
@@ -33,7 +33,8 @@ import scala.reflect.ClassTag
   * Created by dirceu on 17/05/16.
   */
 class HoltWintersModel[T](override val uid: String,
-                          val models: RDD[(T, (HOLTWintersModel, ModelParamEvaluation[T]))])(implicit kt: ClassTag[T], ord: Ordering[T] = null)
+                          val models: RDD[(T, (UberHoltWintersModel, ModelParamEvaluation[T]))])
+                         (implicit kt: ClassTag[T], ord: Ordering[T] = null)
   extends ForecastBaseModel[HoltWintersModel[T]]
     with HoltWintersParams
     with HasValidationCol
@@ -65,7 +66,7 @@ class HoltWintersModel[T](override val uid: String,
     dataSet.sqlContext.createDataFrame(predictions, predSchema)
   }
 
-  lazy val forecast: (T, (HOLTWintersModel, Row)) => Row = {
+  lazy val forecast: (T, (UberHoltWintersModel, Row)) => Row = {
     case (id, (model, row)) =>
       val features = row.getAs[Vector]($(featuresCol))
       val futures = $(nFutures)
@@ -110,7 +111,7 @@ object HoltWintersModel extends MLReadable[HoltWintersModel[_]] {
       val metadata = DefaultParamsReader.loadMetadata(path, sc, className)
 
       val dataPath = new Path(path, "data").toString
-      val models = sc.objectFile[(T, (HOLTWintersModel, ModelParamEvaluation[T]))](dataPath)
+      val models = sc.objectFile[(T, (UberHoltWintersModel, ModelParamEvaluation[T]))](dataPath)
 
       val holtWintersModel = new HoltWintersModel[T](metadata.uid, models)
 

@@ -16,7 +16,7 @@
 
 package org.apache.spark.ml
 
-import com.cloudera.sparkts.models.{HOLTWinters, HOLTWintersModel}
+import com.cloudera.sparkts.models.UberHoltWintersModel
 import org.apache.spark.Logging
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
@@ -52,7 +52,7 @@ class HoltWintersBestModelFinder[L](override val uid: String)(implicit kt: Class
 
   def this()(implicit kt: ClassTag[L]) = this(Identifiable.randomUID("arima"))
 
-  def modelEvaluation(idModels: RDD[(L, Row, Option[HOLTWintersModel])]): RDD[(L, (HOLTWintersModel, ModelParamEvaluation[L]))] = {
+  def modelEvaluation(idModels: RDD[(L, Row, Option[UberHoltWintersModel])]): RDD[(L, (UberHoltWintersModel, ModelParamEvaluation[L]))] = {
     val eval = $(timeSeriesEvaluator)
     val broadcastEvaluator = idModels.context.broadcast(eval)
     idModels.filter(_._3.isDefined).map {
@@ -73,11 +73,11 @@ class HoltWintersBestModelFinder[L](override val uid: String)(implicit kt: Class
       asInstanceOf[HoltWintersModel[L]]
   }
 
-  def train(row: Row): (L, Row, Option[HOLTWintersModel]) = {
+  def train(row: Row): (L, Row, Option[UberHoltWintersModel]) = {
     val id = row.getAs[L]($(labelCol))
 
     val result = try {
-      Some(HOLTWinters.fitModel(row.getAs($(featuresCol)), $(nFutures)))
+      Some(UberHoltWintersModel.fitModel(row.getAs($(featuresCol)), $(nFutures)))
     } catch {
       case e: Exception =>
         log.error(s"Got the following Exception ${e.getLocalizedMessage} in id $id")
