@@ -20,6 +20,7 @@ import eleflow.uberdata.core.data.Dataset
 import Dataset._
 import eleflow.uberdata.enums.SupportedAlgorithm
 import eleflow.uberdata.core.enums.DateSplitType._
+import eleflow.uberdata.core.exception.UnexpectedValueException
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
@@ -315,7 +316,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 
 
   "ForecastPredictor" should "execute mean average and return predictions" in {
-    @transient val sc = context.sparkContext//    val rdd = sc.parallelizeext.sparkContext
+    @transient val sc = context.sparkContext //    val rdd = sc.parallelizeext.sparkContext
     @transient val sqlContext = context.sqlContext
 
     val structType = StructType(Seq(StructField("label", DoubleType), StructField("Date", DoubleType),
@@ -423,7 +424,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     val dataFrame = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
 
     val pipeline = ForecastPredictor().prepareBestForecastPipeline[Int]("Store",
-      "Sales", "validation","data", 5, Seq(8, 12, 16, 24, 26), (0 to 2).toArray)
+      "Sales", "validation", "data", 5, Seq(8, 12, 16, 24, 26), (0 to 2).toArray)
     val model = pipeline.fit(dataFrame)
     val result = model.transform(dataFrame)
     assert(result.collect().length == 4)
@@ -514,12 +515,14 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 
   it should "accept different kind of data into it's columns " in {
     val train = Dataset(context, s"$defaultFilePath/data/RossmannTrain.csv")
-    train.applyColumnTypes(Seq(ShortType, ByteType, TimestampType, IntegerType, DoubleType, BooleanType, BooleanType,
-      StringType, StringType))
-    val trainData = train.formatDateValues("Date", DayMonthYear).select("Store", "Sales", "DayOfWeek", "Date1",
-      "Date2", "Date3", "Open", "Promo", "StateHoliday", "SchoolHoliday").cache
+    train.applyColumnTypes(Seq(ShortType, ByteType, TimestampType, IntegerType, DoubleType,
+      BooleanType, BooleanType, StringType, StringType))
+    val trainData = train.formatDateValues("Date", DayMonthYear).select("Store", "Sales",
+      "DayOfWeek", "Date1", "Date2", "Date3", "Open", "Promo", "StateHoliday", "SchoolHoliday")
+      .cache
     val test = Dataset(context, s"$defaultFilePath/data/RossmannTest.csv")
-    test.applyColumnTypes(Seq(DoubleType, ShortType, ByteType, TimestampType, DoubleType, DoubleType, StringType, StringType))
+    test.applyColumnTypes(Seq(DoubleType, ShortType, ByteType, TimestampType, DoubleType,
+      DoubleType, StringType, StringType))
     val testData = test.formatDateValues("Date", DayMonthYear)
 
     val trainSchema = trainData.schema
@@ -528,30 +531,53 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     val convertedTest = sqlContext.createDataFrame(testData.map { row =>
       val seq = row.toSeq
       val newSeq = if (seq.contains(null)) {
-        if (row.getAs[String]("StateHoliday") == "1.0")
+        if (row.getAs[String]("StateHoliday") == "1.0") {
           seq.updated(6, 0d)
-        else seq.updated(6, 1d)
-      } else seq
+        } else {
+          seq.updated(6, 1d)
+        }
+      } else {
+        seq
+      }
       Row(newSeq: _*)
     }, testSchema)
     val convertedTrain = sqlContext.createDataFrame(trainData.map { row =>
       val seq = row.toSeq
       val newSeq = if (seq.contains(null)) {
-        if (row.getAs[String]("StateHoliday") == "1.0")
+        if (row.getAs[String]("StateHoliday") == "1.0") {
           seq.updated(6, 0d)
-        else seq.updated(6, 1d)
-      } else seq
+        } else {
+          seq.updated(6, 1d)
+        }
+      } else {
+        seq
+      }
       Row(newSeq: _*)
     }, trainSchema)
     val (bestDf, _) = eleflow.uberdata.ForecastPredictor().
       predictSmallModelFeatureBased[Int, Short](convertedTrain, convertedTest, "Sales",
-      Seq("DayOfWeek","Date2","Date3","Open", "Promo", "StateHoliday", "SchoolHoliday"), "Date1", "Id", "Store",
-      XGBoostAlgorithm, "validacaocoluna")
+      Seq("DayOfWeek", "Date2", "Date3", "Open", "Promo", "StateHoliday", "SchoolHoliday"), "Date1",
+      "Id", "Store", XGBoostAlgorithm, "validacaocoluna")
 
     val cachedDf = bestDf.cache
 
     assert(cachedDf.count == 288)
     assert(train.count == 9420)
     assert(test.count == 288)
+  }
+  it should "throw UnsupportedOperationException when the algorithm is invalid" in {
+    a[UnexpectedValueException] should be thrownBy {
+      val dataframe = context.sqlContext.emptyDataFrame
+      eleflow.uberdata.ForecastPredictor().predict[Double, Double](dataframe, dataframe, "",
+        Seq("Date"), "", "", "", SupportedAlgorithm.LinearLeastSquares)
+    }
+  }
+
+  it should "throw IllegalArgumentexception when the algorithm featurescol is empty" in {
+    a[IllegalArgumentException] should be thrownBy {
+      val dataframe = context.sqlContext.emptyDataFrame
+      eleflow.uberdata.ForecastPredictor().predict[Double, Double](dataframe, dataframe, "",
+        Seq.empty[String], "", "", "", SupportedAlgorithm.LinearLeastSquares)
+    }
   }
 }
