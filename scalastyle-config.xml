@@ -244,15 +244,15 @@ This file is divided into 3 sections:
         </customMessage>
     </check>
 
-    <check level="error" class="org.scalastyle.scalariform.ImportOrderChecker" enabled="true">
-        <parameters>
-            <parameter name="groups">java,scala,3rdParty,spark</parameter>
-            <parameter name="group.java">javax?\..*</parameter>
-            <parameter name="group.scala">scala\..*</parameter>
-            <parameter name="group.3rdParty">(?!org\.apache\.spark\.).*</parameter>
-            <parameter name="group.spark">org\.apache\.spark\..*</parameter>
-        </parameters>
-    </check>
+    <!--<check level="error" class="org.scalastyle.scalariform.ImportOrderChecker" enabled="false">-->
+        <!--<parameters>-->
+            <!--<parameter name="groups">java,scala,3rdParty,spark</parameter>-->
+            <!--<parameter name="group.java">javax?\..*</parameter>-->
+            <!--<parameter name="group.scala">scala\..*</parameter>-->
+            <!--<parameter name="group.3rdParty">(?!org\.apache\.spark\.).*</parameter>-->
+            <!--<parameter name="group.spark">org\.apache\.spark\..*</parameter>-->
+        <!--</parameters>-->
+    <!--</check>-->
 
     <!-- check level="error" class="org.scalastyle.scalariform.DisallowSpaceBeforeTokenChecker" enabled="true">
       <parameters>
@@ -271,9 +271,10 @@ This file is divided into 3 sections:
     ]]></customMessage>
     </check>
 
-    <check customId="NoScalaDoc" level="error" class="org.scalastyle.file.RegexChecker" enabled="true">
+    <check customId="NoScalaDoc" level="error" class="org.scalastyle.file.RegexChecker" enabled="false">
         <parameters>
-            <parameter name="regex">(?m)^(\s*)/[*][*].*$(\r|)\n^\1 [*]</parameter>
+            <parameter name="regex">(?m)^(\s*)\/[*][*].*$(\r|)\n^\\[*]</parameter>
+            <!--<parameter name="regex">^.[\w]*\n\/\*\*\n(  \* [\w]+\n)* \*\/\n[\w]*</parameter>-->
         </parameters>
         <customMessage>Use Javadoc style indentation for multiline comments</customMessage>
     </check>
@@ -442,10 +443,11 @@ This file is divided into 3 sections:
         </parameters>
     </check>
 
-    <check enabled="false" class="org.scalastyle.file.IndentationChecker" level="warning">
+    <check enabled="true" class="org.scalastyle.file.IndentationChecker" level="warning">
         <parameters>
             <parameter name="tabSize">2</parameter>
-            <parameter name="methodParamIndentSize">2</parameter>
+            <parameter name="methodParamIndentSize">4</parameter>
+            <parameter name="classParamIndentSize">4</parameter>
         </parameters>
     </check>
 

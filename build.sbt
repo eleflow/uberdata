@@ -89,3 +89,5 @@ test in assembly := {}
 testOptions in Test in iuberdata_core += Tests.Argument("-oDF")
 
 parallelExecution in Test in iuberdata_core := false
+
+scalafmtConfig in ThisBuild := Some(file(".scalafmt"))
