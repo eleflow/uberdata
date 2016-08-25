@@ -20,8 +20,8 @@
       copy: src=zeppelin-site.xml dest=/tmp/zeppelin-site.xml
     - name: copy interpreter.sh
       copy: src=interpreter.sh dest=/tmp/interpreter.sh
-    - name: copy shell.zip
-      copy: src=shell.zip dest=/tmp/shell.zip
+    - name: copy notebook.zip
+      copy: src=notebook.zip dest=/tmp/notebook.zip
     - name: stop iuberdata
       service: name=iuberdata state=stopped enabled=yes
       ignore_errors: yes
