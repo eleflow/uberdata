@@ -75,7 +75,7 @@ chown iuberdata:iuberdata /etc/default/iuberdata
 mkdir -p /var/run/iuberdata
 chown iuberdata:iuberdata /var/run/iuberdata
 
-sudo unzip notebook.zip -d /usr/share/zeppelin/notebook
+sudo unzip /tmp/notebook.zip -d /usr/share/zeppelin/notebook
 sudo cp -f /usr/share/zeppelin/notebook/interpreter.json /usr/share/zeppelin/conf/
 
 cp -f /tmp/notebook/interpreter.json /usr/share/zeppelin/conf/
