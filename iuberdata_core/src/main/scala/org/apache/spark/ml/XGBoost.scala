@@ -37,7 +37,7 @@ import scala.reflect.ClassTag
   * Created by dirceu on 29/06/16.
   */
 class XGBoost[I](override val uid: String, val models: RDD[(I, (UberXGBOOSTModel, Seq[(ModelParamEvaluation[I])]))])
-                (implicit kt: ClassTag[I], ord: Ordering[I] = null) extends ForecastBaseModel[XGBoostModel[I]]
+                (implicit kt: ClassTag[I], ord: Ordering[I] = null) extends ForecastBaseModel[XGBoostSmallModel[I]]
   with HasInputCol with HasOutputCol with DefaultParamsWritable with HasFeaturesCol with HasNFutures
 with HasGroupByCol {
 
@@ -73,5 +73,5 @@ with HasGroupByCol {
     schema.add(StructField($(outputCol), ArrayType(DoubleType)))
   }
 
-  override def copy(extra: ParamMap): XGBoostModel[I] = defaultCopy(extra)
+  override def copy(extra: ParamMap): XGBoostSmallModel[I] = defaultCopy(extra)
 }

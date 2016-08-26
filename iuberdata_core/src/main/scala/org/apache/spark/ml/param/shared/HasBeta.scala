@@ -19,15 +19,15 @@ package org.apache.spark.ml.param.shared
 import org.apache.spark.ml.param.{Param, Params}
 
 /**
-  * Created by dirceu on 17/05/16.
-  */
+ * Created by dirceu on 17/05/16.
+ */
 private[ml] trait HasBeta extends Params {
 
   /**
-    * Param for label column name.
-    *
-    * @group param
-    */
+   * Param for label column name.
+   *
+   * @group param
+   */
   final val beta: Param[Double] = new Param[Double](this, "beta", "Holt Winters beta param")
 
   setDefault(beta, 0d)

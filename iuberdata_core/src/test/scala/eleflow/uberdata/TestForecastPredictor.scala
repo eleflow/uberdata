@@ -26,8 +26,11 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
 import org.scalatest.{FlatSpec, Matchers, Suite}
 import eleflow.uberdata.enums.SupportedAlgorithm._
+import eleflow.uberdata.models.UberXGBOOSTModel
+import ml.dmlc.xgboost4j.scala.spark.XGBoost
 import org.apache.spark.ml.ArimaModel
-import org.apache.spark.mllib.linalg.DenseVector
+import org.apache.spark.mllib.linalg.{DenseVector, Vectors}
+import org.apache.spark.mllib.regression.LabeledPoint
 
 /**
   * Created by dirceu on 26/05/16.
@@ -503,8 +506,8 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
       Row(newSeq: _*)
     }, trainSchema)
     val (bestDf, _) = eleflow.uberdata.ForecastPredictor().
-      predictSmallModelFeatureBased[Int, Double](convertedTrain, convertedTest, "Sales", Seq("Store"),
-      "Date1", "Id", "Store", XGBoostAlgorithm, "validacaocoluna")
+      predictSmallModelFeatureBased[Int, Double](convertedTrain, convertedTest, "Sales",
+      Seq("Store"), "Date1", "Id", "Store", XGBoostAlgorithm, "validacaocoluna")
 
     val cachedDf = bestDf.cache
 
@@ -580,4 +583,6 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
         Seq.empty[String], "", "", "", SupportedAlgorithm.LinearLeastSquares)
     }
   }
+
+
 }
