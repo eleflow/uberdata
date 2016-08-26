@@ -1,5 +1,3 @@
--s IntelliJ
+--style IntelliJ
 --maxColumn 100
---formatSbtFiles true
---javaDocs false
---reformatDocstrings false
+--danglingParentheses false

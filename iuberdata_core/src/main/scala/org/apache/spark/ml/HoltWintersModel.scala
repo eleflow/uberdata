@@ -1,18 +1,18 @@
 /*
-* Copyright 2015 eleflow.com.br.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2015 eleflow.com.br.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.apache.spark.ml
 
@@ -32,16 +32,19 @@ import scala.reflect.ClassTag
 /**
   * Created by dirceu on 17/05/16.
   */
-class HoltWintersModel[T](override val uid: String,
-                          val models: RDD[(T, (UberHoltWintersModel, ModelParamEvaluation[T]))])
-                         (implicit kt: ClassTag[T], ord: Ordering[T] = null)
-  extends ForecastBaseModel[HoltWintersModel[T]]
+class HoltWintersModel[T](
+  override val uid: String,
+  val models: RDD[(T, (UberHoltWintersModel, ModelParamEvaluation[T]))]
+)(implicit kt: ClassTag[T], ord: Ordering[T] = null)
+    extends ForecastBaseModel[HoltWintersModel[T]]
     with HoltWintersParams
     with HasValidationCol
     with HasNFutures
-    with MLWritable with ForecastPipelineStage{
+    with MLWritable
+    with ForecastPipelineStage {
 
-  override def write: MLWriter = new HoltWintersModel.HOLTWintersRegressionModelWriter(this)
+  override def write: MLWriter =
+    new HoltWintersModel.HOLTWintersRegressionModelWriter(this)
 
   override def transform(dataSet: DataFrame) = {
     val schema = dataSet.schema
@@ -56,11 +59,14 @@ class HoltWintersModel[T](override val uid: String,
     val nFut = scContext.broadcast($(nFutures))
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
-        val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
+        val features = row
+          .getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
 
         val forecast = Vectors.dense(new Array[Double](nFut.value))
         bestModel.forecast(features, forecast)
-        Row(row.toSeq :+ forecast :+ SupportedAlgorithm.HoltWinters.toString :+ bestModel.params: _*)
+        Row(
+          row.toSeq :+ forecast :+ SupportedAlgorithm.HoltWinters.toString :+ bestModel.params: _*
+        )
     }
 
     dataSet.sqlContext.createDataFrame(predictions, predSchema)
@@ -70,15 +76,22 @@ class HoltWintersModel[T](override val uid: String,
     case (id, (model, row)) =>
       val features = row.getAs[Vector]($(featuresCol))
       val futures = $(nFutures)
-      val forecast = model.forecast(features, Vectors.dense(Array[Double](futures))).toArray //.drop(features.size)
-    val (featuresPrediction, forecastPrediction) = forecast.splitAt(features.size)
-      Row(row.toSeq :+ Vectors.dense(forecastPrediction) :+ Vectors.dense(featuresPrediction): _*)
+      val forecast = model
+        .forecast(features, Vectors.dense(Array[Double](futures)))
+        .toArray //.drop(features.size)
+      val (featuresPrediction, forecastPrediction) =
+        forecast.splitAt(features.size)
+      Row(
+        row.toSeq :+ Vectors.dense(forecastPrediction) :+ Vectors
+          .dense(featuresPrediction): _*
+      )
   }
 
   override def copy(extra: ParamMap): HoltWintersModel[T] = {
     val newModel = copyValues(new HoltWintersModel[T](uid, models), extra)
     newModel
-      .setValidationCol($(validationCol)).asInstanceOf[HoltWintersModel[T]]
+      .setValidationCol($(validationCol))
+      .asInstanceOf[HoltWintersModel[T]]
   }
 
 }
@@ -89,8 +102,10 @@ object HoltWintersModel extends MLReadable[HoltWintersModel[_]] {
   //TODO avaliar a necessidade deste metodo
   override def read: MLReader[HoltWintersModel[_]] = null
 
-  private[HoltWintersModel] class HOLTWintersRegressionModelWriter(instance: HoltWintersModel[_])
-    extends MLWriter with Logging {
+  private[HoltWintersModel] class HOLTWintersRegressionModelWriter(
+    instance: HoltWintersModel[_]
+  ) extends MLWriter
+      with Logging {
 
     //TODO validar este metodo
     override protected def saveImpl(path: String): Unit = {
@@ -102,7 +117,9 @@ object HoltWintersModel extends MLReadable[HoltWintersModel[_]] {
 
   }
 
-  private class HOLTWintersRegressionModelReader[T](implicit kt: ClassTag[T], ord: Ordering[T] = null) extends MLReader[HoltWintersModel[T]] {
+  private class HOLTWintersRegressionModelReader[T](implicit kt: ClassTag[T],
+                                                    ord: Ordering[T] = null)
+      extends MLReader[HoltWintersModel[T]] {
 
     /** Checked against metadata when loading model */
     private val className = classOf[HoltWintersModel[T]].getName
@@ -111,7 +128,10 @@ object HoltWintersModel extends MLReadable[HoltWintersModel[_]] {
       val metadata = DefaultParamsReader.loadMetadata(path, sc, className)
 
       val dataPath = new Path(path, "data").toString
-      val models = sc.objectFile[(T, (UberHoltWintersModel, ModelParamEvaluation[T]))](dataPath)
+      val models =
+        sc.objectFile[(T, (UberHoltWintersModel, ModelParamEvaluation[T]))](
+          dataPath
+        )
 
       val holtWintersModel = new HoltWintersModel[T](metadata.uid, models)
 

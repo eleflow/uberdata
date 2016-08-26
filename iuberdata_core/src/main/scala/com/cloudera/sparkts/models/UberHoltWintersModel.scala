@@ -19,20 +19,33 @@ package com.cloudera.sparkts.models
 import org.apache.spark.mllib.linalg.Vector
 
 /**
- * Created by dirceu on 24/08/16.
- */
-class UberHoltWintersModel(override val modelType: String, override val period: Int,
-                            override val alpha: Double, override val beta: Double,
-                            override val gamma: Double)
-  extends HoltWintersModel(modelType, period, alpha, beta, gamma) {
-  lazy val params = Map("HoltWintersAlpha" -> alpha.toString, "HoltWintersBeta" -> beta.toString,
-    "HoltWintersGamma" -> gamma.toString)
+  * Created by dirceu on 24/08/16.
+  */
+class UberHoltWintersModel(override val modelType: String,
+                           override val period: Int,
+                           override val alpha: Double,
+                           override val beta: Double,
+                           override val gamma: Double)
+    extends HoltWintersModel(modelType, period, alpha, beta, gamma) {
+  lazy val params = Map(
+    "HoltWintersAlpha" -> alpha.toString,
+    "HoltWintersBeta" -> beta.toString,
+    "HoltWintersGamma" -> gamma.toString
+  )
 }
 
 object UberHoltWintersModel {
-  def fitModel(ts: Vector, period: Int, modelType: String = "additive", method: String = "BOBYQA"):
-  UberHoltWintersModel = {
+  def fitModel(ts: Vector,
+               period: Int,
+               modelType: String = "additive",
+               method: String = "BOBYQA"): UberHoltWintersModel = {
     val model = HoltWinters.fitModel(ts, period, modelType, method)
-    new UberHoltWintersModel(modelType, period, model.alpha, model.beta, model.gamma)
+    new UberHoltWintersModel(
+      modelType,
+      period,
+      model.alpha,
+      model.beta,
+      model.gamma
+    )
   }
 }

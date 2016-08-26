@@ -1,18 +1,18 @@
 /*
-* Copyright 2015 eleflow.com.br.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2015 eleflow.com.br.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package eleflow.uberdata.core.json
 
@@ -21,7 +21,10 @@ import java.util.Properties
 import eleflow.uberdata.core.data.json.{TaskEnd, _}
 import org.apache.spark.UberRDDOperationScope
 import org.apache.spark.rdd.RDDOperationScope
-import org.apache.spark.scheduler.{SparkListenerApplicationEnd, SparkListenerApplicationStart}
+import org.apache.spark.scheduler.{
+  SparkListenerApplicationEnd,
+  SparkListenerApplicationStart
+}
 import org.apache.spark.storage.{BlockId, BlockStatus, RDDInfo, StorageLevel}
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
@@ -37,8 +40,10 @@ object SparkJsonMapper {
   implicit val executorRemovedWrites = Json.writes[ExecutorRemoved]
   implicit val executorRemovedFormat = Json.format[ExecutorRemoved]
 
-  implicit val executorMetricsUpdateWrites = Json.writes[ExecutorMetricsUpdated]
-  implicit val executorMetricsUpdateFormat = Json.format[ExecutorMetricsUpdated]
+  implicit val executorMetricsUpdateWrites =
+    Json.writes[ExecutorMetricsUpdated]
+  implicit val executorMetricsUpdateFormat =
+    Json.format[ExecutorMetricsUpdated]
 
   implicit val storageLvlWrites = Json.writes[StorageLvl]
   implicit val storageLvlFormat = Json.format[StorageLvl]
@@ -48,7 +53,6 @@ object SparkJsonMapper {
 
   implicit val accumulableInfoWrites = Json.writes[AccumulableInfo]
   implicit val accumulableInfoFormat = Json.format[AccumulableInfo]
-
 
   implicit val stageWrites = Json.writes[Stage]
   implicit val stageFormat = Json.format[Stage]
@@ -71,11 +75,11 @@ object SparkJsonMapper {
   implicit val blockIdWrite = Json.writes[UberBlockId]
   implicit val blockIdFormat = Json.format[UberBlockId]
 
+  implicit val taskEndCompWrites: Writes[TaskEndComp] =
+    Json.writes[TaskEndComp]
 
-
-  implicit val taskEndCompWrites:Writes[TaskEndComp] = Json.writes[TaskEndComp]
-
-  implicit val taskEndCompFormat:Format[TaskEndComp] = Json.format[TaskEndComp]
+  implicit val taskEndCompFormat: Format[TaskEndComp] =
+    Json.format[TaskEndComp]
 
   implicit val taskEndWrites = new Writes[TaskEnd] {
     def writes(task: TaskEnd) = Json.obj(

@@ -100,7 +100,7 @@ This file is divided into 3 sections:
 
     <check level="error" class="org.scalastyle.scalariform.ParameterNumberChecker" enabled="true">
         <parameters>
-            <parameter name="maxParameters"><![CDATA[10]]></parameter>
+            <parameter name="maxParameters"><![CDATA[15]]></parameter>
         </parameters>
     </check>
 
@@ -443,13 +443,13 @@ This file is divided into 3 sections:
         </parameters>
     </check>
 
-    <check enabled="true" class="org.scalastyle.file.IndentationChecker" level="warning">
-        <parameters>
-            <parameter name="tabSize">2</parameter>
-            <parameter name="methodParamIndentSize">4</parameter>
-            <parameter name="classParamIndentSize">4</parameter>
-        </parameters>
-    </check>
+    <!--<check enabled="true" class="org.scalastyle.file.IndentationChecker" level="warning">-->
+        <!--<parameters>-->
+            <!--<parameter name="tabSize">2</parameter>-->
+            <!--<parameter name="methodParamIndentSize">2</parameter>-->
+            <!--<parameter name="classParamIndentSize">4</parameter>-->
+        <!--</parameters>-->
+    <!--</check>-->
 
     <check enabled="true" class="org.scalastyle.scalariform.BlockImportChecker" level="error"/>
 
@@ -482,7 +482,7 @@ This file is divided into 3 sections:
         </parameters>
     </check>
 
-    <check enabled="true" class="org.scalastyle.scalariform.PatternMatchAlignChecker" level="error"/>
+    <check enabled="false" class="org.scalastyle.scalariform.PatternMatchAlignChecker" level="error"/>
 
     <check enabled="true" class="org.scalastyle.scalariform.ProcedureDeclarationChecker" level="error"/>
 

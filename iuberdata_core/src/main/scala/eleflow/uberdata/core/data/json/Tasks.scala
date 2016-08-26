@@ -1,89 +1,93 @@
 /*
-* Copyright 2015 eleflow.com.br.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2015 eleflow.com.br.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package eleflow.uberdata.core.data.json
-
 
 /**
   * Created by dirceu on 30/11/15.
   */
-case class TaskStart(appId: String, stageId: Int, stageAttemptId: Int, taskId: Long,
+case class TaskStart(appId: String,
+                     stageId: Int,
+                     stageAttemptId: Int,
+                     taskId: Long,
                      index: Int,
                      attemptNumber: Int,
                      launchTime: Long,
                      executorId: String,
                      host: String,
                      taskLocality: String,
-                     speculative: Boolean) {
+                     speculative: Boolean) {}
 
-}
-
-case class TaskGettingResult(appId: String, taskId: Long,
+case class TaskGettingResult(appId: String,
+                             taskId: Long,
                              index: Int,
                              attemptNumber: Int,
                              launchTime: Long,
                              executorId: String,
                              host: String,
                              taskLocality: String,
-                             speculative: Boolean) {
-
-}
+                             speculative: Boolean) {}
 
 case class UberBlockId(name: String, status: UberBlockStatus)
 
-class TaskEnd(val appId: String, val stageId: Int, val stageAttemptId: Int, val taskType: String,
-                   val taskId: Long,
-                   val taskEndReason: String,
-                   val index: Int,
-                   val attemptNumber: Int,
-                   val launchTime: Long,
-                   val executorId: String,
-                   val host: String,
-                   val taskLocality: String,
-                   val speculative: Boolean,
-                   val hostname: String,
-                   val executorDeserializeTime: Long,
-                   val executorRunTime: Long,
-                   val resultSize: Long,
-                   val jvmGCTime: Long,
-                   val resultSerializationTime: Long,
-                   val memoryBytesSpilled: Long,
-                   val diskBytesSpilled: Long,
-                   val readMethod: Option[String]= None,
-                   val bytesRead: Option[Long] = None,
-                   val recordsRead: Option[Long] = None,
-                   val writeMethod: Option[String],
-                   val bytesWritten: Option[Long] = None,
-                   val recordsWritten: Option[Long] = None,
-                   val remoteBlocksFetched: Option[Int] = None,
-                   val localBlocksFetched: Option[Int] = None,
-                   val fetchWaitTime: Option[Long] = None,
-                   val remoteBytesRead: Option[Long] = None,
-                   val localBytesRead: Option[Long] = None,
-                   val totalBytesRead: Option[Long] = None,
-                   val totalBlocksFetched: Option[Int] = None,
-                   val shuffleRecordsRead: Option[Long] = None,
-                   val shuffleBytesWritten: Option[Long] = None,
-                   val shuffleWriteTime: Option[Long] = None,
-                   val shuffleRecordsWritten: Option[Long] = None,
-                   val updatedBlocks: Seq[UberBlockId]) extends Mappable with Product with Serializable {
+class TaskEnd(val appId: String,
+              val stageId: Int,
+              val stageAttemptId: Int,
+              val taskType: String,
+              val taskId: Long,
+              val taskEndReason: String,
+              val index: Int,
+              val attemptNumber: Int,
+              val launchTime: Long,
+              val executorId: String,
+              val host: String,
+              val taskLocality: String,
+              val speculative: Boolean,
+              val hostname: String,
+              val executorDeserializeTime: Long,
+              val executorRunTime: Long,
+              val resultSize: Long,
+              val jvmGCTime: Long,
+              val resultSerializationTime: Long,
+              val memoryBytesSpilled: Long,
+              val diskBytesSpilled: Long,
+              val readMethod: Option[String] = None,
+              val bytesRead: Option[Long] = None,
+              val recordsRead: Option[Long] = None,
+              val writeMethod: Option[String],
+              val bytesWritten: Option[Long] = None,
+              val recordsWritten: Option[Long] = None,
+              val remoteBlocksFetched: Option[Int] = None,
+              val localBlocksFetched: Option[Int] = None,
+              val fetchWaitTime: Option[Long] = None,
+              val remoteBytesRead: Option[Long] = None,
+              val localBytesRead: Option[Long] = None,
+              val totalBytesRead: Option[Long] = None,
+              val totalBlocksFetched: Option[Int] = None,
+              val shuffleRecordsRead: Option[Long] = None,
+              val shuffleBytesWritten: Option[Long] = None,
+              val shuffleWriteTime: Option[Long] = None,
+              val shuffleRecordsWritten: Option[Long] = None,
+              val updatedBlocks: Seq[UberBlockId])
+    extends Mappable
+    with Product
+    with Serializable {
   def canEqual(that: Any) = that.isInstanceOf[TaskEnd]
 
   def productArity = 39 // number of columns
-
 
   def productElement(idx: Int) = idx match {
     case 0 => appId
@@ -126,100 +130,107 @@ class TaskEnd(val appId: String, val stageId: Int, val stageAttemptId: Int, val 
     case 37 => shuffleRecordsWritten
     case 38 => updatedBlocks
   }
-  
-  def apply( appId: String,  stageId: Int,  stageAttemptId: Int,  taskType: String,
-   taskId: Long,
-   taskEndReason: String,
-   index: Int,
-   attemptNumber: Int,
-   launchTime: Long,
-   executorId: String,
-   host: String,
-   taskLocality: String,
-   speculative: Boolean,
-   hostname: String,
-   executorDeserializeTime: Long,
-   executorRunTime: Long,
-   resultSize: Long,
-   jvmGCTime: Long,
-   resultSerializationTime: Long,
-   memoryBytesSpilled: Long,
-   diskBytesSpilled: Long,
-   readMethod: Option[String]= None,
-   bytesRead: Option[Long] = None,
-   recordsRead: Option[Long] = None,
-   writeMethod: Option[String],
-   bytesWritten: Option[Long] = None,
-   recordsWritten: Option[Long] = None,
-   remoteBlocksFetched: Option[Int] = None,
-   localBlocksFetched: Option[Int] = None,
-   fetchWaitTime: Option[Long] = None,
-   remoteBytesRead: Option[Long] = None,
-   localBytesRead: Option[Long] = None,
-   totalBytesRead: Option[Long] = None,
-   totalBlocksFetched: Option[Int] = None,
-   shuffleRecordsRead: Option[Long] = None,
-   shuffleBytesWritten: Option[Long] = None,
-   shuffleWriteTime: Option[Long] = None,
-   shuffleRecordsWritten: Option[Long] = None,
-   updatedBlocks: Seq[UberBlockId]) = new TaskEnd( appId,  stageId,  stageAttemptId,  taskType,
-   taskId,
-   taskEndReason,
-   index,
-   attemptNumber,
-   launchTime,
-   executorId,
-   host,
-   taskLocality,
-   speculative,
-   hostname,
-   executorDeserializeTime,
-   executorRunTime,
-   resultSize,
-   jvmGCTime,
-   resultSerializationTime,
-   memoryBytesSpilled,
-   diskBytesSpilled,
-   readMethod,
-   bytesRead,
-   recordsRead,
-   writeMethod,
-   bytesWritten,
-   recordsWritten,
-   remoteBlocksFetched,
-   localBlocksFetched,
-   fetchWaitTime,
-   remoteBytesRead,
-   localBytesRead,
-   totalBytesRead,
-   totalBlocksFetched,
-   shuffleRecordsRead,
-   shuffleBytesWritten,
-   shuffleWriteTime,
-   shuffleRecordsWritten,
-   updatedBlocks)
+
+  def apply(appId: String,
+            stageId: Int,
+            stageAttemptId: Int,
+            taskType: String,
+            taskId: Long,
+            taskEndReason: String,
+            index: Int,
+            attemptNumber: Int,
+            launchTime: Long,
+            executorId: String,
+            host: String,
+            taskLocality: String,
+            speculative: Boolean,
+            hostname: String,
+            executorDeserializeTime: Long,
+            executorRunTime: Long,
+            resultSize: Long,
+            jvmGCTime: Long,
+            resultSerializationTime: Long,
+            memoryBytesSpilled: Long,
+            diskBytesSpilled: Long,
+            readMethod: Option[String] = None,
+            bytesRead: Option[Long] = None,
+            recordsRead: Option[Long] = None,
+            writeMethod: Option[String],
+            bytesWritten: Option[Long] = None,
+            recordsWritten: Option[Long] = None,
+            remoteBlocksFetched: Option[Int] = None,
+            localBlocksFetched: Option[Int] = None,
+            fetchWaitTime: Option[Long] = None,
+            remoteBytesRead: Option[Long] = None,
+            localBytesRead: Option[Long] = None,
+            totalBytesRead: Option[Long] = None,
+            totalBlocksFetched: Option[Int] = None,
+            shuffleRecordsRead: Option[Long] = None,
+            shuffleBytesWritten: Option[Long] = None,
+            shuffleWriteTime: Option[Long] = None,
+            shuffleRecordsWritten: Option[Long] = None,
+            updatedBlocks: Seq[UberBlockId]) =
+    new TaskEnd(
+      appId,
+      stageId,
+      stageAttemptId,
+      taskType,
+      taskId,
+      taskEndReason,
+      index,
+      attemptNumber,
+      launchTime,
+      executorId,
+      host,
+      taskLocality,
+      speculative,
+      hostname,
+      executorDeserializeTime,
+      executorRunTime,
+      resultSize,
+      jvmGCTime,
+      resultSerializationTime,
+      memoryBytesSpilled,
+      diskBytesSpilled,
+      readMethod,
+      bytesRead,
+      recordsRead,
+      writeMethod,
+      bytesWritten,
+      recordsWritten,
+      remoteBlocksFetched,
+      localBlocksFetched,
+      fetchWaitTime,
+      remoteBytesRead,
+      localBytesRead,
+      totalBytesRead,
+      totalBlocksFetched,
+      shuffleRecordsRead,
+      shuffleBytesWritten,
+      shuffleWriteTime,
+      shuffleRecordsWritten,
+      updatedBlocks
+    )
 
 }
 
-
-
 case class TaskEndComp(memoryBytesSpilled: Long,
-                        diskBytesSpilled: Long,
-                        readMethod: Option[String]= None,
-                        bytesRead: Option[Long] = None,
-                        recordsRead: Option[Long] = None,
-                        writeMethod: Option[String],
-                        bytesWritten: Option[Long] = None,
-                        recordsWritten: Option[Long] = None,
-                        remoteBlocksFetched: Option[Int] = None,
-                        localBlocksFetched: Option[Int] = None,
-                        fetchWaitTime: Option[Long] = None,
-                        remoteBytesRead: Option[Long] = None,
-                        localBytesRead: Option[Long] = None,
-                        totalBytesRead: Option[Long] = None,
-                        totalBlocksFetched: Option[Int] = None,
-                        shuffleRecordsRead: Option[Long] = None,
-                        shuffleBytesWritten: Option[Long] = None,
-                        shuffleWriteTime: Option[Long] = None,
-                        shuffleRecordsWritten: Option[Long] = None,
-                        updatedBlocks: Seq[UberBlockId])
+                       diskBytesSpilled: Long,
+                       readMethod: Option[String] = None,
+                       bytesRead: Option[Long] = None,
+                       recordsRead: Option[Long] = None,
+                       writeMethod: Option[String],
+                       bytesWritten: Option[Long] = None,
+                       recordsWritten: Option[Long] = None,
+                       remoteBlocksFetched: Option[Int] = None,
+                       localBlocksFetched: Option[Int] = None,
+                       fetchWaitTime: Option[Long] = None,
+                       remoteBytesRead: Option[Long] = None,
+                       localBytesRead: Option[Long] = None,
+                       totalBytesRead: Option[Long] = None,
+                       totalBlocksFetched: Option[Int] = None,
+                       shuffleRecordsRead: Option[Long] = None,
+                       shuffleBytesWritten: Option[Long] = None,
+                       shuffleWriteTime: Option[Long] = None,
+                       shuffleRecordsWritten: Option[Long] = None,
+                       updatedBlocks: Seq[UberBlockId])
