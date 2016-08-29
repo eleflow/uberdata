@@ -21,7 +21,7 @@ import eleflow.uberdata.enums.SupportedAlgorithm
 import org.apache.hadoop.fs.Path
 import org.apache.spark.Logging
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.param.shared.{HasNFutures, HasValidationCol}
+import org.apache.spark.ml.param.shared.{HasGroupByCol, HasNFutures, HasValidationCol}
 import org.apache.spark.ml.util.{DefaultParamsReader, _}
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.rdd.RDD
@@ -40,6 +40,7 @@ class HoltWintersModel[T](
     with HoltWintersParams
     with HasValidationCol
     with HasNFutures
+    with HasGroupByCol
     with MLWritable
     with ForecastPipelineStage {
 
@@ -48,12 +49,12 @@ class HoltWintersModel[T](
 
   override def transform(dataSet: DataFrame) = {
     val schema = dataSet.schema
-    val predSchema = transformSchema(schema) //TODO mudar pra groupbycol
+    val predSchema = transformSchema(schema)
 
     val scContext = dataSet.sqlContext.sparkContext
     //TODO fazer com que os modelos invalidos voltem numeros absurdos
 
-    val joined = models.join(dataSet.map(r => (r.getAs[T]($(labelCol)), r)))
+    val joined = models.join(dataSet.map(r => (r.getAs[T]($(groupByCol)), r)))
 
     val featuresColName = scContext.broadcast($(featuresCol))
     val nFut = scContext.broadcast($(nFutures))

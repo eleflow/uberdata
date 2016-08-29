@@ -42,7 +42,6 @@ final class TimeSeriesEvaluator[L](
     extends KeyValueEvaluator[L]
     with HasPredictionCol
     with HasLabelCol
-    with HasFeaturesCol
     with HasValidationCol
     with DefaultParamsWritable {
 
@@ -79,14 +78,13 @@ final class TimeSeriesEvaluator[L](
 
   /** @group setParam */
   def setLabelCol(value: String): this.type = set(labelCol, value)
-  def setFeaturesCol(value: String): this.type = set(featuresCol, value)
 
   setDefault(metricName -> "rmse")
 
   override def evaluate(dataSet: (L, (Int, Vector))): RDD[(L, (Int, Double))] =
     ???
 
-  def evaluate(dataSet: Array[(Double, Double)]) = {
+  def evaluate(dataSet: Array[(Double, Double)]): Double = {
     val metrics = new TimeSeriesSmallModelRegressionMetrics(dataSet)
     $(metricName) match {
       case "rmse" => metrics.rootMeanSquaredError
@@ -152,7 +150,7 @@ object TimeSeriesEvaluator
 
   override def load(path: String): TimeSeriesEvaluator[_] = super.load(path)
 
-  def ordering(metricName: String) =
+  def ordering(metricName: String): Ordering[Double] =
     metricName match {
       case "r2" => Ordering.Double.reverse
       case "rmspe" | "rmse" | "mse" | "mae" => Ordering.Double

@@ -132,7 +132,7 @@ class TestPipelineTransformer extends FlatSpec with Matchers with EasyMockSugar 
       (10.0, 2.0, 11d)
     )).toDF("sales", "store", "date")
 
-    val tsg = new TimeSeriesGenerator[Double]().setOutputCol("features").setLabelCol("store")
+    val tsg = new TimeSeriesGenerator[Double]().setOutputCol("features").setGroupByCol("store")
       .setFeaturesCol("sales")
     val transformedData = tsg.transform(testData)
     val namesArray = transformedData.columns
@@ -165,7 +165,7 @@ class TestPipelineTransformer extends FlatSpec with Matchers with EasyMockSugar 
     )).toDF("store", "sales", "date")
 
     val tsg = new TimeSeriesGenerator[Double]().setOutputCol("features")
-    tsg.setLabelCol("store")
+    tsg.setGroupByCol("store")
     tsg.setFeaturesCol("sales")
     val transformedData = tsg.transform(testData)
     val namesArray = transformedData.columns
@@ -200,7 +200,7 @@ class TestPipelineTransformer extends FlatSpec with Matchers with EasyMockSugar 
     )).toDF("sales", "store", "date")
 
     val tsg = new TimeSeriesGenerator[Double]().setOutputCol("features")
-    tsg.setLabelCol("store")
+    tsg.setGroupByCol("store")
     tsg.setFeaturesCol("sales")
     val transformedData = tsg.transform(testData)
     val namesArray = transformedData.columns

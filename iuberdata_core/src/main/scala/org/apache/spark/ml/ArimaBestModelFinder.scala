@@ -38,30 +38,30 @@ import scala.reflect.ClassTag
   * Treina e executa a validacao do melhor modelo, retornando o melhor modelo mas os parametros de avaliação de
   * todos os modelos.
   */
-class ArimaBestModelFinder[L](
+class ArimaBestModelFinder[G](
   override val uid: String
-)(implicit kt: ClassTag[L])
-    extends BestModelFinder[L, ArimaModel[L]]
+)(implicit kt: ClassTag[G])
+    extends BestModelFinder[G, ArimaModel[G]]
     with ArimaParams
     with DefaultParamsWritable
     with HasNFutures
     with TimeSeriesBestModelFinder
     with Logging {
-  def this()(implicit kt: ClassTag[L]) = this(Identifiable.randomUID("arima"))
+  def this()(implicit kt: ClassTag[G]) = this(Identifiable.randomUID("arima"))
 
-  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[L]) =
+  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[G]): this.type =
     set(timeSeriesEvaluator, eval)
 
   def setEstimatorParamMaps(value: Array[ParamMap]): this.type =
     set(estimatorParamMaps, value)
 
-  def setNFutures(value: Int) = set(nFutures, value)
+  def setNFutures(value: Int): this.type = set(nFutures, value)
 
-  override def setValidationCol(value: String) = set(validationCol, value)
+  override def setValidationCol(value: String): this.type = set(validationCol, value)
 
-  def setFeaturesCol(label: String) = set(featuresCol, label)
+  def setFeaturesCol(features: String): this.type = set(featuresCol, features)
 
-  def setLabelCol(label: String) = set(labelCol, label)
+  def setGroupByCol(groupBy: String): this.type = set(groupByCol, groupBy)
 
   def getOrdering(metricName: String): Ordering[Double] = {
     metricName match {
@@ -71,8 +71,8 @@ class ArimaBestModelFinder[L](
   }
 
   def modelEvaluation(
-    idModels: RDD[(L, Row, Seq[(ParamMap, UberArimaModel)])]
-  ): RDD[(L, (UberArimaModel, Seq[ModelParamEvaluation[L]]))] = {
+    idModels: RDD[(G, Row, Seq[(ParamMap, UberArimaModel)])]
+  ): RDD[(G, (UberArimaModel, Seq[ModelParamEvaluation[G]]))] = {
     val eval = $(timeSeriesEvaluator)
     val broadcastEvaluator = idModels.context.broadcast(eval)
     val ordering = TimeSeriesEvaluator.ordering(eval.getMetricName)
@@ -91,16 +91,16 @@ class ArimaBestModelFinder[L](
     }
   }
 
-  override protected def train(dataSet: DataFrame): ArimaModel[L] = {
+  override protected def train(dataSet: DataFrame): ArimaModel[G] = {
     val splitDs = split(dataSet, $(nFutures))
     val labelModel = splitDs.rdd.map(train)
-    new ArimaModel[L](uid, modelEvaluation(labelModel))
+    new ArimaModel[G](uid, modelEvaluation(labelModel))
       .setValidationCol($(validationCol))
-      .asInstanceOf[ArimaModel[L]]
+      .asInstanceOf[ArimaModel[G]]
   }
 
-  def train(row: Row): (L, Row, Seq[(ParamMap, UberArimaModel)]) = {
-    val label = row.getAs[L]($(labelCol))
+  def train(row: Row): (G, Row, Seq[(ParamMap, UberArimaModel)]) = {
+    val groupId = row.getAs[G]($(groupByCol))
     val result = $(estimatorParamMaps).flatMap { params =>
       val q = params.getOrElse(arimaQ, 0)
       val p = params.getOrElse(arimaP, 0)
@@ -113,15 +113,15 @@ class ArimaBestModelFinder[L](
         case e: Exception =>
           log.error(
             s"Got the following Exception ${e.getLocalizedMessage} when using params P $p, Q$q and D$d " +
-              s"in label $label"
+              s"in groupId $groupId"
           )
           None
       }
     }.toSeq
-    (label, row, result)
+    (groupId, row, result)
   }
 }
-case class ModelParamEvaluation[L](id: L,
+case class ModelParamEvaluation[G](id: G,
                                    metricResult: Double,
                                    params: ParamMap,
                                    metricName: Option[String] = None,
@@ -133,17 +133,17 @@ object ArimaBestModelFinder
   override def load(path: String): ArimaBestModelFinder[_] = super.load(path)
 }
 
-class ArimaTrainingSummary[L](predictions: DataFrame,
+class ArimaTrainingSummary[G](predictions: DataFrame,
                               predictionCol: String,
-                              labelCol: String,
-                              model: ArimaModel[L],
+                              groupByCol: String,
+                              model: ArimaModel[G],
                               diagInvAtWA: Array[Double],
                               val featuresCol: String,
                               val objectiveHistory: Array[Double])
-    extends ARIMALinearSummary[L](
+    extends ARIMALinearSummary[G](
       predictions,
       predictionCol,
-      labelCol,
+      groupByCol,
       model,
       diagInvAtWA
     )

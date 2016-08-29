@@ -339,19 +339,22 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     @transient val sc = context.sparkContext
     @transient val sqlContext = context.sqlContext
 
-    val structType = StructType(Seq(StructField("label", DoubleType), StructField("Date", DoubleType),
-      StructField("feat", IntegerType)))
+    val structType = StructType(Seq(StructField("feat", DoubleType),
+      StructField("Date", DoubleType),
+      StructField("label", IntegerType)))
 
     val rdd = sc.parallelize(arimaData)
     val dataFrame = sqlContext.createDataFrame(rdd, structType)
 
-    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double](featuresCol = "feat",
+    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double](
+      groupByCol = "feat",
       nFutures = 5)
     val model = timeSeriesBestModelFinder.fit(dataFrame)
     val df = model.transform(dataFrame)
     val first = df.first
     assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("validation").toArray.length == 5)
-    assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("featuresPrediction").toArray.length == 16)
+    assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("featuresPrediction").toArray.length ==
+      16)
   }
 
   it should "execute ARIMA without standard field names and return predictions" in {
@@ -364,8 +367,11 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     val rdd = sc.parallelize(arimaData)
     val dataFrame = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
 
-    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double](labelCol = "Store",
-      featuresCol = "Sales", timeCol = "data", nFutures = 5)
+    val timeSeriesBestModelFinder = ForecastPredictor().prepareARIMAPipeline[Double](
+      groupByCol = "Store",
+      labelCol = "Sales",
+      timeCol = "data",
+      nFutures = 5)
     val model = timeSeriesBestModelFinder.fit(dataFrame)
     val df = model.transform(dataFrame)
     val first = df.first
@@ -377,13 +383,17 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     @transient val sc = context.sparkContext
     @transient val sqlContext = context.sqlContext
 
-    val structType = StructType(Seq(StructField("label", DoubleType), StructField("Date", DoubleType),
-      StructField("features", IntegerType), StructField("Open", BooleanType)))
+    val structType = StructType(Seq(StructField("Store", DoubleType),
+      StructField("Date", DoubleType),
+      StructField("label", IntegerType),
+      StructField("Open", BooleanType)))
 
     val rdd = sc.parallelize(data)
     val dataFrame = sqlContext.createDataFrame(rdd, structType)
 
-    val timeSeriesBestModelFinder = ForecastPredictor().prepareHOLTWintersPipeline[Double](nFutures = 8)
+    val timeSeriesBestModelFinder = ForecastPredictor().prepareHOLTWintersPipeline[Double](
+      groupByCol = "Store",
+      nFutures = 8)
     val model = timeSeriesBestModelFinder.fit(dataFrame)
     val df = model.transform(dataFrame)
     val first = df.first
@@ -403,8 +413,16 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     val testRdd = sc.parallelize(testArimaData)
     val dataFrame = sqlContext.createDataFrame(rdd, structType)
     val testDataFrame = sqlContext.createDataFrame(testRdd, testStructType)
-    val (timeSeriesBestModelFinder, model) = ForecastPredictor().predict[Double, Double](dataFrame, testDataFrame,
-      "Store", Seq("Sales"), "data", "Id", "Store", SupportedAlgorithm.Arima, 5)
+    val (timeSeriesBestModelFinder, model) = ForecastPredictor().predict[Double, Double](
+      dataFrame,
+      testDataFrame,
+      "",
+      Seq("Sales"),
+      "data",
+      "Id",
+      "Store",
+      SupportedAlgorithm.Arima,
+      5)
     val first = timeSeriesBestModelFinder.collect
     val arima = model.stages.last.asInstanceOf[ArimaModel[Int]]
     val bestArima = arima.models.sortBy(_._2._2.minBy(_.metricResult).metricResult).first()

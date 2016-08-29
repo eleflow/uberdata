@@ -17,10 +17,8 @@
 package org.apache.spark.ml
 
 import eleflow.uberdata.IUberdataForecastUtil
-import org.apache.spark.annotation.Since
-
 import org.apache.spark.ml.param.ParamMap
-
+import org.apache.spark.ml.param.shared.HasGroupByCol
 import org.apache.spark.ml.util.{DefaultParamsReadable, Identifiable}
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.sql.DataFrame
@@ -34,16 +32,18 @@ import scala.reflect.ClassTag
 class TimeSeriesGenerator[L](
   override val uid: String
 )(implicit ct: ClassTag[L])
-    extends BaseTimeSeriesGenerator {
+    extends BaseTimeSeriesGenerator with HasGroupByCol {
 
   def this()(implicit ct: ClassTag[L]) =
     this(Identifiable.randomUID("TimeSeriesGenerator"))
 
-  def setLabelCol(value: String) = set(labelCol, value)
+  def setGroupByCol(value: String): this.type = set(groupByCol, value)
 
-  def setTimeCol(colName: String) = set(timeCol, colName)
+  def setLabelCol(value: String): this.type = set(labelCol, value)
 
-  def setFeaturesCol(value: String) = set(featuresCol, value)
+  def setTimeCol(colName: String): this.type = set(timeCol, colName)
+
+  def setFeaturesCol(value: String): this.type = set(featuresCol, value)
 
   /** @group setParam */
   def setInputCol(value: String): this.type = set(inputCol, value)
@@ -57,7 +57,7 @@ class TimeSeriesGenerator[L](
     val sparkContext = dataSet.sqlContext.sparkContext
     val index = sparkContext.broadcast(dataSet.schema.fieldIndex($(timeCol)))
     val labelColIndex =
-      sparkContext.broadcast(dataSet.schema.fieldIndex($(labelCol)))
+      sparkContext.broadcast(dataSet.schema.fieldIndex($(groupByCol)))
     val featuresColIndex =
       sparkContext.broadcast(dataSet.schema.fieldIndex($(featuresCol)))
     val grouped = rdd.map { row =>
@@ -86,7 +86,7 @@ class TimeSeriesGenerator[L](
   }
 
   override def transformSchema(schema: StructType): StructType = {
-    val labelIndex = schema.fieldIndex($(labelCol))
+    val labelIndex = schema.fieldIndex($(groupByCol))
     StructType(
       Seq(
         schema.fields(labelIndex),
@@ -100,10 +100,8 @@ class TimeSeriesGenerator[L](
 
 }
 
-@Since("1.6.0")
 object TimeSeriesGenerator
     extends DefaultParamsReadable[TimeSeriesGenerator[_]] {
 
-  @Since("1.6.0")
   override def load(path: String): TimeSeriesGenerator[_] = super.load(path)
 }
