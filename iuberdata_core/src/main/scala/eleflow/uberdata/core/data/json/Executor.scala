@@ -1,25 +1,25 @@
 /*
-* Copyright 2015 eleflow.com.br.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2015 eleflow.com.br.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package eleflow.uberdata.core.data.json
 
 /**
   * Created by dirceu on 28/12/15.
   */
-case class ExecutorAdded(initTimestamp:Long,
+case class ExecutorAdded(initTimestamp: Long,
                          executorId: String,
                          time: Long,
                          masterHost: String,
@@ -28,14 +28,17 @@ case class ExecutorAdded(initTimestamp:Long,
                          logUrlMap: Map[String, String],
                          cacheMemory: Long,
                          remainingMemory: Long,
-                         executorMemory:Long)
+                         executorMemory: Long)
 
-case class ExecutorRemoved(initTimestamp:Long,executorId: String, time: Long,
+case class ExecutorRemoved(initTimestamp: Long,
+                           executorId: String,
+                           time: Long,
                            reason: String)
 
 case class ExecutorMetricsUpdated(executorId: String,
                                   time: Long,
-                                  taskId:Long, stageId:Int,
+                                  taskId: Long,
+                                  stageId: Int,
                                   bytesRead: Option[Long] = None,
                                   recordsRead: Option[Long] = None,
                                   writeMethod: Option[String],
@@ -53,17 +56,15 @@ case class ExecutorMetricsUpdated(executorId: String,
                                   shuffleWriteTime: Option[Long] = None,
                                   shuffleRecordsWritten: Option[Long] = None)
 
-case class Workers(
-                  id:String,
-                  host:String,
-                  port:Int,
-                  webuiaddress:String,
-                  cores:Int,
-                  coresused:Int,
-                  coresfree:Int,
-                  memory:Long,
-                  memoryused:Long,
-                  memoryfree:Long,
-                  state:String,
-                  lastheartbeat:Long
-                  )
+case class Workers(id: String,
+                   host: String,
+                   port: Int,
+                   webuiaddress: String,
+                   cores: Int,
+                   coresused: Int,
+                   coresfree: Int,
+                   memory: Long,
+                   memoryused: Long,
+                   memoryfree: Long,
+                   state: String,
+                   lastheartbeat: Long)

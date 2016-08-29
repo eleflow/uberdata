@@ -16,38 +16,30 @@
 
 package com.cloudera.sparkts.models
 
-import ml.dmlc.xgboost4j.java.{DMatrix => JDMatrix}
 import ml.dmlc.xgboost4j.scala.{Booster, DMatrix}
-import ml.dmlc.xgboost4j.scala.spark.{DataUtils, XGBoostModel}
-import ml.dmlc.xgboost4j.LabeledPoint
-import org.apache.spark.{SparkContext, TaskContext}
-import org.apache.spark.mllib.linalg.Vector
+import ml.dmlc.xgboost4j.{LabeledPoint => XGBLabeledPoint}
+import ml.dmlc.xgboost4j.scala.spark.{XGBoost, XGBoostModel}
+import org.apache.spark.SparkContext
+import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
 
 /**
  * Created by dirceu on 25/08/16.
  */
-class UberXGBoostModel(_booster: Booster)(implicit sc: SparkContext)
-	extends XGBoostModel(_booster) {
-//	def predict(testSet: RDD[LabeledPoint], useExternalCache: Boolean = false)
-//	:	RDD[Array[Array[Float]]]	= {
-////		import DataUtils._
-//		val broadcastBooster = testSet.sparkContext.broadcast(_booster)
-//		val appName = testSet.context.appName
-//		testSet.mapPartitions { testSamples =>
-//			if (testSamples.hasNext) {
-//				val cacheFileName = {
-//					if (useExternalCache) {
-//						s"$appName-dtest_cache-${TaskContext.getPartitionId()}"
-//					} else {
-//						null //scalastyle:ignore
-//					}
-//				}
-//				val dMatrix = new DMatrix(testSamples, cacheFileName)
-//				Iterator(broadcastBooster.value.predict(dMatrix))
-//			} else {
-//				Iterator()
-//			}
-//		}
-//	}
+object UberXGBoostModel {
+	def train(trainLabel: RDD[LabeledPoint], configMap: Map[String, AnyRef], round: Int,
+						nWorkers: Int) = {
+		XGBoost.train(trainLabel, configMap, round, nWorkers)
+	}
+
+	def labelPredict(testSet: RDD[XGBLabeledPoint], useExternalCache: Boolean = false,
+									 booster: XGBoostModel): RDD[(Float, Float)] = {
+		val broadcastBooster = testSet.sparkContext.broadcast(booster)
+		testSet.mapPartitions { testData =>
+			val prediction = broadcastBooster.value.predict(new DMatrix(testData)).flatten
+			testData.toArray.zip(prediction).map { case (labeledPoint, prediction) =>
+				(labeledPoint.label, prediction)
+			}.toIterator
+		}
+	}
 }

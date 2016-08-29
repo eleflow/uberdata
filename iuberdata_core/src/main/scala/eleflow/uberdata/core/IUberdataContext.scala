@@ -1,23 +1,28 @@
 /*
-* Copyright 2015 eleflow.com.br.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2015 eleflow.com.br.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package eleflow.uberdata.core
 
 import java.io._
 import java.net.URI
-import com.amazonaws.services.s3.model.{GetObjectRequest, ObjectMetadata, PutObjectRequest, S3Object}
+import com.amazonaws.services.s3.model.{
+  GetObjectRequest,
+  ObjectMetadata,
+  PutObjectRequest,
+  S3Object
+}
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3Client}
 
 import eleflow.uberdata.core.data.Dataset
@@ -36,7 +41,6 @@ import scala.sys.process._
 import scala.util.Try
 import scala.util.matching.Regex
 
-
 object IUberdataContext {
 
   var conf: SparkConf = new SparkConf
@@ -52,13 +56,13 @@ object IUberdataContext {
 
 }
 
-
 /**
- * User: paulomagalhaes
- * Date: 8/15/14 12:24 PM
- */
-
-class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable with Logging {
+  * User: paulomagalhaes
+  * Date: 8/15/14 12:24 PM
+  */
+class IUberdataContext(@transient sparkConf: SparkConf)
+    extends Serializable
+    with Logging {
 
   @transient protected lazy val s3Client: AmazonS3 = new AmazonS3Client()
   val version = UberdataCoreVersion.version
@@ -66,7 +70,6 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
   @transient var _sqlContext: Option[HiveContext] = None
   @transient protected var sc: Option[SparkContext] = None
   private var _masterHost: Option[String] = None
-
 
   def initialized = sc.isDefined
 
@@ -84,11 +87,10 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
 
   def clearContext() {
     ClusterSettings.resume = true
-    sc.foreach {
-      f =>
-        f.cancelAllJobs()
+    sc.foreach { f =>
+      f.cancelAllJobs()
 //        HiveThriftServer2.listener.server.stop() // stop ThriftServer
-        f.stop()
+      f.stop()
     }
     _sqlContext = None
     sc = None
@@ -103,15 +105,13 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
   def shellRun(command: Seq[String]) = {
     val out = new StringBuilder
 
-    val logger = ProcessLogger(
-      (o: String) => {
-        out.append(o)
-        logInfo(o)
-      },
-      (e: String) => {
-        println(e)
-        logInfo(e)
-      })
+    val logger = ProcessLogger((o: String) => {
+      out.append(o)
+      logInfo(o)
+    }, (e: String) => {
+      println(e)
+      logInfo(e)
+    })
     command ! logger
     out.toString()
   }
@@ -133,7 +133,9 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
   def getAllFilesRecursively(fullPath: Path): Seq[String] = {
     val fs = fullPath.getFileSystem(new Configuration)
     @tailrec
-    def iter(fs: FileSystem, paths: Seq[Path], result: Seq[String]): Seq[String] = paths match {
+    def iter(fs: FileSystem,
+             paths: Seq[Path],
+             result: Seq[String]): Seq[String] = paths match {
       case path :: tail =>
         val children: Seq[FileStatus] = try {
           fs.listStatus(path)
@@ -143,7 +145,11 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
             Seq.empty[FileStatus]
         }
         val (files, directories) = children.partition(_.isFile)
-        iter(fs, tail ++ directories.map(_.getPath), files.map(_.getPath.toString) ++ result)
+        iter(
+          fs,
+          tail ++ directories.map(_.getPath),
+          files.map(_.getPath.toString) ++ result
+        )
       case _ =>
         result
     }
@@ -161,15 +167,16 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
   import eleflow.uberdata.core.listener.UberdataSparkListener
 
   def sparkContext: SparkContext = sc getOrElse {
-      val context = if (ClusterSettings.master.isDefined) createSparkContextForProvisionedCluster(sparkConf)
+    val context =
+      if (ClusterSettings.master.isDefined)
+        createSparkContextForProvisionedCluster(sparkConf)
       else createSparkContextForNewCluster(sparkConf)
-      addClasspathToSparkContext(context)
-      sc = Some(context)
-      val listener = new UberdataSparkListener(context.getConf)
-      context.addSparkListener(listener)
-      context
-    }
-
+    addClasspathToSparkContext(context)
+    sc = Some(context)
+    val listener = new UberdataSparkListener(context.getConf)
+    context.addSparkListener(listener)
+    context
+  }
 
   def addClasspathToSparkContext(context: SparkContext) {
     val sqoop = "org.apache.sqoop.sqoop-.*jar".r
@@ -178,14 +185,18 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
     val guavaJar = "com.google.guava.*".r
     val mySqlDriver = "mysql-connector-java.*".r
     val oracle = "ojdbc6.*".r
-    val urls = this.getClass.getClassLoader.asInstanceOf[java.net.URLClassLoader].getURLs
-    val jarUrls = urls.filter(url =>
-      sqoop.findFirstIn(url.getFile).isDefined
-        || jodaJar.findFirstIn(url.getFile).isDefined
-        || eleflowJar.findFirstIn(url.getFile).isDefined
-        || guavaJar.findFirstIn(url.getFile).isDefined
-        || mySqlDriver.findFirstIn(url.getFile).isDefined
-        || oracle.findFirstIn(url.getFile).isDefined)
+    val urls = this.getClass.getClassLoader
+      .asInstanceOf[java.net.URLClassLoader]
+      .getURLs
+    val jarUrls = urls.filter(
+      url =>
+        sqoop.findFirstIn(url.getFile).isDefined
+          || jodaJar.findFirstIn(url.getFile).isDefined
+          || eleflowJar.findFirstIn(url.getFile).isDefined
+          || guavaJar.findFirstIn(url.getFile).isDefined
+          || mySqlDriver.findFirstIn(url.getFile).isDefined
+          || oracle.findFirstIn(url.getFile).isDefined
+    )
     jarUrls.foreach { url =>
       logInfo(s"adding ${url.getPath} to spark context jars")
       context.addJar(url.getPath)
@@ -216,11 +227,17 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
 
     val path = getSparkEc2Py
     import ClusterSettings._
-    val mandatory = Seq(path,
-      "--hadoop-major-version", hadoopVersion,
-      "--master-instance-type", masterInstanceType,
-      "--slaves", coreInstanceCount.toString,
-      "--instance-type", coreInstanceType)
+    val mandatory = Seq(
+      path,
+      "--hadoop-major-version",
+      hadoopVersion,
+      "--master-instance-type",
+      masterInstanceType,
+      "--slaves",
+      coreInstanceCount.toString,
+      "--instance-type",
+      coreInstanceType
+    )
     val command = mandatory ++ (ec2KeyName match {
       case None => Seq[String]()
       case Some(keyName) => Seq("--key-pair", keyName)
@@ -238,7 +255,9 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
     val output = shellRun(command ++ Seq("launch", clusterName))
 
     log.info(s"Output:: $output")
-    val pattern = new Regex("Spark standalone cluster started at http://([^:]+):8080")
+    val pattern = new Regex(
+      "Spark standalone cluster started at http://([^:]+):8080"
+    )
     val host = pattern.findAllIn(output).matchData.map(_.group(1)).next
     Some(host)
   }
@@ -246,25 +265,35 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
   def masterHost_=(host: String): Unit = _masterHost = Some(host)
 
   private def confSetup(conf: SparkConf): SparkContext = {
-    ClusterSettings.additionalConfs.map{
-      case(key,value) => conf.set(key,value)
+    ClusterSettings.additionalConfs.map {
+      case (key, value) => conf.set(key, value)
     }
-    conf.set("spark.app.name",ClusterSettings.appName)
+    conf.set("spark.app.name", ClusterSettings.appName)
     conf.set("spark.sql.parquet.compression.codec", "snappy")
     conf.set("spark.local.dir", ClusterSettings.localDir)
     conf.set("spark.externalBlockStore.baseDir", ClusterSettings.baseDir)
-    ClusterSettings.defaultParallelism.map(value => conf.set("spark.default.parallelism", value.toString))
-    ClusterSettings.kryoBufferMaxSize.map(value => conf.set("spark.kryoserializer.buffer.max.mb", value.toString))
+    ClusterSettings.defaultParallelism.map(
+      value => conf.set("spark.default.parallelism", value.toString)
+    )
+    ClusterSettings.kryoBufferMaxSize.map(
+      value => conf.set("spark.kryoserializer.buffer.max.mb", value.toString)
+    )
     //according to keo, in Making Sense of Spark Performance webcast, this codec is better than default
     conf.set("spark.io.compression.codec", "lzf")
     conf.set("spark.driver.maxResultSize", ClusterSettings.maxResultSize)
-    conf.set("spark.serializer",
-    ClusterSettings.serializer.getOrElse("org.apache.spark.serializer.KryoSerializer"))
+    conf.set(
+      "spark.serializer",
+      ClusterSettings.serializer.getOrElse(
+        "org.apache.spark.serializer.KryoSerializer"
+      )
+    )
 
+    ClusterSettings.executorMemory.foreach(
+      conf.set("spark.executor.memory", _)
+    )
 
-    ClusterSettings.executorMemory.foreach(conf.set("spark.executor.memory", _))
-
-    val defaultConfStream = this.getClass.getClassLoader.getResourceAsStream("spark-defaults.conf")
+    val defaultConfStream =
+      this.getClass.getClassLoader.getResourceAsStream("spark-defaults.conf")
     if (defaultConfStream != null) {
       import scala.collection.JavaConversions._
       val defaultConf = IOUtils.readLines(defaultConfStream)
@@ -277,11 +306,12 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
     //according to keo, in Making Sense of Spark Performance webcast, this codec is better than default
     conf.set("spark.io.compression.codec", "lzf")
 
-
     conf.set("spark.driver.maxResultSize", ClusterSettings.maxResultSize)
-    ClusterSettings.executorMemory.foreach(conf.set("spark.executor.memory", _))
+    ClusterSettings.executorMemory.foreach(
+      conf.set("spark.executor.memory", _)
+    )
     new SparkContext(conf)
-    }
+  }
 
   def createSparkContextForProvisionedCluster(conf: SparkConf): SparkContext = {
     log.info("connecting to localhost")
@@ -320,9 +350,10 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
     FileUtil.copy(input, dstFs, dstPath, false, conf)
   }
 
-  def readFromS3(input: URI): Try[InputStream] ={
-    val rangeObjectRequest: GetObjectRequest = new GetObjectRequest(input.getHost, input.getPath.substring(1))
-     Try {
+  def readFromS3(input: URI): Try[InputStream] = {
+    val rangeObjectRequest: GetObjectRequest =
+      new GetObjectRequest(input.getHost, input.getPath.substring(1))
+    Try {
 
       val objectPortion: S3Object = s3Client.getObject(rangeObjectRequest)
       objectPortion.getObjectContent
@@ -332,21 +363,19 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
 
   protected def copyFromS3(input: URI, path: Path, fs: FileSystem): Unit = {
     val inputStream = readFromS3(input)
-    inputStream.map {
-      in =>
-        val copyResult = Try(fs.create(path)).flatMap {
-          out =>
-            val copyResult = copyStreams(in, out)
-            out.close()
-            copyResult
-        }.recover{
-          case e: Exception =>
-            e.printStackTrace()
-            println(e.getStackTrace.mkString("\n"))
-            throw e
-        }
-        in.close()
+    inputStream.map { in =>
+      val copyResult = Try(fs.create(path)).flatMap { out =>
+        val copyResult = copyStreams(in, out)
+        out.close()
         copyResult
+      }.recover {
+        case e: Exception =>
+          e.printStackTrace()
+          println(e.getStackTrace.mkString("\n"))
+          throw e
+      }
+      in.close()
+      copyResult
     }.recover {
       case e: Exception =>
         e.printStackTrace()
@@ -355,7 +384,8 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
     }
   }
 
-  protected def copyStreams(in: InputStream, out: OutputStream) = Try(IOUtils.copy(in, out))
+  protected def copyStreams(in: InputStream, out: OutputStream) =
+    Try(IOUtils.copy(in, out))
 
   def fs(pathStr: String): FileSystem = {
     val path = createPathInstance(pathStr)
@@ -379,13 +409,19 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
     }
   }
 
-  def load(file: String, separator: String = ",") =   Dataset(this, file, separator)
+  def load(file: String, separator: String = ",") =
+    Dataset(this, file, separator)
 
   protected def this(sparkConf: SparkConf, data: String) = this(sparkConf)
 
   protected def copyToS3(input: Path, bucket: String, fileName: String): Unit = {
 
-    val objRequest = new PutObjectRequest(bucket, fileName, readFromHDFS(input), new ObjectMetadata())
+    val objRequest = new PutObjectRequest(
+      bucket,
+      fileName,
+      readFromHDFS(input),
+      new ObjectMetadata()
+    )
     s3Client.putObject(objRequest)
   }
 
@@ -399,7 +435,9 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
     val classLoader: ClassLoader = getClass.getClassLoader
     val out: File = new File(s"$scriptPath/$filePath")
     if (out.exists && out.isDirectory) {
-      throw new RuntimeException("Can't create python script " + out.getAbsolutePath)
+      throw new RuntimeException(
+        "Can't create python script " + out.getAbsolutePath
+      )
     }
     if (!out.getParentFile.exists()) {
       out.getParentFile.mkdirs()
@@ -408,8 +446,7 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
       val outStream: FileOutputStream = new FileOutputStream(out)
       IOUtils.copy(classLoader.getResourceAsStream(filePath), outStream)
       outStream.close()
-    }
-    catch {
+    } catch {
       case e: IOException =>
         throw new RuntimeException(e)
 
@@ -418,11 +455,12 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
   }
 
   private def getSparkEc2Py = {
-    copyFromClasspath2Tmp("python/deploy.generic/root/spark-ec2/ec2-variables.sh").toString
+    copyFromClasspath2Tmp(
+      "python/deploy.generic/root/spark-ec2/ec2-variables.sh"
+    ).toString
     val path = copyFromClasspath2Tmp("python/spark_ec2.py")
     path.setExecutable(true)
     log.info(s"spark_ec2.py in $path")
     path.toString
   }
 }
-

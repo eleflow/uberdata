@@ -1,37 +1,43 @@
 /*
-* Copyright 2015 eleflow.com.br.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2015 eleflow.com.br.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package eleflow.uberdata.models
 
 
 import ml.dmlc.xgboost4j.scala.{Booster, DMatrix, XGBoost}
-import ml.dmlc.xgboost4j.scala.spark.{XGBoostModel, XGBoost => XGBoostSpark}
+import ml.dmlc.xgboost4j.{LabeledPoint => XGBLabeledPoint}
 import org.apache.spark.mllib.regression.LabeledPoint
+
 import org.apache.spark.rdd.RDD
 
 /**
- * Created by dirceu on 29/06/16.
- */
+  * Created by dirceu on 29/06/16.
+  */
 object UberXGBOOSTModel {
 	def fitModel(matrix: DMatrix, params: Map[String, Any], rounds: Int): Booster = {
-		XGBoost.train(matrix, params, rounds, Map[String, DMatrix](), null, null)
-	}
+    XGBoost.train(matrix, params, rounds, Map[String, DMatrix](), null, null)
+  }
 
-	def fitSparkModel(matrix: RDD[LabeledPoint], params: Map[String, Any], rounds: Int): XGBoostModel
-	= XGBoostSpark.train(matrix, params, rounds, 3, null, null)
+	def fitSparkModel(matrix: RDD[XGBLabeledPoint], params: Map[String, Any], rounds: Int):
+	RDD[Booster]	= {
+		matrix.mapPartitions{
+			partitionData =>
+				Iterator(XGBoost.train(new DMatrix(partitionData), params, rounds))
+		}
+	}
 
 	def returnValue[T](value: Option[Any]): T = value.map(f => f.asInstanceOf[T]).get
 }

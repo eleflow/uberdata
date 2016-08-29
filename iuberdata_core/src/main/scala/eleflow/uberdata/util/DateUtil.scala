@@ -1,8 +1,8 @@
 package eleflow.uberdata.util
 
 /**
- * Created by dirceu on 17/10/14.
- */
+  * Created by dirceu on 17/10/14.
+  */
 /*
  * net/balusc/util/DateUtil.java
  *
@@ -36,26 +36,27 @@ import org.joda.time.format.DateTimeFormat
 import scala.util.{Success, Try}
 
 /**
- * Useful Date utilities.
- *
- * @author BalusC
- * @see http://balusc.blogspot.com/2007/09/dateutil.html
- * @see CalendarUtil
- */
+  * Useful Date utilities.
+  *
+  * @author BalusC
+  * @see http://balusc.blogspot.com/2007/09/dateutil.html
+  * @see CalendarUtil
+  */
 object DateUtil extends Serializable {
 
   /**
-   * Parse the given date string to date object and return a date instance based on the given
-   * date string. This makes use of the {@link DateUtil#determineDateFormat(String)} to determine
-   * the SimpleDateFormat pattern to be used for parsing.
-   *
-   * @param dateString The date string to be parsed to date object.
-   * @return The parsed date object.
-   * @throws ParseException If the date format pattern of the given date string is unknown, or if
-   *                        the given date string or its actual date is invalid based on the date format pattern.
-   */
+    * Parse the given date string to date object and return a date instance based on the given
+    * date string. This makes use of the {@link DateUtil#determineDateFormat(String)} to determine
+    * the SimpleDateFormat pattern to be used for parsing.
+    *
+    * @param dateString The date string to be parsed to date object.
+    * @return The parsed date object.
+    * @throws ParseException If the date format pattern of the given date string is unknown, or if
+    *                        the given date string or its actual date is invalid based on the date format pattern.
+    */
   def parse(dateString: String): Option[DateTime] = {
-    val dateFormat: Option[String] = readDateFormat.orElse(determineDateFormat(dateString))
+    val dateFormat: Option[String] =
+      readDateFormat.orElse(determineDateFormat(dateString))
     dateFormat.flatMap { f =>
       Try {
         parse(dateString, dateFormat)
@@ -66,11 +67,12 @@ object DateUtil extends Serializable {
     }
   }
 
-  def parse(dateString: String,timeZone:DateTimeZone): Option[DateTime] = {
-    val dateFormat: Option[String] = readDateFormat.orElse(determineDateFormat(dateString))
+  def parse(dateString: String, timeZone: DateTimeZone): Option[DateTime] = {
+    val dateFormat: Option[String] =
+      readDateFormat.orElse(determineDateFormat(dateString))
     dateFormat.flatMap { f =>
       Try {
-        parse(dateString, dateFormat,timeZone)
+        parse(dateString, dateFormat, timeZone)
       } match {
         case Success(s) => s
         case _ => None
@@ -79,38 +81,42 @@ object DateUtil extends Serializable {
   }
 
   /**
-   * Validate the actual date of the given date string based on the given date format pattern and
-   * return a date instance based on the given date string.
-   *
-   * @param dateString The date string.
-   * @param dateFormat The date format pattern which should respect the SimpleDateFormat rules.
-   * @return The parsed date object.
-   * @throws ParseException If the given date string or its actual date is invalid based on the
-   *                        given date format pattern.
-   * @see SimpleDateFormat
-   */
-  def parse(dateString: String, dateFormat: String): Option[DateTime] = parse(dateString,dateFormat,DateTimeZone.UTC)
+    * Validate the actual date of the given date string based on the given date format pattern and
+    * return a date instance based on the given date string.
+    *
+    * @param dateString The date string.
+    * @param dateFormat The date format pattern which should respect the SimpleDateFormat rules.
+    * @return The parsed date object.
+    * @throws ParseException If the given date string or its actual date is invalid based on the
+    *                        given date format pattern.
+    * @see SimpleDateFormat
+    */
+  def parse(dateString: String, dateFormat: String): Option[DateTime] =
+    parse(dateString, dateFormat, DateTimeZone.UTC)
 
-  def parse(dateString: String, dateFormat: String, timeZone:DateTimeZone): Option[DateTime] = {
+  def parse(dateString: String,
+            dateFormat: String,
+            timeZone: DateTimeZone): Option[DateTime] = {
     val formatter = DateTimeFormat.forPattern(dateFormat).withZone(timeZone)
     Some(formatter.parseDateTime(dateString))
   }
 
   /**
-   * Either call  parse with or without dateFormat depending on the dateFormatOption
-   *
-   * @param dateString The date string.
-   * @param dateFormatOption An Option with the date format pattern which should respect the SimpleDateFormat rules.
-   * @return The parsed date object.
-   * @throws ParseException If the given date string or its actual date is invalid based on the
-   *                        given date format pattern.
-   * @see parse(dateString: String, dateFormat: String) and parse(dateString: String)
-   */
-  def parse(dateString: String, dateFormatOption: Option[String],timeZone:DateTimeZone = DateTimeZone.UTC):
-  Option[DateTime] = {
+    * Either call  parse with or without dateFormat depending on the dateFormatOption
+    *
+    * @param dateString The date string.
+    * @param dateFormatOption An Option with the date format pattern which should respect the SimpleDateFormat rules.
+    * @return The parsed date object.
+    * @throws ParseException If the given date string or its actual date is invalid based on the
+    *                        given date format pattern.
+    * @see parse(dateString: String, dateFormat: String) and parse(dateString: String)
+    */
+  def parse(dateString: String,
+            dateFormatOption: Option[String],
+            timeZone: DateTimeZone = DateTimeZone.UTC): Option[DateTime] = {
     dateFormatOption match {
       case Some(dateFormat) =>
-        parse(dateString, dateFormat,timeZone)
+        parse(dateString, dateFormat, timeZone)
       case None =>
         parse(dateString)
     }
@@ -118,43 +124,42 @@ object DateUtil extends Serializable {
   }
 
   /**
-   * Checks whether the actual date of the given date string is valid. This makes use of the
-   * {@link DateUtil#determineDateFormat(String)} to determine the SimpleDateFormat pattern to be
-   * used for parsing.
-   *
-   * @param dateString The date string.
-   * @return True if the actual date of the given date string is valid.
-   */
+    * Checks whether the actual date of the given date string is valid. This makes use of the
+    * {@link DateUtil#determineDateFormat(String)} to determine the SimpleDateFormat pattern to be
+    * used for parsing.
+    *
+    * @param dateString The date string.
+    * @return True if the actual date of the given date string is valid.
+    */
   def isValidDate(dateString: String): Boolean = parse(dateString).isDefined
 
   /**
-   * Checks whether the actual date of the given date string is valid based on the given date
-   * format pattern.
-   *
-   * @param dateString The date string.
-   * @param dateFormat The date format pattern which should respect the SimpleDateFormat rules.
-   * @return True if the actual date of the given date string is valid based on the given date
-   *         format pattern.
-   * @see SimpleDateFormat
-   */
+    * Checks whether the actual date of the given date string is valid based on the given date
+    * format pattern.
+    *
+    * @param dateString The date string.
+    * @param dateFormat The date format pattern which should respect the SimpleDateFormat rules.
+    * @return True if the actual date of the given date string is valid based on the given date
+    *         format pattern.
+    * @see SimpleDateFormat
+    */
   def isValidDate(dateString: String, dateFormat: String): Boolean = {
     try {
       parse(dateString, dateFormat)
-       true
-    }
-    catch {
+      true
+    } catch {
       case e: ParseException => false
     }
   }
 
   /**
-   * Determine SimpleDateFormat pattern matching with the given date string. Returns null if
-   * format is unknown. You can simply extend DateUtil with more formats if needed.
-   *
-   * @param dateString The date string to determine the SimpleDateFormat pattern for.
-   * @return The matching SimpleDateFormat pattern, or null if format is unknown.
-   * @see SimpleDateFormat
-   */
+    * Determine SimpleDateFormat pattern matching with the given date string. Returns null if
+    * format is unknown. You can simply extend DateUtil with more formats if needed.
+    *
+    * @param dateString The date string to determine the SimpleDateFormat pattern for.
+    * @return The matching SimpleDateFormat pattern, or null if format is unknown.
+    * @see SimpleDateFormat
+    */
   def determineDateFormat(dateString: String): Option[String] = {
     for (regexp <- DATE_FORMAT_REGEXPS.keySet) {
       if (dateString.toLowerCase.matches(regexp)) {
@@ -164,8 +169,7 @@ object DateUtil extends Serializable {
     None
   }
 
-
-  private  val DATE_FORMAT_REGEXPS: Map[String, String] = Map(
+  private val DATE_FORMAT_REGEXPS: Map[String, String] = Map(
     "^\\d{8}$" -> "yyyyMMdd",
     """^\d{1,2}-\d{1,2}-\d{4}$""" -> "dd-MM-yyyy",
     """^\d{4}-\d{1,2}-\d{1,2}$""" -> "yyyy-MM-dd",
@@ -188,7 +192,8 @@ object DateUtil extends Serializable {
     """^\d{1,2}/\d{1,2}/\d{4}\s\d{1,2}:\d{2}:\d{2}$""" -> "MM/dd/yyyy HH:mm:ss",
     """^\d{4}/\d{1,2}/\d{1,2}\s\d{1,2}:\d{2}:\d{2}$""" -> "yyyy/MM/dd HH:mm:ss",
     """^\d{1,2}\s[a-z]{3}\s\d{4}\s\d{1,2}:\d{2}:\d{2}$""" -> "dd MMM yyyy HH:mm:ss",
-    """^\d{1,2}\s[a-z]{4,}\s\d{4}\s\d{1,2}:\d{2}:\d{2}$""" -> "dd MMMM yyyy HH:mm:ss")
+    """^\d{1,2}\s[a-z]{4,}\s\d{4}\s\d{1,2}:\d{2}:\d{2}$""" -> "dd MMMM yyyy HH:mm:ss"
+  )
 
   def period(date: DateTime): PeriodOfDay.PeriodOfDay = {
     date.getHourOfDay match {
@@ -199,13 +204,16 @@ object DateUtil extends Serializable {
     }
   }
 
+  lazy val dateFormatFilePath = FileSystems.getDefault.getPath(
+    SparkNotebookConfig.tempFolder,
+    SparkNotebookConfig.propertyFolder,
+    SparkNotebookConfig.dateFormatFileName
+  )
 
-
-
-  lazy val dateFormatFilePath = FileSystems.getDefault.getPath(SparkNotebookConfig.tempFolder, SparkNotebookConfig.propertyFolder,
-    SparkNotebookConfig.dateFormatFileName)
-
-  private lazy val propertyFolderPath = FileSystems.getDefault.getPath(SparkNotebookConfig.tempFolder, SparkNotebookConfig.propertyFolder)
+  private lazy val propertyFolderPath = FileSystems.getDefault.getPath(
+    SparkNotebookConfig.tempFolder,
+    SparkNotebookConfig.propertyFolder
+  )
 
   def applyDateFormat(dateFormat: String) = {
     if (Files.notExists(propertyFolderPath)) {
@@ -216,13 +224,14 @@ object DateUtil extends Serializable {
   }
 
   private def readDateFormat = {
-    val clusterFilePath = FileSystems.getDefault.getPath(SparkFiles.get(SparkNotebookConfig.dateFormatFileName))
-    if (Files.exists(clusterFilePath)) Files.readAllLines(clusterFilePath, StandardCharsets.UTF_8).headOption
+    val clusterFilePath = FileSystems.getDefault.getPath(
+      SparkFiles.get(SparkNotebookConfig.dateFormatFileName)
+    )
+    if (Files.exists(clusterFilePath))
+      Files.readAllLines(clusterFilePath, StandardCharsets.UTF_8).headOption
     else None
   }
 
 }
 
-final class DateUtil {
-
-}
+final class DateUtil {}

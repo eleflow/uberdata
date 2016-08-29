@@ -20,19 +20,17 @@ import eleflow.uberdata.IUberdataForecastUtil
 import eleflow.uberdata.enums.SupportedAlgorithm
 import eleflow.uberdata.models.UberXGBOOSTModel
 import ml.dmlc.xgboost4j.scala.DMatrix
-import ml.dmlc.xgboost4j.scala.spark.XGBoostModel
 import ml.dmlc.xgboost4j.{LabeledPoint => XGBLabeledPoint}
 import org.apache.hadoop.fs.Path
 import org.apache.spark.ml.XGBoostSmallModel.XGBoostRegressionModelWriter
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.{HasFeaturesCol, HasGroupByCol, HasIdCol, HasLabelCol}
 import org.apache.spark.ml.util.{DefaultParamsReader, _}
-import org.apache.spark.mllib.linalg.{Vector => SparkVector}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.Logging
-import org.apache.spark.annotation.DeveloperApi
+
 
 import scala.reflect.ClassTag
 

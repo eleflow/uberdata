@@ -100,7 +100,7 @@ This file is divided into 3 sections:
 
     <check level="error" class="org.scalastyle.scalariform.ParameterNumberChecker" enabled="true">
         <parameters>
-            <parameter name="maxParameters"><![CDATA[10]]></parameter>
+            <parameter name="maxParameters"><![CDATA[15]]></parameter>
         </parameters>
     </check>
 
@@ -126,7 +126,7 @@ This file is divided into 3 sections:
     <check customId="nonascii" level="error" class="org.scalastyle.scalariform.NonASCIICharacterChecker"
            enabled="true"></check>
 
-    <check level="error" class="org.scalastyle.scalariform.SpaceAfterCommentStartChecker" enabled="true"></check>
+    <check level="error" class="org.scalastyle.scalariform.SpaceAfterCommentStartChecker" enabled="false"></check>
 
     <check level="error" class="org.scalastyle.scalariform.EnsureSingleSpaceBeforeTokenChecker" enabled="true">
         <parameters>
@@ -244,15 +244,15 @@ This file is divided into 3 sections:
         </customMessage>
     </check>
 
-    <check level="error" class="org.scalastyle.scalariform.ImportOrderChecker" enabled="true">
-        <parameters>
-            <parameter name="groups">java,scala,3rdParty,spark</parameter>
-            <parameter name="group.java">javax?\..*</parameter>
-            <parameter name="group.scala">scala\..*</parameter>
-            <parameter name="group.3rdParty">(?!org\.apache\.spark\.).*</parameter>
-            <parameter name="group.spark">org\.apache\.spark\..*</parameter>
-        </parameters>
-    </check>
+    <!--<check level="error" class="org.scalastyle.scalariform.ImportOrderChecker" enabled="false">-->
+        <!--<parameters>-->
+            <!--<parameter name="groups">java,scala,3rdParty,spark</parameter>-->
+            <!--<parameter name="group.java">javax?\..*</parameter>-->
+            <!--<parameter name="group.scala">scala\..*</parameter>-->
+            <!--<parameter name="group.3rdParty">(?!org\.apache\.spark\.).*</parameter>-->
+            <!--<parameter name="group.spark">org\.apache\.spark\..*</parameter>-->
+        <!--</parameters>-->
+    <!--</check>-->
 
     <!-- check level="error" class="org.scalastyle.scalariform.DisallowSpaceBeforeTokenChecker" enabled="true">
       <parameters>
@@ -271,9 +271,10 @@ This file is divided into 3 sections:
     ]]></customMessage>
     </check>
 
-    <check customId="NoScalaDoc" level="error" class="org.scalastyle.file.RegexChecker" enabled="true">
+    <check customId="NoScalaDoc" level="error" class="org.scalastyle.file.RegexChecker" enabled="false">
         <parameters>
-            <parameter name="regex">(?m)^(\s*)/[*][*].*$(\r|)\n^\1 [*]</parameter>
+            <parameter name="regex">(?m)^(\s*)\/[*][*].*$(\r|)\n^\\[*]</parameter>
+            <!--<parameter name="regex">^.[\w]*\n\/\*\*\n(  \* [\w]+\n)* \*\/\n[\w]*</parameter>-->
         </parameters>
         <customMessage>Use Javadoc style indentation for multiline comments</customMessage>
     </check>
@@ -381,7 +382,7 @@ This file is divided into 3 sections:
         </parameters>
     </check>
 
-    <check level="error" class="org.scalastyle.scalariform.IllegalImportsChecker" enabled="false">
+    <check level="error" class="org.scalastyle.scalariform.IllegalImportsChecker" enabled="true">
         <parameters>
             <parameter name="illegalImports"><![CDATA[sun._,java.awt._]]></parameter>
         </parameters>
@@ -442,14 +443,15 @@ This file is divided into 3 sections:
         </parameters>
     </check>
 
-    <check enabled="true" class="org.scalastyle.file.IndentationChecker" level="error">
-        <parameters>
-            <parameter name="tabSize">2</parameter>
-            <parameter name="methodParamIndentSize">2</parameter>
-        </parameters>
-    </check>
+    <!--<check enabled="true" class="org.scalastyle.file.IndentationChecker" level="warning">-->
+        <!--<parameters>-->
+            <!--<parameter name="tabSize">2</parameter>-->
+            <!--<parameter name="methodParamIndentSize">2</parameter>-->
+            <!--<parameter name="classParamIndentSize">4</parameter>-->
+        <!--</parameters>-->
+    <!--</check>-->
 
-    <check enabled="false" class="org.scalastyle.scalariform.BlockImportChecker" level="error"/>
+    <check enabled="true" class="org.scalastyle.scalariform.BlockImportChecker" level="error"/>
 
     <check enabled="true" class="org.scalastyle.scalariform.ClassTypeParameterChecker" level="error">
         <parameters>
@@ -480,7 +482,7 @@ This file is divided into 3 sections:
         </parameters>
     </check>
 
-    <check enabled="true" class="org.scalastyle.scalariform.PatternMatchAlignChecker" level="error"/>
+    <check enabled="false" class="org.scalastyle.scalariform.PatternMatchAlignChecker" level="error"/>
 
     <check enabled="true" class="org.scalastyle.scalariform.ProcedureDeclarationChecker" level="error"/>
 

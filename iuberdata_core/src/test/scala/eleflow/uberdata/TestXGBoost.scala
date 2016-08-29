@@ -16,14 +16,17 @@
 
 package eleflow.uberdata
 
+import com.cloudera.sparkts.models.UberXGBoostModel
 import eleflow.uberdata.core.data.Dataset
 import eleflow.uberdata.core.data.Dataset._
 import eleflow.uberdata.core.enums.DateSplitType._
 import eleflow.uberdata.models.UberXGBOOSTModel
+import ml.dmlc.xgboost4j.scala.spark.XGBoost
 import org.apache.spark.ml.param.{ParamMap, Params}
 import org.apache.spark.ml.param.shared.HasXGBoostParams
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
+import ml.dmlc.xgboost4j.{LabeledPoint => XGBLabeledPoint}
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
 import org.apache.spark.sql.types.{DoubleType, StringType, TimestampType}
 import org.scalatest.{FlatSpec, Matchers, Suite}
@@ -37,28 +40,28 @@ class TestXGBoost extends FlatSpec with Matchers with BeforeAndAfterWithContext
 
 		"XGBostAlgorithm" should "execute xgboost bigmodel" in {
 		val train = Dataset(context, s"$defaultFilePath/data/RossmannTrain.csv")
-		train.applyColumnTypes(Seq(DoubleType, DoubleType, TimestampType, DoubleType, DoubleType,
-			DoubleType, DoubleType, StringType, StringType))
+
 		val trainData = train.formatDateValues("Date", DayMonthYear).select("Store", "Sales",
 			"DayOfWeek", "Date1", "Date2", "Date3", "Open", "Promo", "StateHoliday", "SchoolHoliday")
 			.cache
 		val test = Dataset(context, s"$defaultFilePath/data/RossmannTest.csv")
-		test.applyColumnTypes(Seq(DoubleType, DoubleType, DoubleType, TimestampType, DoubleType,
-			DoubleType, StringType, StringType))
+
 		val testData = test.formatDateValues("Date", DayMonthYear).map{
 		row =>
-			Vectors.dense(Array(row.getAs[Double]("Store"), row.getAs[Double]("DayOfWeek"),
-				row.getAs[Double]("Date1"), row.getAs[Double]("Date2"), row.getAs[Double]("Date3")))
+			XGBLabeledPoint.fromDenseVector(row.getAs[Long]("Id"), Array(row.getAs[Long]("Store").toFloat,
+				row.getAs[Long]("DayOfWeek").toFloat, row.getAs[Int]("Date1").toFloat,
+				row.getAs[Int]("Date2").toFloat,row.getAs[Int]("Date3").toFloat))
 		}
 
 		val trainLabel = trainData.map{
 			row =>
-				LabeledPoint(row.getAs[Double]("Sales"),
-					Vectors.dense(Array(row.getAs[Double]("Store"), row.getAs[Double]("DayOfWeek"),
-						row.getAs[Double]("Date1"), row.getAs[Double]("Date2"), row.getAs[Double]("Date3"))))
+				LabeledPoint(row.getAs[Long]("Sales").toDouble,
+					Vectors.dense(Array(row.getAs[Long]("Store").toDouble,
+						row.getAs[Long]("DayOfWeek").toDouble, row.getAs[Int]("Date1").toDouble,
+						row.getAs[Int]("Date2").toDouble, row.getAs[Int]("Date3").toDouble)))
 		}
 
-		val model = UberXGBOOSTModel.fitSparkModel(trainLabel,Map[String, Any](
+		val model = UberXGBoostModel.train(trainLabel, Map[String, Any](
 			"silent" -> 1
 			, "objective" -> "reg:linear"
 			, "booster" -> "gbtree"
@@ -70,8 +73,8 @@ class TestXGBoost extends FlatSpec with Matchers with BeforeAndAfterWithContext
 			, "gamma" -> 0
 			, "eval_metric" -> "rmse"
 			, "tree_method" -> "exact"
-		).map(f => (f._1, f._2.asInstanceOf[AnyRef])),200)
-			val prediction = model.predict(testData).cache
+		).map(f => (f._1, f._2.asInstanceOf[AnyRef])), 200, 2)
+			val prediction = UberXGBoostModel.labelPredict(testData, booster = model).cache
 			prediction.count()
 			assert(prediction.count == 36)
 	}

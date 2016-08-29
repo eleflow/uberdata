@@ -1,18 +1,18 @@
 /*
-* Copyright 2015 eleflow.com.br.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2015 eleflow.com.br.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package eleflow.uberdata
 
@@ -32,15 +32,15 @@ import org.apache.spark.sql.{DataFrame, Row}
 import scala.reflect.ClassTag
 
 /**
-	* Created by celio on 11/04/16.
-	*/
+  * Created by celio on 11/04/16.
+  */
 object ForecastPredictor {
-	def apply(): ForecastPredictor = new ForecastPredictor
+  def apply(): ForecastPredictor = new ForecastPredictor
 }
 
 class ForecastPredictor extends Serializable with Logging {
 
-	lazy val defaultRange = (0 to 2).toArray
+  lazy val defaultRange = (0 to 2).toArray
 
 	trait TimestampOrd extends Ordering[Timestamp] {
 		override def compare(x: Timestamp, y: Timestamp): Int = if (x.getTime < y.getTime) -1
@@ -48,7 +48,7 @@ class ForecastPredictor extends Serializable with Logging {
 		else 1
 	}
 
-	implicit object TimestampOrdering extends TimestampOrd
+  implicit object TimestampOrdering extends TimestampOrd
 
 	protected def defaultARIMAParamMap[T <: ArimaParams](estimator: T, paramRange: Array[Int]) = new ParamGridBuilder()
 		.addGrid(estimator.arimaP, paramRange)
@@ -97,8 +97,8 @@ class ForecastPredictor extends Serializable with Logging {
 			.setNFutures(nFutures)
 			.asInstanceOf[HoltWintersBestModelFinder[Double]]
 
-		preparePipeline(holtWinters, preTransformers = Array(transformer))
-	}
+    preparePipeline(holtWinters, preTransformers = Array(transformer))
+  }
 
 	def prepareMovingAveragePipeline[L](labelCol: String = "label", featuresCol: String = "features",
 																			validationCol: String = "validation", timeCol: String = "Date", windowSize: Int = 8)
@@ -126,9 +126,9 @@ class ForecastPredictor extends Serializable with Logging {
 	private def preparePipeline(timeSeriesBestModelFinder: TimeSeriesBestModelFinder,
 															preTransformers: Array[_ <: Transformer]): Pipeline = {
 
-		new Pipeline()
-			.setStages(preTransformers ++ Array(timeSeriesBestModelFinder))
-	}
+    new Pipeline()
+      .setStages(preTransformers ++ Array(timeSeriesBestModelFinder))
+  }
 
 	def prepareBestForecastPipeline[L](labelCol: String, featuresCol: String, validationCol: String, timeCol: String,
 																		 nFutures: Int, meanAverageWindowSize: Seq[Int], paramRange: Array[Int])
@@ -187,44 +187,37 @@ class ForecastPredictor extends Serializable with Logging {
 		}.toArray
 
 		val nonStringIndex = "nonStringIndex"
-		val columnIndexers = new VectorizeEncoder()
-			.setInputCol(nonStringColumns)
+    val columnIndexers = new VectorizeEncoder()
+      .setInputCol(nonStringColumns)
 			.setOutputCol(nonStringIndex)
-			.setLabelCol(labelCol)
-			.setGroupByCol(groupByCol)
-			.setIdCol(idCol.getOrElse(""))
+      .setLabelCol(labelCol)
+      .setGroupByCol(groupByCol)
+      .setIdCol(idCol.getOrElse(""))
 
 		val assembler = new VectorAssembler()
 			.setInputCols(stringColumns.map(f => s"${f}Index").toArray :+ nonStringIndex)
 			.setOutputCol(IUberdataForecastUtil.FEATURES_COL_NAME)
 
-		stringIndexers :+ columnIndexers :+ assembler
-	}
+    stringIndexers :+ columnIndexers :+ assembler
+  }
 
-	case class ColumnConfig()
-
-	//label, GroupBy
-	def predict[L, G](train: DataFrame, test: DataFrame, labelCol: String,
-										featuresCol: Seq[String] = Seq.empty[String], timeCol: String, idCol: String,
-										groupByCol: String, algorithm: Algorithm = FindBestForecast, nFutures: Int = 6,
-										meanAverageWindowSize: Seq[Int] = Seq(8, 16, 26),
-										paramRange: Array[Int] = defaultRange)(implicit kt: ClassTag[L],
-																													 ord: Ordering[L] = null, gt: ClassTag[G])
-	: (DataFrame, PipelineModel) = {
-		require(featuresCol.nonEmpty, "featuresCol parameter can't be empty")
-		val validationCol = idCol + algorithm.toString
-		algorithm match {
-			case Arima | HoltWinters | MovingAverage8 | MovingAverage16 | MovingAverage26
-					 | FindBestForecast =>
-				predictSmallModelFuture[L](train, test, labelCol, featuresCol.head, timeCol, idCol,
-					algorithm, validationCol, nFutures, meanAverageWindowSize, paramRange)
-			case XGBoostAlgorithm =>
-				predictSmallModelFeatureBased[L, G](train, test, labelCol, featuresCol, timeCol, idCol,
-					groupByCol, algorithm, validationCol)
-			case _ => throw new UnexpectedValueException(s"Algorithm $algorithm can't be used to " +
-				s"predict a Forecast")
-		}
-	}
+  //label, GroupBy
+  def predict[L, G](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: Seq[String] = Seq.empty[String],
+                    timeCol: String, idCol: String, groupByCol: String, algorithm: Algorithm = FindBestForecast, nFutures: Int = 6,
+                    meanAverageWindowSize: Seq[Int] = Seq(8, 16, 26), paramRange: Array[Int] = defaultRange)
+                   (implicit kt: ClassTag[L], ord: Ordering[L] = null, gt: ClassTag[G]): (DataFrame, PipelineModel) = {
+    require(featuresCol.nonEmpty, "featuresCol parameter can't be empty")
+    val validationCol = idCol + algorithm.toString
+    algorithm match {
+      case Arima | HoltWinters | MovingAverage8 | MovingAverage16 | MovingAverage26 | FindBestForecast =>
+        predictSmallModelFuture[L](train, test, labelCol, featuresCol.head, timeCol, idCol, algorithm,
+          validationCol, nFutures, meanAverageWindowSize, paramRange)
+      case XGBoostAlgorithm =>
+        predictSmallModelFeatureBased[L, G](train, test, labelCol, featuresCol, timeCol, idCol, groupByCol,
+          algorithm, validationCol)
+      case _ => throw new UnexpectedValueException(s"Algorithm $algorithm can't be used to predict a Forecast")
+    }
+  }
 
 	def predictSmallModelFeatureBased[L, G](train: DataFrame, test: DataFrame, labelCol: String, featuresCol: Seq[String],
 																					timeCol: String, idCol: String, groupByCol: String, algorithm: Algorithm = XGBoostAlgorithm,
@@ -240,8 +233,8 @@ class ForecastPredictor extends Serializable with Logging {
 		val joined = result.select(idCol, IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME)
 		val dfToBeReturned = joined.withColumnRenamed("featuresPrediction", "prediction")
 
-		(dfToBeReturned.sort(idCol), model)
-	}
+    (dfToBeReturned.sort(idCol), model)
+  }
 
 	def predictSmallModelFuture[L](train: DataFrame, test: DataFrame, labelCol: String,
 																 featuresCol: String, timeCol: String,
