@@ -22,21 +22,13 @@ import eleflow.uberdata.core.IUberdataContext
 import eleflow.uberdata.core.util.ClusterSettings
 import eleflow.uberdata.core.enums.{DataSetType, DateSplitType}
 import DateSplitType._
-import eleflow.uberdata.core.exception.{
-  InvalidDataException,
-  UnexpectedFileFormatException
-}
+import eleflow.uberdata.core.exception.{InvalidDataException, UnexpectedFileFormatException}
 import eleflow.uberdata.core.util.DateTimeParser
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.joda.time.{DateTime, DateTimeZone, Days}
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.{
-  StringType,
-  StructField,
-  StructType,
-  DataType => SqlDataType
-}
+import org.apache.spark.sql.types.{StringType, StructField, StructType, DataType => SqlDataType}
 
 import scala.collection.immutable.TreeSet
 import dataset._
@@ -60,9 +52,7 @@ object Dataset {
   implicit def FileDatasetToDataFrame(fileDS: FileDataset): DataFrame =
     fileDS.toDataFrame
 
-  def apply(uc: IUberdataContext,
-            file: String,
-            dateTimeParser: DateTimeParser) = {
+  def apply(uc: IUberdataContext, file: String, dateTimeParser: DateTimeParser) = {
     new Dataset(
       new FileDataset(uc, file, separator = ",").toDataFrame,
       dateTimeParser = dateTimeParser
@@ -260,9 +250,7 @@ class Dataset private[data] (dataFrame: DataFrame,
       val (before, after) = f.toSeq.splitAt(index)
       val formattedDate = splitDateValues(f, index, dateSplitter)
       Row(
-        before ++ formattedDate ++ after.headOption
-          .map(_ => after.tail)
-          .getOrElse(Seq.empty): _*
+        before ++ formattedDate ++ after.headOption.map(_ => after.tail).getOrElse(Seq.empty): _*
       )
     }
     val dateFields = (1 to determineSizeOfSplitter(dateSplitter)).map(
@@ -362,8 +350,7 @@ class FileDataset protected[data] (@transient uc: IUberdataContext,
                                    file: String,
                                    separator: String = ",",
                                    header: Option[String] = None,
-                                   dateTimeParser: DateTimeParser =
-                                     DateTimeParser()
+                                   dateTimeParser: DateTimeParser = DateTimeParser()
                                    //                                  , schema2: Option[StructType]
 ) extends Serializable {
 
@@ -404,8 +391,7 @@ class FileDataset protected[data] (@transient uc: IUberdataContext,
     header.getOrElse(firstLine)
   }
 
-  def initOriginalRdd(header: String,
-                      localFileName: String): RDD[Array[String]] = {
+  def initOriginalRdd(header: String, localFileName: String): RDD[Array[String]] = {
     initOriginalRdd(header, loadedRDD)
   }
 
@@ -453,13 +439,7 @@ class FileDataset protected[data] (@transient uc: IUberdataContext,
   protected def extractTableName(file: String): String = {
     val name = file.split("/").last
     val index = name.indexOf(".csv") + name.indexOf(".txt")
-    name
-      .splitAt(index + 1)
-      .productIterator
-      .toList
-      .filter(!_.toString.isEmpty)
-      .head
-      .toString
+    name.splitAt(index + 1).productIterator.toList.filter(!_.toString.isEmpty).head.toString
   }
 
   protected def extractFirstCompleteLine(dataRdd: RDD[Row]): Array[String] = {
@@ -484,8 +464,7 @@ class FileDataset protected[data] (@transient uc: IUberdataContext,
       case r"""-?\d{9,18}""" => LongType
       case r"""-?\d{1,8}""" =>
         LongType // TODO: To return IntType for ints the whole data set (or sample) needs to be analyzed.
-      case r"""[+-]?\d*\.?\d*E?\d{1,4}"""
-          if ClusterSettings.enforceDoubleAsBigDecimal =>
+      case r"""[+-]?\d*\.?\d*E?\d{1,4}""" if ClusterSettings.enforceDoubleAsBigDecimal =>
         DecimalType(
           ClusterSettings.defaultDecimalPrecision,
           ClusterSettings.defaultDecimalScale
@@ -560,8 +539,7 @@ package object dataset {
     val converted = dataFrame.map { row =>
       val values = row.toSeq.zip(newSchema.fields).map {
         case (null, _) => null
-        case (s: String, tp: StructField)
-            if s.isEmpty && !tp.dataType.isInstanceOf[StringType] =>
+        case (s: String, tp: StructField) if s.isEmpty && !tp.dataType.isInstanceOf[StringType] =>
           null
         case (value: Double, StructField(_, DoubleType, _, _)) => value
         case (value: Float, StructField(_, FloatType, _, _)) => value

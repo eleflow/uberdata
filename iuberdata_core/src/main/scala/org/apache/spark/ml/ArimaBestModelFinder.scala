@@ -19,11 +19,7 @@ package org.apache.spark.ml
 import org.apache.spark.Logging
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.regression._
-import org.apache.spark.ml.util.{
-  DefaultParamsReadable,
-  DefaultParamsWritable,
-  Identifiable
-}
+import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.sql.{DataFrame, Row}
 import com.cloudera.sparkts.models.UberArimaModel
 import eleflow.uberdata.enums.SupportedAlgorithm.Algorithm
@@ -127,8 +123,7 @@ case class ModelParamEvaluation[L](id: L,
                                    metricName: Option[String] = None,
                                    algorithm: Algorithm)
 
-object ArimaBestModelFinder
-    extends DefaultParamsReadable[ArimaBestModelFinder[_]] {
+object ArimaBestModelFinder extends DefaultParamsReadable[ArimaBestModelFinder[_]] {
 
   override def load(path: String): ArimaBestModelFinder[_] = super.load(path)
 }

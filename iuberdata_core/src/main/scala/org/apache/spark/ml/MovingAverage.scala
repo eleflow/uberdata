@@ -18,16 +18,8 @@ package org.apache.spark.ml
 
 import org.apache.spark.annotation.Since
 import org.apache.spark.ml.param.{IntParam, ParamMap}
-import org.apache.spark.ml.param.shared.{
-  HasInputCol,
-  HasLabelCol,
-  HasOutputCol
-}
-import org.apache.spark.ml.util.{
-  DefaultParamsReadable,
-  DefaultParamsWritable,
-  Identifiable
-}
+import org.apache.spark.ml.param.shared.{HasInputCol, HasLabelCol, HasOutputCol}
+import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.mllib.linalg.{VectorUDT, Vectors}
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.types._
@@ -82,12 +74,10 @@ class MovingAverage[T](override val uid: String)
       val (array, rawValue) = if (inputTypeBr.value.isInstanceOf[VectorUDT]) {
         val vector =
           row.getAs[org.apache.spark.mllib.linalg.Vector](inputColName.value)
-        (vector.toArray,
-         Vectors.dense(vector.toArray.drop(windowSizeBr.value - 1)))
+        (vector.toArray, Vectors.dense(vector.toArray.drop(windowSizeBr.value - 1)))
       } else {
         val iterable = row.getAs[Iterable[Double]](inputColName.value)
-        (iterable.toArray,
-         Vectors.dense(iterable.toArray.drop(windowSizeBr.value - 1)))
+        (iterable.toArray, Vectors.dense(iterable.toArray.drop(windowSizeBr.value - 1)))
       }
       val (before, after) = row.toSeq.splitAt(inputColIndexBr.value)
       Row(
@@ -106,8 +96,7 @@ class MovingAverage[T](override val uid: String)
 }
 
 object MovingAverageCalc {
-  private[ml] def simpleMovingAverageArray(values: Array[Double],
-                                           period: Int): Array[Double] = {
+  private[ml] def simpleMovingAverageArray(values: Array[Double], period: Int): Array[Double] = {
     (for (i <- 1 to values.length)
       yield
       //TODO rollback this comment with the right size of features to make the meanaverage return

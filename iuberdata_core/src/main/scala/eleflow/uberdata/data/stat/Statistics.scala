@@ -42,8 +42,7 @@ object Statistics {
   def correlation(rdd: RDD[LabeledPoint]): Matrix =
     SparkStatistics.corr(rdd.map(_.features))
 
-  def correlation(rdd: Dataset,
-                  numberOfColumns: Int = 20): Seq[(Double, String)] = {
+  def correlation(rdd: Dataset, numberOfColumns: Int = 20): Seq[(Double, String)] = {
     val matrix = correlation(rdd.toLabeledPoint)
     val correlat = correlation(matrix, rdd)
     correlat.map {
@@ -75,9 +74,7 @@ object Statistics {
   def targetCorrelation(rdd: RDD[LabeledPoint]): Seq[(Double, Int)] = {
     val targetVectors =
       rdd.map(
-        f =>
-          Vectors
-            .dense(DataTransformer.toDouble(f.label), f.features.toArray: _*)
+        f => Vectors.dense(DataTransformer.toDouble(f.label), f.features.toArray: _*)
       )
     val correlated = SparkStatistics.corr(targetVectors)
     val cols = correlated.numCols
@@ -91,8 +88,7 @@ object Statistics {
   def columnAndTargetCorrelation(dataset: Dataset,
                                  numberOfColumns: Int = 20,
                                  ids: Seq[String] = Seq("id")) =
-    (correlation(dataset, numberOfColumns),
-     targetCorrelation(dataset, numberOfColumns, ids))
+    (correlation(dataset, numberOfColumns), targetCorrelation(dataset, numberOfColumns, ids))
 
   def targetCorrelation(rdd: Dataset,
                         numberOfColumns: Int = 20,
@@ -103,13 +99,11 @@ object Statistics {
 
     correlation.map {
       case (corr, index) =>
-        (corr,
-         rdd.summarizedColumnsIndex.getOrElse(index + 1 + ids.size, "Unknow"))
+        (corr, rdd.summarizedColumnsIndex.getOrElse(index + 1 + ids.size, "Unknow"))
     }.seq
   }
 
-  def targetCorrelation(rdd: RDD[LabeledPoint],
-                        numberOfColumns: Int): Seq[(Double, Int)] =
+  def targetCorrelation(rdd: RDD[LabeledPoint], numberOfColumns: Int): Seq[(Double, Int)] =
     targetCorrelation(rdd).take(numberOfColumns)
 
   def correlationLabeledPoint(
@@ -140,8 +134,7 @@ object Statistics {
     }
   }
 
-  private def filterCorrelatedLabeledPointValues(f: LabeledPoint,
-                                                 correlatedColumns: Seq[Int]) =
+  private def filterCorrelatedLabeledPointValues(f: LabeledPoint, correlatedColumns: Seq[Int]) =
     (LabeledPoint(
       f.label,
       Vectors.dense(f.features.toArray.zipWithIndex.filter {

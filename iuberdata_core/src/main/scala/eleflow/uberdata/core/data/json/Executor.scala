@@ -30,10 +30,7 @@ case class ExecutorAdded(initTimestamp: Long,
                          remainingMemory: Long,
                          executorMemory: Long)
 
-case class ExecutorRemoved(initTimestamp: Long,
-                           executorId: String,
-                           time: Long,
-                           reason: String)
+case class ExecutorRemoved(initTimestamp: Long, executorId: String, time: Long, reason: String)
 
 case class ExecutorMetricsUpdated(executorId: String,
                                   time: Long,

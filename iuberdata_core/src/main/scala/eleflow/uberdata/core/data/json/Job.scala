@@ -26,5 +26,4 @@ case class JobStart(
   properties: Map[String, String] = Map.empty[String, String]
 ) {}
 
-case class JobEnd(appId: String, jobId: Int, time: Long, jobResult: String)
-    extends Mappable
+case class JobEnd(appId: String, jobId: Int, time: Long, jobResult: String) extends Mappable

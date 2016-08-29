@@ -101,8 +101,7 @@ class TimeSeriesGenerator[L](
 }
 
 @Since("1.6.0")
-object TimeSeriesGenerator
-    extends DefaultParamsReadable[TimeSeriesGenerator[_]] {
+object TimeSeriesGenerator extends DefaultParamsReadable[TimeSeriesGenerator[_]] {
 
   @Since("1.6.0")
   override def load(path: String): TimeSeriesGenerator[_] = super.load(path)

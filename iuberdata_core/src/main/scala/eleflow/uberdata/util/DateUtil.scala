@@ -94,9 +94,7 @@ object DateUtil extends Serializable {
   def parse(dateString: String, dateFormat: String): Option[DateTime] =
     parse(dateString, dateFormat, DateTimeZone.UTC)
 
-  def parse(dateString: String,
-            dateFormat: String,
-            timeZone: DateTimeZone): Option[DateTime] = {
+  def parse(dateString: String, dateFormat: String, timeZone: DateTimeZone): Option[DateTime] = {
     val formatter = DateTimeFormat.forPattern(dateFormat).withZone(timeZone)
     Some(formatter.parseDateTime(dateString))
   }

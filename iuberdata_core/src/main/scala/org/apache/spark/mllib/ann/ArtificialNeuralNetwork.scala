@@ -31,18 +31,12 @@ import breeze.numerics.{sigmoid => Bsigmoid}
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.mllib.linalg
 
-import org.apache.spark.mllib.linalg.{
-  DenseMatrix,
-  DenseVector,
-  Vector,
-  Vectors
-}
+import org.apache.spark.mllib.linalg.{DenseMatrix, DenseVector, Vector, Vectors}
 import org.apache.spark.mllib.optimization._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.util.random.XORShiftRandom
 
-class ArtificialNeuralNetworkModel private[mllib] (val weights: Vector,
-                                                   val topology: Array[Int])
+class ArtificialNeuralNetworkModel private[mllib] (val weights: Vector, val topology: Array[Int])
     extends Serializable
     with NeuralHelper {
 
@@ -73,8 +67,7 @@ class ArtificialNeuralNetworkModel private[mllib] (val weights: Vector,
 
   def weightsByLayer(index: Int): Vector = {
     require(index > 0 && index < topology.length)
-    val layerWeight = BDV
-      .vertcat(weightMatrices(index).toDenseVector, bias(index).toDenseVector)
+    val layerWeight = BDV.vertcat(weightMatrices(index).toDenseVector, bias(index).toDenseVector)
     Vectors.dense(layerWeight.toArray)
   }
 }
@@ -230,8 +223,7 @@ object ArtificialNeuralNetwork {
       .run(trainingRDD, initialWeights)
   }
 
-  def randomWeights(trainingRDD: RDD[(Vector, Vector)],
-                    hiddenLayersTopology: Array[Int]): Vector = {
+  def randomWeights(trainingRDD: RDD[(Vector, Vector)], hiddenLayersTopology: Array[Int]): Vector = {
     val topology = convertTopology(trainingRDD, hiddenLayersTopology)
     return randomWeights(topology, false)
   }
@@ -257,9 +249,7 @@ object ArtificialNeuralNetwork {
     firstElt._1.size +: hiddenLayersTopology :+ firstElt._2.size
   }
 
-  private def randomWeights(topology: Array[Int],
-                            useSeed: Boolean,
-                            seed: Int = 0): Vector = {
+  private def randomWeights(topology: Array[Int], useSeed: Boolean, seed: Int = 0): Vector = {
     val rand: XORShiftRandom =
       if (useSeed == false) new XORShiftRandom() else new XORShiftRandom(seed)
     var i: Int = 0
@@ -308,12 +298,10 @@ private[ann] trait NeuralHelper {
     val bias = new Array[BDM[Double]](topology.size)
     var offset = 0
     for (i <- 1 until topology.size) {
-      weightMatrices(i) =
-        new BDM[Double](topology(i), topology(i - 1), weightsCopy, offset)
+      weightMatrices(i) = new BDM[Double](topology(i), topology(i - 1), weightsCopy, offset)
       offset += topology(i) * topology(i - 1)
       /* TODO: BDM */
-      bias(i) =
-        (new BDV[Double](weightsCopy, offset, 1, topology(i))).toDenseMatrix.t
+      bias(i) = (new BDV[Double](weightsCopy, offset, 1, topology(i))).toDenseMatrix.t
       offset += topology(i)
     }
     (weightMatrices, bias)
@@ -385,23 +373,17 @@ private[ann] trait NeuralHelper {
   }
 }
 
-private class ANNLeastSquaresGradient(val topology: Array[Int],
-                                      val batchSize: Int = 1)
+private class ANNLeastSquaresGradient(val topology: Array[Int], val batchSize: Int = 1)
     extends Gradient
     with NeuralHelper {
 
-  override def compute(data: Vector,
-                       label: Double,
-                       weights: Vector): (Vector, Double) = {
+  override def compute(data: Vector, label: Double, weights: Vector): (Vector, Double) = {
     val gradient = Vectors.zeros(weights.size)
     val loss = compute(data, label, weights, gradient)
     (gradient, loss)
   }
 
-  override def compute(data: Vector,
-                       label: Double,
-                       weights: Vector,
-                       cumGradient: Vector): Double = {
+  override def compute(data: Vector, label: Double, weights: Vector, cumGradient: Vector): Double = {
     val arrData = data.toArray
     val realBatchSize = arrData.length / (topology(0) + topology.last)
     val input = new BDM(topology(0), realBatchSize, arrData)

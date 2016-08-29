@@ -24,9 +24,7 @@ import org.apache.spark.rdd.RDD
 /**
   * Created by dirceu on 18/02/15.
   */
-class ComposedDataset(train: Dataset,
-                      test: Dataset,
-                      result: Option[RDD[(Double, Double)]]) {
+class ComposedDataset(train: Dataset, test: Dataset, result: Option[RDD[(Double, Double)]]) {
 
   def exportResult(path: String, locale: Locale = Locale.ENGLISH) = {
     val formatSymbols = new DecimalFormatSymbols(locale)

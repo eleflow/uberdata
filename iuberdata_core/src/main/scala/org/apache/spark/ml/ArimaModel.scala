@@ -69,12 +69,9 @@ class ArimaModel[L](
     val nFut = scContext.broadcast($(nFutures))
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
-        val features = row
-          .getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
-        val (ownFeaturesPrediction, forecast) = bestModel
-          .forecast(features, nFut.value)
-          .toArray
-          .splitAt(features.size)
+        val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
+        val (ownFeaturesPrediction, forecast) =
+          bestModel.forecast(features, nFut.value).toArray.splitAt(features.size)
         Row(
           row.toSeq :+ Vectors
             .dense(forecast) :+ SupportedAlgorithm.Arima.toString :+ bestModel.params :+ Vectors
@@ -122,8 +119,7 @@ object ArimaModel extends MLReadable[ArimaModel[_]] {
 
   }
 
-  private class ARIMARegressionModelReader[T](implicit kt: ClassTag[T],
-                                              ord: Ordering[T] = null)
+  private class ARIMARegressionModelReader[T](implicit kt: ClassTag[T], ord: Ordering[T] = null)
       extends MLReader[ArimaModel[T]] {
 
     /** Checked against metadata when loading model */

@@ -17,10 +17,7 @@
 
 package org.apache.spark.mllib.classification
 
-import org.apache.spark.mllib.ann.{
-  ArtificialNeuralNetworkModel,
-  ArtificialNeuralNetwork
-}
+import org.apache.spark.mllib.ann.{ArtificialNeuralNetworkModel, ArtificialNeuralNetwork}
 import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
@@ -276,14 +273,11 @@ object ANNClassifier {
     * @param seed
     * @return vector with random weights.
     */
-  def randomWeights(data: RDD[LabeledPoint],
-                    hiddenLayersTopology: Array[Int],
-                    seed: Int): Vector = {
+  def randomWeights(data: RDD[LabeledPoint], hiddenLayersTopology: Array[Int], seed: Int): Vector = {
     /* TODO: remove duplication - the same analysis will be done in ANNClassifier.run() */
     val labelCount = data.map(lp => lp.label).distinct().collect().length
     val featureCount = data.first().features.size
-    ArtificialNeuralNetwork
-      .randomWeights(featureCount, labelCount, hiddenLayersTopology, seed)
+    ArtificialNeuralNetwork.randomWeights(featureCount, labelCount, hiddenLayersTopology, seed)
   }
 
   /**
@@ -295,8 +289,7 @@ object ANNClassifier {
     * @param hiddenLayersTopology number of nodes per hidden layer, excluding the bias nodes.
     * @return vector with random weights.
     */
-  def randomWeights(data: RDD[LabeledPoint],
-                    hiddenLayersTopology: Array[Int]): Vector = {
+  def randomWeights(data: RDD[LabeledPoint], hiddenLayersTopology: Array[Int]): Vector = {
     randomWeights(data, hiddenLayersTopology, Random.nextInt())
   }
 }

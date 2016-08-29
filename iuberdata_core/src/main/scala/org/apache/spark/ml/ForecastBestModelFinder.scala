@@ -22,10 +22,7 @@ import org.apache.spark.Logging
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.{ParamMap, ParamPair}
-import org.apache.spark.ml.param.shared.{
-  HasTimeSeriesEvaluator,
-  HasWindowParams
-}
+import org.apache.spark.ml.param.shared.{HasTimeSeriesEvaluator, HasWindowParams}
 import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable}
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.rdd.RDD
@@ -83,8 +80,8 @@ class ForecastBestModelFinder[I, M <: ForecastBaseModel[M]](
     val forecastToBeValidated = Vectors.dense(new Array[Double]($(nFutures)))
     model.forecast(features, forecastToBeValidated).toArray
     $(windowParams).map { windowSize =>
-      val movingAverageToBeValidate = MovingAverageCalc
-        .simpleMovingAverageArray(forecastToBeValidated.toArray, windowSize)
+      val movingAverageToBeValidate =
+        MovingAverageCalc.simpleMovingAverageArray(forecastToBeValidated.toArray, windowSize)
       val toBeValidated = expectedResult.toArray.zip(movingAverageToBeValidate)
       val metric = broadcastEvaluator.value.evaluate(toBeValidated)
       val metricName = broadcastEvaluator.value.getMetricName

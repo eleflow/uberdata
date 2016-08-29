@@ -34,8 +34,7 @@ abstract class KeyValueEvaluator[T] extends Params {
     * @return metric
     */
   @Since("1.5.0")
-  def evaluate(dataSet: DataFrame,
-               paramMap: ParamMap): RDD[(T, (Int, Double))] = {
+  def evaluate(dataSet: DataFrame, paramMap: ParamMap): RDD[(T, (Int, Double))] = {
     this.copy(paramMap).evaluate(dataSet)
   }
 

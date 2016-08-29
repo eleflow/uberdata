@@ -60,9 +60,7 @@ object IUberdataContext {
   * User: paulomagalhaes
   * Date: 8/15/14 12:24 PM
   */
-class IUberdataContext(@transient sparkConf: SparkConf)
-    extends Serializable
-    with Logging {
+class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable with Logging {
 
   @transient protected lazy val s3Client: AmazonS3 = new AmazonS3Client()
   val version = UberdataCoreVersion.version
@@ -133,9 +131,7 @@ class IUberdataContext(@transient sparkConf: SparkConf)
   def getAllFilesRecursively(fullPath: Path): Seq[String] = {
     val fs = fullPath.getFileSystem(new Configuration)
     @tailrec
-    def iter(fs: FileSystem,
-             paths: Seq[Path],
-             result: Seq[String]): Seq[String] = paths match {
+    def iter(fs: FileSystem, paths: Seq[Path], result: Seq[String]): Seq[String] = paths match {
       case path :: tail =>
         val children: Seq[FileStatus] = try {
           fs.listStatus(path)
@@ -185,9 +181,7 @@ class IUberdataContext(@transient sparkConf: SparkConf)
     val guavaJar = "com.google.guava.*".r
     val mySqlDriver = "mysql-connector-java.*".r
     val oracle = "ojdbc6.*".r
-    val urls = this.getClass.getClassLoader
-      .asInstanceOf[java.net.URLClassLoader]
-      .getURLs
+    val urls = this.getClass.getClassLoader.asInstanceOf[java.net.URLClassLoader].getURLs
     val jarUrls = urls.filter(
       url =>
         sqoop.findFirstIn(url.getFile).isDefined

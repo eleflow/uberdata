@@ -33,38 +33,41 @@ import scala.reflect.ClassTag
   */
 abstract class BestModelFinder[L, M <: ForecastBaseModel[M]](implicit kt: ClassTag[L],
                                                              ord: Ordering[L] = null)
-  extends Estimator[M]  with PredictorParams with HasTimeSeriesEvaluator[L] with HasEstimatorParams
-  with HasNFutures with HasValidationCol {
+    extends Estimator[M]
+    with PredictorParams
+    with HasTimeSeriesEvaluator[L]
+    with HasEstimatorParams
+    with HasNFutures
+    with HasValidationCol {
 
   lazy val partialValidationCol = s"partial${$(validationCol)}"
   lazy val inputOutputDataType = new VectorUDT
 
-  def setValidationCol(colName:String) = set(validationCol,colName)
+  def setValidationCol(colName: String) = set(validationCol, colName)
 
   protected def train(dataSet: DataFrame): M
 
   override def fit(dataSet: DataFrame): M = {
-    copyValues(train(dataSet).setParent(this)
-     )
+    copyValues(train(dataSet).setParent(this))
   }
 
   protected def split(dataSet: DataFrame, nFutures: Int) = {
     dataSet.foreach { row =>
       val features = row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
       if (features.size - nFutures <= 0) {
-        throw new IllegalArgumentException(s"Row ${row.toSeq.mkString(",")} " +
-          s"has less timeseries attributes than nFutures")
+        throw new IllegalArgumentException(
+          s"Row ${row.toSeq.mkString(",")} " +
+            s"has less timeseries attributes than nFutures")
       }
     }
-    val data = dataSet.map {
-      row =>
-        val featuresIndex = row.fieldIndex($(featuresCol))
-        val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresIndex)
-        val trainSize = features.size - nFutures
-        val (validationFeatures, toBeValidated) = features.toArray.splitAt(trainSize)
-        val validationRow = row.toSeq.updated(featuresIndex, Vectors.dense(validationFeatures)) :+
+    val data = dataSet.map { row =>
+      val featuresIndex = row.fieldIndex($(featuresCol))
+      val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresIndex)
+      val trainSize = features.size - nFutures
+      val (validationFeatures, toBeValidated) = features.toArray.splitAt(trainSize)
+      val validationRow = row.toSeq.updated(featuresIndex, Vectors.dense(validationFeatures)) :+
           Vectors.dense(toBeValidated)
-        Row(validationRow: _*)
+      Row(validationRow: _*)
     }
     val context = dataSet.sqlContext
     context
@@ -91,20 +94,28 @@ abstract class BestModelFinder[L, M <: ForecastBaseModel[M]](implicit kt: ClassT
     copyValues(that, extra)
   }
 
-  protected def arimaEvaluation(row: Row, model: UberArimaModel,
-                                broadcastEvaluator: Broadcast[TimeSeriesEvaluator[L]],
-                                id: L, parameters: ParamMap):
-  (UberArimaModel, ModelParamEvaluation[L]) = {
+  protected def arimaEvaluation(
+    row: Row,
+    model: UberArimaModel,
+    broadcastEvaluator: Broadcast[TimeSeriesEvaluator[L]],
+    id: L,
+    parameters: ParamMap): (UberArimaModel, ModelParamEvaluation[L]) = {
     val features = row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
-    log.warn(s"Evaluating forecast for id $id, with parameters p ${model.p}, d ${model.d} " +
-      s"and q ${model.q}")
+    log.warn(
+      s"Evaluating forecast for id $id, with parameters p ${model.p}, d ${model.d} " +
+        s"and q ${model.q}")
 
-    val (forecastToBeValidated, _) = model.forecast(features, $(nFutures))
-      .toArray.splitAt(features.size)
+    val (forecastToBeValidated, _) =
+      model.forecast(features, $(nFutures)).toArray.splitAt(features.size)
     val toBeValidated = features.toArray.zip(forecastToBeValidated)
     val metric = broadcastEvaluator.value.evaluate(toBeValidated)
     val metricName = broadcastEvaluator.value.getMetricName
-    (model, new ModelParamEvaluation[L](id, metric, parameters, Some(metricName),
-      SupportedAlgorithm.Arima))
+    (model,
+     new ModelParamEvaluation[L](
+       id,
+       metric,
+       parameters,
+       Some(metricName),
+       SupportedAlgorithm.Arima))
   }
 }

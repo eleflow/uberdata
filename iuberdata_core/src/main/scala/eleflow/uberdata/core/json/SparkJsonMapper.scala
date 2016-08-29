@@ -21,10 +21,7 @@ import java.util.Properties
 import eleflow.uberdata.core.data.json.{TaskEnd, _}
 import org.apache.spark.UberRDDOperationScope
 import org.apache.spark.rdd.RDDOperationScope
-import org.apache.spark.scheduler.{
-  SparkListenerApplicationEnd,
-  SparkListenerApplicationStart
-}
+import org.apache.spark.scheduler.{SparkListenerApplicationEnd, SparkListenerApplicationStart}
 import org.apache.spark.storage.{BlockId, BlockStatus, RDDInfo, StorageLevel}
 import play.api.libs.json._
 import play.api.libs.functional.syntax._

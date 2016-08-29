@@ -80,8 +80,7 @@ final class DateTimeParser(offset: Int) extends Serializable {
     Some(formatter.parseDateTime(dateString)) //.minusMillis(offset))
   }
 
-  def parse(dateString: String,
-            dateFormatOption: Option[String]): Option[DateTime] = {
+  def parse(dateString: String, dateFormatOption: Option[String]): Option[DateTime] = {
     dateFormatOption match {
       case Some(dateFormat) =>
         parse(dateString, dateFormat)

@@ -24,22 +24,29 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
 
 /**
- * Created by dirceu on 25/08/16.
- */
+  * Created by dirceu on 25/08/16.
+  */
 object UberXGBoostModel {
-	def train(trainLabel: RDD[LabeledPoint], configMap: Map[String, AnyRef], round: Int,
-						nWorkers: Int) = {
-		XGBoost.train(trainLabel, configMap, round, nWorkers)
-	}
+  def train(trainLabel: RDD[LabeledPoint],
+            configMap: Map[String, AnyRef],
+            round: Int,
+            nWorkers: Int) = {
+    XGBoost.train(trainLabel, configMap, round, nWorkers)
+  }
 
-	def labelPredict(testSet: RDD[XGBLabeledPoint], useExternalCache: Boolean = false,
-									 booster: XGBoostModel): RDD[(Float, Float)] = {
-		val broadcastBooster = testSet.sparkContext.broadcast(booster)
-		testSet.mapPartitions { testData =>
-			val prediction = broadcastBooster.value.predict(new DMatrix(testData)).flatten
-			testData.toArray.zip(prediction).map { case (labeledPoint, prediction) =>
-				(labeledPoint.label, prediction)
-			}.toIterator
-		}
-	}
+  def labelPredict(testSet: RDD[XGBLabeledPoint],
+                   useExternalCache: Boolean = false,
+                   booster: XGBoostModel): RDD[(Float, Float)] = {
+    val broadcastBooster = testSet.sparkContext.broadcast(booster)
+    testSet.mapPartitions { testData =>
+      val prediction = broadcastBooster.value.predict(new DMatrix(testData)).flatten
+      testData.toArray
+        .zip(prediction)
+        .map {
+          case (labeledPoint, prediction) =>
+            (labeledPoint.label, prediction)
+        }
+        .toIterator
+    }
+  }
 }

@@ -50,8 +50,7 @@ abstract class BaseTimeSeriesGenerator
     Row(values: _*)
   }
 
-  def convertColumnToDouble(toBeTransformed: Row,
-                            colIndex: Broadcast[Int]): Row = {
+  def convertColumnToDouble(toBeTransformed: Row, colIndex: Broadcast[Int]): Row = {
     val (prior, after) = toBeTransformed.toSeq.splitAt(colIndex.value)
     val converted =
       DataTransformer.toDouble(toBeTransformed.get(colIndex.value))

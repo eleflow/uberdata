@@ -80,13 +80,9 @@ object DataTransformer {
   }
 
   //TODO
-  def idAndTargetAtHead(train: Dataset,
-                        test: Dataset,
-                        target: Seq[String],
-                        id: Seq[String]) = {
+  def idAndTargetAtHead(train: Dataset, test: Dataset, target: Seq[String], id: Seq[String]) = {
     val newTrain =
-      if (train
-            .columnIndexOf(target.head) == 1 && train.columnIndexOf(id.head) == 0) {
+      if (train.columnIndexOf(target.head) == 1 && train.columnIndexOf(id.head) == 0) {
         train
       } else {
         val trainColumnNames = id ++ target ++ train
@@ -115,10 +111,7 @@ object DataTransformer {
                                 test: Dataset,
                                 target: Seq[String],
                                 id: Seq[String]) = {
-    train
-      .sliceByName(excludes = target)
-      .unionAll(test)
-      .sliceByName(excludes = id)
+    train.sliceByName(excludes = target).unionAll(test).sliceByName(excludes = id)
   }
 
   def createLabeledPointFromRDD(
@@ -130,13 +123,13 @@ object DataTransformer {
     columnsSize: Int
   ): RDD[((Double, Any), LabeledPoint)] = {
     // TODO Break in two methods. One for train another for test
-    val fields = dataset.dtypes.zipWithIndex
-      .filter(f => !target.contains(f._1._1) && !id.contains(f._1._1))
+    val fields =
+      dataset.dtypes.zipWithIndex.filter(f => !target.contains(f._1._1) && !id.contains(f._1._1))
     val targetFieldType = dataset.dtypes.filter(f => target.contains(f._1))
     val targetIndices = target.map(f => dataset.columnIndexOf(f))
     val idIndices = id.map(f => dataset.columnIndexOf(f))
-    val normalizedStrings = dataset.sqlContext.sparkContext
-      .broadcast(summarizedColumns.collectAsMap())
+    val normalizedStrings =
+      dataset.sqlContext.sparkContext.broadcast(summarizedColumns.collectAsMap())
     val columnShift = id.size + target.size
 
     dataset.rdd.zipWithIndex.map {
@@ -253,9 +246,7 @@ object DataTransformer {
                            train: RDD[LabeledPoint],
                            validation: RDD[LabeledPoint],
                            test: RDD[((Double, Any), LabeledPoint)])
-    : (RDD[LabeledPoint],
-       RDD[LabeledPoint],
-       RDD[((Double, Any), LabeledPoint)]) = {
+    : (RDD[LabeledPoint], RDD[LabeledPoint], RDD[((Double, Any), LabeledPoint)]) = {
     val (_, columnsIndex) = columns.unzip
     val trainlp = extractColumns(columnsIndex, train)
     val validationlp = extractColumns(columnsIndex, validation)
@@ -265,8 +256,7 @@ object DataTransformer {
     (trainlp, validationlp, testlp)
   }
 
-  def extractColumns(columnsIndex: mutable.IndexedSeq[Int],
-                     train: RDD[LabeledPoint]) = {
+  def extractColumns(columnsIndex: mutable.IndexedSeq[Int], train: RDD[LabeledPoint]) = {
     train.map(extractLP(columnsIndex)(_))
   }
 

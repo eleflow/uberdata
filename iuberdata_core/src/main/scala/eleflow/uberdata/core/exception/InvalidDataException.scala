@@ -20,8 +20,6 @@ import scala.util.control.NoStackTrace
 /**
   * Created by dirceu on 04/11/14.
   */
-class InvalidDataException(message: String)
-    extends Exception(message)
-    with NoStackTrace {
+class InvalidDataException(message: String) extends Exception(message) with NoStackTrace {
   def this() = this("")
 }

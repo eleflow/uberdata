@@ -20,8 +20,6 @@ import scala.util.control.NoStackTrace
 /**
   * Created by dirceu on 15/10/14.
   */
-class UnexpectedFileFormatException(message: String)
-    extends Exception(message)
-    with NoStackTrace {
+class UnexpectedFileFormatException(message: String) extends Exception(message) with NoStackTrace {
   def this() = this("")
 }

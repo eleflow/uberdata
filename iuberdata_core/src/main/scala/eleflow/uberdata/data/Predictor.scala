@@ -106,8 +106,7 @@ trait Predictor extends Serializable with Logging {
     val columns = svmModel.weights.toArray.zipWithIndex
       .sortBy(_._1)(Ordering[Double].reverse)
       .take(columnsToUse)
-    log.info(s"Using columns weight of ${columns
-      .map(_._1)} and columns ids ${columns.map(_._2)}")
+    log.info(s"Using columns weight of ${columns.map(_._1)} and columns ids ${columns.map(_._2)}")
     val (trainlp, validationlp, testlp) = extractColumnsFromLP(
       columns,
       trainDataSetCached.values,
@@ -161,20 +160,20 @@ trait Predictor extends Serializable with Logging {
     )
   }
 
-  def predictEvolutiveMiddleStart(middle: Int,
-                                  featuresSize: Int,
-                                  quantity: Int,
-                                  trainLP: RDD[LabeledPoint],
-                                  validationLP: RDD[LabeledPoint],
-                                  testLP: RDD[((Double, Any), LabeledPoint)],
-                                  method: ValidationMethod,
-                                  iterations: Int,
-                                  algorithm: Algorithm,
-                                  columns: Array[String],
-                                  previousScore: Double = 0.0,
-                                  topScore: Double = 0.0001,
-                                  result: List[(Double, Array[Int])] =
-                                    List.empty): List[(Double, Array[Int])] = {
+  def predictEvolutiveMiddleStart(
+    middle: Int,
+    featuresSize: Int,
+    quantity: Int,
+    trainLP: RDD[LabeledPoint],
+    validationLP: RDD[LabeledPoint],
+    testLP: RDD[((Double, Any), LabeledPoint)],
+    method: ValidationMethod,
+    iterations: Int,
+    algorithm: Algorithm,
+    columns: Array[String],
+    previousScore: Double = 0.0,
+    topScore: Double = 0.0001,
+    result: List[(Double, Array[Int])] = List.empty): List[(Double, Array[Int])] = {
 
     if (previousScore > topScore) result
     else {
@@ -193,8 +192,7 @@ trait Predictor extends Serializable with Logging {
             lp =>
               LabeledPoint(
                 lp.label,
-                Vectors
-                  .dense(getIndices(lp.features.toArray, featureCombination))
+                Vectors.dense(getIndices(lp.features.toArray, featureCombination))
             )
           )
           .persist(StorageLevel.MEMORY_AND_DISK_SER)
@@ -203,8 +201,7 @@ trait Predictor extends Serializable with Logging {
             lp =>
               LabeledPoint(
                 lp.label,
-                Vectors
-                  .dense(getIndices(lp.features.toArray, featureCombination))
+                Vectors.dense(getIndices(lp.features.toArray, featureCombination))
             )
           )
           .persist(StorageLevel.MEMORY_AND_DISK_SER)
@@ -224,8 +221,8 @@ trait Predictor extends Serializable with Logging {
         (result, (featureCombination.toArray, hash, toSubmit))
       //        (result,featureCombination)
       }
-      val scores = (TreeMap
-        .empty[Double, (Array[Int], String, RDD[String])] ++ results.toMap).toList.reverse
+      val scores =
+        (TreeMap.empty[Double, (Array[Int], String, RDD[String])] ++ results.toMap).toList.reverse
 
       println(scores)
       val topScores = scores.slice(0, 10)
@@ -271,11 +268,7 @@ trait Predictor extends Serializable with Logging {
 
   def getRandomCombinationsRandomSize(quantity: Int, m: Int) = {
     (for (i <- (1 to quantity))
-      yield
-        (Random
-          .shuffle((0 to (m - 1)).toList)
-          .combinations(Random.nextInt(m - 1) + 1)
-          .next))
+      yield (Random.shuffle((0 to (m - 1)).toList).combinations(Random.nextInt(m - 1) + 1).next))
   }
 
   def getIndices(array: Array[Double], indices: Seq[Int]) = {
@@ -296,8 +289,7 @@ trait Predictor extends Serializable with Logging {
     (model, validate(prediction, method), columns)
   }
 
-  def take(models: Array[(Models, Double, Array[String])],
-           method: ValidationMethod) = {
+  def take(models: Array[(Models, Double, Array[String])], method: ValidationMethod) = {
     val sorted = method match {
       case LogarithmicLoss =>
         models.sortWith(_._2 < _._2)
@@ -497,8 +489,7 @@ trait Predictor extends Serializable with Logging {
     }
   }
 
-  def neuralNetworkPredict(model: ANNClassifierModel,
-                           dataSet: RDD[LabeledPoint]) =
+  def neuralNetworkPredict(model: ANNClassifierModel, dataSet: RDD[LabeledPoint]) =
     dataSet.map(f => (f.label, model.predict(f.features)))
 
   def svmPredict(model: SVMModel, dataSet: RDD[LabeledPoint]) = {
@@ -506,15 +497,13 @@ trait Predictor extends Serializable with Logging {
     dataSet.map(f => (f.label, model.predict(f.features)))
   }
 
-  def binaryLogisticRegressionPredict(model: LogisticRegressionModel,
-                                      dataSet: RDD[LabeledPoint]) = {
+  def binaryLogisticRegressionPredict(model: LogisticRegressionModel, dataSet: RDD[LabeledPoint]) = {
     model.clearThreshold()
     dataSet.map(f => (f.label, model.predict(f.features)))
   }
 
   //  private
-  def linearPredict(model: GeneralizedLinearModel,
-                    dataSet: RDD[LabeledPoint]) =
+  def linearPredict(model: GeneralizedLinearModel, dataSet: RDD[LabeledPoint]) =
     dataSet.map(f => (f.label, model.predict(f.features)))
 
   def naiveBayesPredict(model: NaiveBayesModel, rdd: RDD[LabeledPoint]) =
@@ -553,15 +542,11 @@ trait Predictor extends Serializable with Logging {
     val (trainDataSet, validationDataSet) =
       splitRddInTestValidation(train, (1D - validationPercentage))
 
-    (trainDataSet.cache,
-     filteredTrainDataSetCached,
-     validationDataSet.cache,
-     test)
+    (trainDataSet.cache, filteredTrainDataSetCached, validationDataSet.cache, test)
   }
 
   //  private
-  def splitRddInTestValidation[T](dataSet: RDD[T],
-                                  train: Double = 0.7): (RDD[T], RDD[T]) = {
+  def splitRddInTestValidation[T](dataSet: RDD[T], train: Double = 0.7): (RDD[T], RDD[T]) = {
     require(train < 1d)
     require(train > 0)
     val split = dataSet.randomSplit(Array(train, 1 - train))
@@ -594,8 +579,7 @@ trait Predictor extends Serializable with Logging {
     }
   }
 
-  def binaryLogisticRegressionModelSGD(dataSet: RDD[LabeledPoint],
-                                       iterations: Int) = {
+  def binaryLogisticRegressionModelSGD(dataSet: RDD[LabeledPoint], iterations: Int) = {
     val regression = new LogisticRegressionWithSGD()
     regression.optimizer.setNumIterations(iterations)
     //    regression.optimizer.setRegParam(0.1d)
@@ -608,8 +592,7 @@ trait Predictor extends Serializable with Logging {
     )
   }
 
-  def binaryLogisticRegressionModel(dataSet: RDD[LabeledPoint],
-                                    iterations: Int) = {
+  def binaryLogisticRegressionModel(dataSet: RDD[LabeledPoint], iterations: Int) = {
     val regression = new LogisticRegressionWithLBFGS()
     regression.optimizer.setNumIterations(iterations)
     val model = regression.run(dataSet)
@@ -635,8 +618,7 @@ trait Predictor extends Serializable with Logging {
   }
 
   //private
-  def linearLeastSquaresModel(trainDataSet: RDD[LabeledPoint],
-                              iterations: Int) = {
+  def linearLeastSquaresModel(trainDataSet: RDD[LabeledPoint], iterations: Int) = {
     val model = LassoWithSGD.train(trainDataSet, iterations)
     TrainedData[RegressionModel](model, LinearLeastSquares, iterations)
   }
@@ -668,9 +650,7 @@ trait Predictor extends Serializable with Logging {
 
     val categoricalFeatures = trans.collectAsMap.filter(_._2 >= 2)
     val bins = maxBins.getOrElse(
-      categoricalFeatures.headOption
-        .map(_ => categoricalFeatures.values.max + 1)
-        .getOrElse(100)
+      categoricalFeatures.headOption.map(_ => categoricalFeatures.values.max + 1).getOrElse(100)
     )
     val dtreeModel = TrainedData(
       DecisionTree.trainClassifier(
@@ -960,9 +940,7 @@ trait Predictor extends Serializable with Logging {
   }
 
   //  private
-  def determineAlgorithm(dataSet: DataFrame,
-                         targetIndex: Int,
-                         algorithm: Algorithm) = {
+  def determineAlgorithm(dataSet: DataFrame, targetIndex: Int, algorithm: Algorithm) = {
     algorithm match {
       case ToBeDetermined =>
         val targetDataSet = dataSet.map(f => f(targetIndex)).distinct()
@@ -1142,17 +1120,13 @@ trait Predictor extends Serializable with Logging {
     )
   }
 
-  def datasetKeyJoin(testKeys: RDD[(Double, Any)],
-                     testPredict: RDD[(Double, Double)]) = {
+  def datasetKeyJoin(testKeys: RDD[(Double, Any)], testPredict: RDD[(Double, Double)]) = {
     import org.apache.spark.rdd.PairRDDFunctions
     testKeys.join(testPredict).values
   }
 
-  def datasetKeyJoinLabel(testKeys: RDD[(Double, Any)],
-                          values: RDD[LabeledPoint]) = {
-    testKeys
-      .join(values.map(labelPoint => (labelPoint.label, labelPoint)))
-      .values
+  def datasetKeyJoinLabel(testKeys: RDD[(Double, Any)], values: RDD[LabeledPoint]) = {
+    testKeys.join(values.map(labelPoint => (labelPoint.label, labelPoint))).values
   }
 
   def predictGeneric(
@@ -1187,16 +1161,10 @@ trait Predictor extends Serializable with Logging {
     val validationPredict = executePredict(model, validationDataSet.values)
     val testPredict = executePredict(model, testDataSet.values.cache)
 
-    (validationPredict,
-     model,
-     testDataSet,
-     validationDataSet,
-     trainDataSetCached,
-     testPredict)
+    (validationPredict, model, testDataSet, validationDataSet, trainDataSetCached, testPredict)
   }
 
-  def decisionTreePredict(model: DecisionTreeModel,
-                          dataSet: RDD[LabeledPoint]) =
+  def decisionTreePredict(model: DecisionTreeModel, dataSet: RDD[LabeledPoint]) =
     dataSet.map(f => (f.label, model.predict(f.features)))
 
   def binaryStatistics(scoreAndLabels: RDD[(Double, Double)]) =
@@ -1212,9 +1180,7 @@ trait Predictor extends Serializable with Logging {
 
   //  private
   def stats(rdd: RDD[Double]): StatCounter =
-    rdd
-      .mapPartitions(nums => Iterator(StatCounter(nums)))
-      .reduce((a, b) => a.merge(b))
+    rdd.mapPartitions(nums => Iterator(StatCounter(nums))).reduce((a, b) => a.merge(b))
 
   def linearPredict(model: LassoModel, id: Any, label: LabeledPoint) =
     (id, model.predict(label.features))
@@ -1277,8 +1243,7 @@ trait Predictor extends Serializable with Logging {
           train
             .columnNames()
             .filter(
-              columnName =>
-                !ids.contains(columnName) && !target.contains(columnName)
+              columnName => !ids.contains(columnName) && !target.contains(columnName)
             )
         )
         .distinct

@@ -17,10 +17,7 @@
 package org.apache.spark.ml.evaluation
 
 import org.apache.spark.mllib.linalg.Vectors
-import org.apache.spark.mllib.stat.{
-  MultivariateOnlineSummarizer,
-  MultivariateStatisticalSummary
-}
+import org.apache.spark.mllib.stat.{MultivariateOnlineSummarizer, MultivariateStatisticalSummary}
 
 /**
   * Created by dirceu on 11/05/16.

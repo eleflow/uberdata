@@ -16,11 +16,7 @@
 
 package org.apache.spark.ml
 
-import com.cloudera.sparkts.models.{
-  UberHoltWintersModel,
-  TimeSeriesModel,
-  UberArimaModel
-}
+import com.cloudera.sparkts.models.{UberHoltWintersModel, TimeSeriesModel, UberArimaModel}
 import eleflow.uberdata.enums.SupportedAlgorithm
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.param.ParamMap
@@ -52,9 +48,7 @@ class ForecastBestModel[L](
   }
 
   override def transformSchema(schema: StructType): StructType = {
-    super
-      .transformSchema(schema)
-      .add(StructField("featuresValidation", new VectorUDT))
+    super.transformSchema(schema).add(StructField("featuresValidation", new VectorUDT))
   }
 
   def evaluateParams(models: Seq[(TimeSeriesModel, ModelParamEvaluation[L])],
@@ -126,8 +120,7 @@ class ForecastBestModel[L](
     val nFut = scContext.broadcast($(nFutures))
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
-        val features = row
-          .getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
+        val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
         val prediction = {
           evaluateParams(metrics, features, nFut)
         }

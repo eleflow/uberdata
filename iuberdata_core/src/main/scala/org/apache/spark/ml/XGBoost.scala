@@ -29,22 +29,24 @@ import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable}
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
-import org.apache.spark.sql.types.{
-  ArrayType,
-  DoubleType,
-  StructField,
-  StructType
-}
+import org.apache.spark.sql.types.{ArrayType, DoubleType, StructField, StructType}
 
 import scala.reflect.ClassTag
 
 /**
   * Created by dirceu on 29/06/16.
   */
-class XGBoost[I](override val uid: String, val models: RDD[(I, (UberXGBOOSTModel, Seq[(ModelParamEvaluation[I])]))])
-                (implicit kt: ClassTag[I], ord: Ordering[I] = null) extends ForecastBaseModel[XGBoostSmallModel[I]]
-  with HasInputCol with HasOutputCol with DefaultParamsWritable with HasFeaturesCol with HasNFutures
-with HasGroupByCol {
+class XGBoost[I](override val uid: String,
+                 val models: RDD[(I, (UberXGBOOSTModel, Seq[(ModelParamEvaluation[I])]))])(
+  implicit kt: ClassTag[I],
+  ord: Ordering[I] = null)
+    extends ForecastBaseModel[XGBoostSmallModel[I]]
+    with HasInputCol
+    with HasOutputCol
+    with DefaultParamsWritable
+    with HasFeaturesCol
+    with HasNFutures
+    with HasGroupByCol {
 
   def this(
     models: RDD[(I, (UberXGBOOSTModel, Seq[(ModelParamEvaluation[I])]))]
@@ -75,8 +77,7 @@ with HasGroupByCol {
         Row(
           row.toSeq :+ Vectors
             .dense(forecast) :+ SupportedAlgorithm.XGBoostAlgorithm.toString :+ bestModel.params
-            .map(f => f._1 -> f._2.toString) :+ Vectors
-            .dense(ownFeaturesPrediction): _*
+            .map(f => f._1 -> f._2.toString) :+ Vectors.dense(ownFeaturesPrediction): _*
         )
     }
     dataSet.sqlContext.createDataFrame(predictions, predSchema)

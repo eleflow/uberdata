@@ -23,5 +23,8 @@ import org.apache.spark.sql.DataFrame
   * Created by dirceu on 30/06/16.
   */
 class XGBoostLinearSummary[T](@transient val predictions: DataFrame,
-    val predictionCol: String, val labelCol: String, val model: XGBoostSmallModel[T],
-		private val diagInvAtWA: Array[Double]) extends Serializable
+                              val predictionCol: String,
+                              val labelCol: String,
+                              val model: XGBoostSmallModel[T],
+                              private val diagInvAtWA: Array[Double])
+    extends Serializable

@@ -59,8 +59,7 @@ class HoltWintersModel[T](
     val nFut = scContext.broadcast($(nFutures))
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
-        val features = row
-          .getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
+        val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
 
         val forecast = Vectors.dense(new Array[Double](nFut.value))
         bestModel.forecast(features, forecast)
@@ -76,22 +75,17 @@ class HoltWintersModel[T](
     case (id, (model, row)) =>
       val features = row.getAs[Vector]($(featuresCol))
       val futures = $(nFutures)
-      val forecast = model
-        .forecast(features, Vectors.dense(Array[Double](futures)))
-        .toArray //.drop(features.size)
+      val forecast = model.forecast(features, Vectors.dense(Array[Double](futures))).toArray //.drop(features.size)
       val (featuresPrediction, forecastPrediction) =
         forecast.splitAt(features.size)
       Row(
-        row.toSeq :+ Vectors.dense(forecastPrediction) :+ Vectors
-          .dense(featuresPrediction): _*
+        row.toSeq :+ Vectors.dense(forecastPrediction) :+ Vectors.dense(featuresPrediction): _*
       )
   }
 
   override def copy(extra: ParamMap): HoltWintersModel[T] = {
     val newModel = copyValues(new HoltWintersModel[T](uid, models), extra)
-    newModel
-      .setValidationCol($(validationCol))
-      .asInstanceOf[HoltWintersModel[T]]
+    newModel.setValidationCol($(validationCol)).asInstanceOf[HoltWintersModel[T]]
   }
 
 }

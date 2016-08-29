@@ -22,6 +22,6 @@ package eleflow.uberdata.core.enums
 object SparkJsonEnum extends Enumeration with Serializable {
 
   type JSon = Value
-  val AccumulableInfo, StageCompleted, StageSubmitted, TaskStart,
-  TaskGettingResult, TaskEnd, JobStart, JobEnd = Value
+  val AccumulableInfo, StageCompleted, StageSubmitted, TaskStart, TaskGettingResult, TaskEnd,
+  JobStart, JobEnd = Value
 }

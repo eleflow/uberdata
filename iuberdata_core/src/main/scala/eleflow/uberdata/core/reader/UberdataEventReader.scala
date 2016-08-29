@@ -45,26 +45,18 @@ object UberdataEventReader {
       import play.api.libs.json._
       jsonName match {
         case value if value == SparkJsonEnum.JobEnd.toString =>
-          Json
-            .fromJson[JobEnd](Json.parse(json))
-            .get // Serialization.read[JobEnd](json)
+          Json.fromJson[JobEnd](Json.parse(json)).get // Serialization.read[JobEnd](json)
         case value if value == SparkJsonEnum.JobStart.toString =>
-          Json
-            .fromJson[JobStart](Json.parse(json))
-            .get // Serialization.read[JobStart](json)
+          Json.fromJson[JobStart](Json.parse(json)).get // Serialization.read[JobStart](json)
         case value
             if value == SparkJsonEnum.StageCompleted.toString || value == SparkJsonEnum.StageSubmitted.toString =>
-          Json
-            .fromJson[Stage](Json.parse(json))
-            .get // Serialization.read[Stage](json)
+          Json.fromJson[Stage](Json.parse(json)).get // Serialization.read[Stage](json)
         case value if value == SparkJsonEnum.TaskEnd.toString =>
           Json
             .fromJson[Map[String, String]](Json.parse(json))
             .get // Serialization.read[TaskEnd](json)
         case value if value == SparkJsonEnum.TaskStart.toString =>
-          Json
-            .fromJson[TaskStart](Json.parse(json))
-            .get // Serialization.read[TaskStart](json)
+          Json.fromJson[TaskStart](Json.parse(json)).get // Serialization.read[TaskStart](json)
         case value if value == SparkJsonEnum.TaskGettingResult.toString =>
           Json
             .fromJson[TaskGettingResult](Json.parse(json))
@@ -110,9 +102,7 @@ object UberdataEventReader {
     }
     val grouped = uc.sparkContext.parallelize(values).cache
     grouped.keys.distinct.collect.foreach { tableName =>
-      sqlContext.read
-        .json(grouped.filter(_._1 == tableName).values)
-        .registerTempTable(tableName)
+      sqlContext.read.json(grouped.filter(_._1 == tableName).values).registerTempTable(tableName)
     }
   }
 

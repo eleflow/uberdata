@@ -21,10 +21,7 @@ import org.apache.spark.storage.{BlockStatus, StorageLevel, RDDInfo}
 /**
   * Created by dirceu on 30/11/15.
   */
-case class StageJobRelation(appId: String,
-                            stageId: Int,
-                            attemptId: Int,
-                            jobId: Int)
+case class StageJobRelation(appId: String, stageId: Int, attemptId: Int, jobId: Int)
 
 case class Stage(
   appId: String,

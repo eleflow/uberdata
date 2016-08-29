@@ -20,11 +20,7 @@ import com.cloudera.sparkts.models.UberHoltWintersModel
 import org.apache.spark.Logging
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.util.{
-  DefaultParamsReadable,
-  DefaultParamsWritable,
-  Identifiable
-}
+import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 
@@ -100,8 +96,7 @@ class HoltWintersBestModelFinder[L](
   }
 }
 
-object HoltWintersBestModelFinder
-    extends DefaultParamsReadable[HoltWintersBestModelFinder[_]] {
+object HoltWintersBestModelFinder extends DefaultParamsReadable[HoltWintersBestModelFinder[_]] {
 
   override def load(path: String): HoltWintersBestModelFinder[_] =
     super.load(path)

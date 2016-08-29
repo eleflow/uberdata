@@ -147,8 +147,7 @@ final class TimeSeriesEvaluator[L](
     defaultCopy(extra)
 }
 
-object TimeSeriesEvaluator
-    extends DefaultParamsReadable[TimeSeriesEvaluator[_]] {
+object TimeSeriesEvaluator extends DefaultParamsReadable[TimeSeriesEvaluator[_]] {
 
   override def load(path: String): TimeSeriesEvaluator[_] = super.load(path)
 

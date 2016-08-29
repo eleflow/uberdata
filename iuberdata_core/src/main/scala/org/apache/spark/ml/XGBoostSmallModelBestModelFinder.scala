@@ -1,18 +1,18 @@
 /*
-* Copyright 2015 eleflow.com.br.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2015 eleflow.com.br.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package org.apache.spark.ml
 
@@ -41,133 +41,145 @@ import scala.reflect.ClassTag
 	* Created by dirceu on 30/06/16.
 	*/
 class XGBoostSmallModelBestModelFinder[L, G](override val uid: String)(implicit gt: ClassTag[G],
-																																			 lt: ClassTag[L])
-	extends BestModelFinder[L, XGBoostSmallModel[G]]
-		with DefaultParamsWritable
-		with HasXGBoostParams
-		with HasIdCol
-		with HasGroupByCol
-		with TimeSeriesBestModelFinder with Logging {
-	def this()(implicit gt: ClassTag[G], lt: ClassTag[L]) = this(Identifiable.randomUID
-	  ("xgboostsmall"))
+                                                                       lt: ClassTag[L])
+    extends BestModelFinder[L, XGBoostSmallModel[G]]
+    with DefaultParamsWritable
+    with HasXGBoostParams
+    with HasIdCol
+    with HasGroupByCol
+    with TimeSeriesBestModelFinder
+    with Logging {
+  def this()(implicit gt: ClassTag[G], lt: ClassTag[L]) =
+    this(Identifiable.randomUID("xgboostsmall"))
 
-	def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[L]): XGBoostSmallModelBestModelFinder[L, G] =
-		set(timeSeriesEvaluator, eval)
+  def setTimeSeriesEvaluator(
+    eval: TimeSeriesEvaluator[L]): XGBoostSmallModelBestModelFinder[L, G] =
+    set(timeSeriesEvaluator, eval)
 
-	def setEstimatorParamMaps(value: Array[ParamMap]): this.type = set(estimatorParamMaps, value)
+  def setEstimatorParamMaps(value: Array[ParamMap]): this.type = set(estimatorParamMaps, value)
 
-	override def setValidationCol(value: String): XGBoostSmallModelBestModelFinder[L, G] =
-		set(validationCol, value)
+  override def setValidationCol(value: String): XGBoostSmallModelBestModelFinder[L, G] =
+    set(validationCol, value)
 
-	def setLabelCol(label: String): this.type = set(labelCol, label)
+  def setLabelCol(label: String): this.type = set(labelCol, label)
 
-	def setGroupByCol(toGroupBy: String): this.type = set(groupByCol, toGroupBy)
+  def setGroupByCol(toGroupBy: String): this.type = set(groupByCol, toGroupBy)
 
-	def setIdCol(id: String): this.type = set(idCol, id)
+  def setIdCol(id: String): this.type = set(idCol, id)
 
-	def setXGBoostParams(params: Map[String, Any]): this.type = set(xGBoostParams, params)
+  def setXGBoostParams(params: Map[String, Any]): this.type = set(xGBoostParams, params)
 
-	def getOrdering(metricName: String): Ordering[Double] = {
-		metricName match {
-			case "re" => Ordering.Double.reverse
-			case    _ => Ordering.Double
-		}
-	}
+  def getOrdering(metricName: String): Ordering[Double] = {
+    metricName match {
+      case "re" => Ordering.Double.reverse
+      case _ => Ordering.Double
+    }
+  }
 
-	def modelEvaluation(idModels: RDD[(G, Row, Seq[(ParamMap, UberXGBOOSTModel)])]):
-	RDD[(G, (UberXGBOOSTModel, Seq[ModelParamEvaluation[G]]))] = {
-		val eval = $(timeSeriesEvaluator)
-		val broadcastEvaluator = idModels.context.broadcast(eval)
-		val ordering = TimeSeriesEvaluator.ordering(eval.getMetricName)
-		idModels.map {
-			case (id, row, models) =>
-				val evaluatedModels = models.map {
-					case (parameters, model) =>
-						(model, xGBoostEvaluation(row, model.boosterInstance, broadcastEvaluator, id,
-							parameters))
-				}
-				val sorted = evaluatedModels.sortBy(_._2.metricResult)(ordering)
-				log.warn(s"best model reach ${sorted.head._2.metricResult}")
-				log.warn(s"best model params ${sorted.head._2.params}")
+  def modelEvaluation(idModels: RDD[(G, Row, Seq[(ParamMap, UberXGBOOSTModel)])])
+    : RDD[(G, (UberXGBOOSTModel, Seq[ModelParamEvaluation[G]]))] = {
+    val eval = $(timeSeriesEvaluator)
+    val broadcastEvaluator = idModels.context.broadcast(eval)
+    val ordering = TimeSeriesEvaluator.ordering(eval.getMetricName)
+    idModels.map {
+      case (id, row, models) =>
+        val evaluatedModels = models.map {
+          case (parameters, model) =>
+            (model,
+             xGBoostEvaluation(row, model.boosterInstance, broadcastEvaluator, id, parameters))
+        }
+        val sorted = evaluatedModels.sortBy(_._2.metricResult)(ordering)
+        log.warn(s"best model reach ${sorted.head._2.metricResult}")
+        log.warn(s"best model params ${sorted.head._2.params}")
 
-				val (bestModel, _) = sorted.head
-				(id, (bestModel, sorted.map(_._2)))
-		}
-	}
+        val (bestModel, _) = sorted.head
+        (id, (bestModel, sorted.map(_._2)))
+    }
+  }
 
+  protected def xGBoostEvaluation(row: Row,
+                                  model: Booster,
+                                  broadcastEvaluator: Broadcast[TimeSeriesEvaluator[L]],
+                                  id: G,
+                                  parameters: ParamMap): ModelParamEvaluation[G] = {
+    val featuresArray = row
+      .getAs[Array[org.apache.spark.mllib.linalg.Vector]](IUberdataForecastUtil.FEATURES_COL_NAME)
+      .map { vec =>
+        val values = vec.toArray.map(DataTransformer.toFloat)
+        LabeledPoint.fromDenseVector(values.head, values.tail)
+      }
+    val features = new DMatrix(featuresArray.toIterator)
+    log.warn(s"Evaluating forecast for id $id, with xgboost")
+    val prediction = model.predict(features).flatten
+    val (forecastToBeValidated, _) = prediction.splitAt(featuresArray.length)
+    val toBeValidated = featuresArray.zip(forecastToBeValidated)
+    val metric = broadcastEvaluator.value.evaluate(toBeValidated.map(f =>
+      (f._1.label.toDouble, f._2.toDouble)))
+    val metricName = broadcastEvaluator.value.getMetricName
+    new ModelParamEvaluation[G](
+      id,
+      metric,
+      parameters,
+      Some(metricName),
+      SupportedAlgorithm.XGBoostAlgorithm)
+  }
 
-	protected def xGBoostEvaluation(row: Row, model: Booster,
-																	broadcastEvaluator: Broadcast[TimeSeriesEvaluator[L]],
-																	id: G, parameters: ParamMap): ModelParamEvaluation[G] = {
-		val featuresArray = row.getAs[Array[org.apache.spark.mllib.linalg.Vector]](
-			IUberdataForecastUtil.FEATURES_COL_NAME).map { vec =>
-				val values = vec.toArray.map(DataTransformer.toFloat)
-				LabeledPoint.fromDenseVector(values.head, values.tail)
-			}
-		val features = new DMatrix(featuresArray.toIterator)
-		log.warn(s"Evaluating forecast for id $id, with xgboost")
-		val prediction = model.predict(features).flatten
-		val (forecastToBeValidated, _) = prediction.splitAt(featuresArray.length)
-		val toBeValidated = featuresArray.zip(forecastToBeValidated)
-		val metric = broadcastEvaluator.value.evaluate(toBeValidated.map(
-			f => (f._1.label.toDouble, f._2.toDouble)))
-		val metricName = broadcastEvaluator.value.getMetricName
-		new ModelParamEvaluation[G](id, metric, parameters, Some(metricName),
-			SupportedAlgorithm.XGBoostAlgorithm)
-	}
+  override protected def train(dataSet: DataFrame): XGBoostSmallModel[G] = {
+    val idModels = dataSet.rdd.groupBy { row =>
+      row.getAs[G]($(groupByCol))
+    }.map(f => train(f._1, f._2.toIterator))
+    new XGBoostSmallModel[G](uid, modelEvaluation(idModels))
+      .setIdCol($(idCol))
+      .setValidationCol($(validationCol))
+      .asInstanceOf[XGBoostSmallModel[G]]
+  }
 
-	override protected def train(dataSet: DataFrame): XGBoostSmallModel[G] = {
-		val idModels = dataSet.rdd.groupBy { row =>
-			row.getAs[G]($(groupByCol))
-		}.map(f => train(f._1, f._2.toIterator))
-		new XGBoostSmallModel[G](uid, modelEvaluation(idModels)).setIdCol($(idCol))
-			.setValidationCol($(validationCol)).asInstanceOf[XGBoostSmallModel[G]]
-	}
+  def train(id: G, rows: Iterator[Row]): (G, Row, Seq[(ParamMap, UberXGBOOSTModel)]) = {
+    val (matrixRow, result) = try {
+      val array = rows.toArray
+      val values = array.map { row =>
+        val values = row
+          .getAs[org.apache.spark.mllib.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
+          .toArray
+        val label = DataTransformer.toFloat(row.getAs[L]($(labelCol)))
+        LabeledPoint.fromDenseVector(label, values.map(_.toFloat))
+      }.toIterator
+      val valuesVector = array.map { row =>
+        val vector =
+          row.getAs[org.apache.spark.mllib.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
+        Vectors.dense(DataTransformer.toDouble(row.getAs($(labelCol))) +: vector.toArray)
+      }
+      val schema = StructType(
+        Seq(
+          StructField($(groupByCol), FloatType),
+          StructField(IUberdataForecastUtil.FEATURES_COL_NAME, ArrayType(new VectorUDT))))
+      val matrixRow = new GenericRowWithSchema(Array(id, valuesVector), schema)
 
-	def train(id: G, rows: Iterator[Row]): (G, Row, Seq[(ParamMap, UberXGBOOSTModel)]) = {
-		val (matrixRow, result) = try {
-			val array = rows.toArray
-			val values = array.map { row =>
-				val values = row.getAs[org.apache.spark.mllib.linalg.Vector](
-					IUberdataForecastUtil.FEATURES_COL_NAME).toArray
-				val label = DataTransformer.toFloat(row.getAs[L]($(labelCol)))
-				LabeledPoint.fromDenseVector(label, values.map(_.toFloat))
-			}.toIterator
-			val valuesVector = array.map { row =>
-				val vector = row.getAs[org.apache.spark.mllib.linalg.Vector](
-					IUberdataForecastUtil.FEATURES_COL_NAME)
-				Vectors.dense(DataTransformer.toDouble(row.getAs($(labelCol))) +: vector.toArray)
-			}
-			val schema = StructType(Seq(
-				StructField($(groupByCol), FloatType),
-				StructField(IUberdataForecastUtil.FEATURES_COL_NAME, ArrayType(new VectorUDT))))
-			val matrixRow = new GenericRowWithSchema(Array(id, valuesVector), schema)
-
-			val matrix = new DMatrix(values)
-			val booster = UberXGBOOSTModel.fitModel(matrix, $(xGBoostParams), $(xGBoostRounds))
-			(matrixRow, Seq((new ParamMap(), new UberXGBOOSTModel($(xGBoostParams), $(xGBoostRounds),
-				booster))))
-		} catch {
-			case e: Exception =>
-				log.error(s"Got the following Exception ${e.getLocalizedMessage} when doing XGBoost " +
-					s"in id $id")
-				(Row(id, Iterator.empty), Seq.empty[(ParamMap, UberXGBOOSTModel)])
-		}
-		(id, matrixRow, result)
-	}
+      val matrix = new DMatrix(values)
+      val booster = UberXGBOOSTModel.fitModel(matrix, $(xGBoostParams), $(xGBoostRounds))
+      (matrixRow,
+       Seq((new ParamMap(), new UberXGBOOSTModel($(xGBoostParams), $(xGBoostRounds), booster))))
+    } catch {
+      case e: Exception =>
+        log.error(
+          s"Got the following Exception ${e.getLocalizedMessage} when doing XGBoost " +
+            s"in id $id")
+        (Row(id, Iterator.empty), Seq.empty[(ParamMap, UberXGBOOSTModel)])
+    }
+    (id, matrixRow, result)
+  }
 }
 
 object XGBoostSmallModelBestModelFinder
-	extends DefaultParamsReadable[XGBoostSmallModelBestModelFinder[_, _]] {
-	override def load(path: String): XGBoostSmallModelBestModelFinder[_, _] = super.load(path)
+    extends DefaultParamsReadable[XGBoostSmallModelBestModelFinder[_, _]] {
+  override def load(path: String): XGBoostSmallModelBestModelFinder[_, _] = super.load(path)
 }
 
-
 class XGBoostTrainingSummary[G](predictions: DataFrame,
-																predictionCol: String,
-																labelCol: String,
-																model: XGBoostSmallModel[G],
-																diagInvAtWA: Array[Double],
-																val featuresCol: String,
-																val objectiveHistory: Array[Double])
-	extends XGBoostLinearSummary[G](predictions, predictionCol, labelCol, model, diagInvAtWA)
+                                predictionCol: String,
+                                labelCol: String,
+                                model: XGBoostSmallModel[G],
+                                diagInvAtWA: Array[Double],
+                                val featuresCol: String,
+                                val objectiveHistory: Array[Double])
+    extends XGBoostLinearSummary[G](predictions, predictionCol, labelCol, model, diagInvAtWA)

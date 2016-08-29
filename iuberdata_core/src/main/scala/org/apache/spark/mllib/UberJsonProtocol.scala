@@ -19,20 +19,10 @@ package org.apache.spark.mllib
 import java.util.{Properties, UUID}
 
 import org.apache.spark.TaskEndReason
-import org.apache.spark.executor.{
-  InputMetrics,
-  OutputMetrics,
-  ShuffleReadMetrics,
-  TaskMetrics
-}
+import org.apache.spark.executor.{InputMetrics, OutputMetrics, ShuffleReadMetrics, TaskMetrics}
 import org.apache.spark.scheduler._
 import org.apache.spark.scheduler.cluster.ExecutorInfo
-import org.apache.spark.storage.{
-  BlockManagerId,
-  BlockStatus,
-  RDDInfo,
-  StorageLevel
-}
+import org.apache.spark.storage.{BlockManagerId, BlockStatus, RDDInfo, StorageLevel}
 import org.apache.spark.util.JsonProtocol
 import org.json4s.JsonAST
 
