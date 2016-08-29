@@ -1,49 +1,15 @@
-# Uberdata Zeppelin Notebook on ASW
+# Uberdata Zeppelin Notebook on AWS
 # Setup
 To run zeppelin and create cluster on AWS you need:
- 1. [To install ansible](http://docs.ansible.com/intro_installation.html#installing-the-control-machine)
- 1. [To install boto](http://boto.readthedocs.org/en/latest/getting_started.html#installing-boto)
- 1. [AWS access keys](http://aws.amazon.com/developers/access-keys)
- 1. [To configure aws credentials in boto](http://boto.readthedocs.org/en/latest/getting_started.html#configuring-boto-credentials)
- 1. [Create a AWS IAM role](http://docs.aws.amazon.com/IAM/latest/UserGuide/roles-creatingrole-service.html) named **dev-ops**
-  with the policies below:
-```JSON
-{
-    "Version": "2012-10-17",
-    "Statement": [
-    {
-        "Action": "ec2:*",
-        "Effect": "Allow",
-        "Resource": "*"
-    }
-    ]
-}
+ 1. [AWS access keys and .pem file](http://aws.amazon.com/developers/access-keys)
+ 1. A user with the policies: AmazonEC2FullAccess, IAMFullAccess and AmazonS3FullAccess 
+ 1. [Install ansible and configure .ansible.cfg file ](http://docs.ansible.com/intro_installation.html#installing-the-control-machine)
+ 1. [Install boto](http://boto.readthedocs.org/en/latest/getting_started.html#installing-boto) and [configure AWS credentials in .boto file](http://boto.readthedocs.org/en/latest/getting_started.html#configuring-boto-credentials)
+ 1. [Install awscli](https://aws.amazon.com/cli/) 
+
+Configure some vars on script ```/uberdata/ansible/iuberdata-prov.yml```
 ```
-And create the policies **AllowS3forDevOps** and **AllowPassRoleforDevOps** as follow;:
-#### AllowS3forDevOps
-```
-{       "Version": "2012-10-17",
-         "Statement": [{         
-	   		"Action": "s3:*",
-		    "Effect": "Allow",           
-			"Resource": "*"         
-		}]
-}
-```
-#### AllowPassRoleforDevOps
-```
-{       "Version": "2012-10-17",       
-		 "Statement": [{           
-		 	"Sid": "Stmt1409776891000",           
-			"Effect": "Allow",           
-			"Action": ["iam:PassRole"],
-            "Resource": ["*"]         
-		 }]     
-}
-```
-Create a security group **IUberdataApplication** and configure some vars on script ```/uberdata/ansible/iuberdata-prov.yml```
-```
-    keypair: "keypairname"
+    keypair: "youkeypairname"
     instance_type: "r3.xlarge"
     price: "0.15"
     image: "ami-e9527ed9"
@@ -52,13 +18,9 @@ Create a security group **IUberdataApplication** and configure some vars on scri
     zone: "us-west-2a"
     iamrole: "dev-ops"
 ```
-Then run script  to set up a new aws instance
+Then run script to set up a new aws instance configure it:
 ```
-$ ansible-playbook -i inventory/local iuberdata-prov.yml
-```
-Run script iuberdata.yml to install and configure the new instance
-```
-$ ansible-playbook -i inventory/hosts iuberdata.yml
+$ ./uberdata/ansible/setup-aws-machine.sh
 ```
 Zeppelin will run at new instance ip.
 
