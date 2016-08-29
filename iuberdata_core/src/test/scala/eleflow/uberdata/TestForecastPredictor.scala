@@ -322,14 +322,15 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
     @transient val sc = context.sparkContext //    val rdd = sc.parallelizeext.sparkContext
     @transient val sqlContext = context.sqlContext
 
-    val structType = StructType(Seq(StructField("label", DoubleType), StructField("Date", DoubleType),
+    val structType = StructType(Seq(StructField("store", DoubleType), StructField("Date",
+      DoubleType),
       StructField("features", IntegerType), StructField("Open", BooleanType)))
 
     val rdd = sc.parallelize(data)
     val dataFrame = sqlContext.createDataFrame(rdd, structType)
 
     val timeSeriesBestModelFinder = ForecastPredictor().
-      prepareMovingAveragePipeline[Double](windowSize = 6)
+      prepareMovingAveragePipeline[Double]("store", windowSize = 6)
     val model = timeSeriesBestModelFinder.fit(dataFrame)
     val df = model.transform(dataFrame)
 

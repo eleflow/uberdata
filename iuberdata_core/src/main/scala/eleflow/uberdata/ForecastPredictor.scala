@@ -130,14 +130,15 @@ class ForecastPredictor extends Serializable with Logging {
     preparePipeline(holtWinters, preTransformers = Array(transformer))
   }
 
-  def prepareMovingAveragePipeline[L](labelCol: String = "label",
-                                      featuresCol: String = "features",
-                                      validationCol: String = "validation",
-                                      timeCol: String = "Date",
-                                      windowSize: Int = 8)(implicit kt: ClassTag[L]): Pipeline = {
-    val transformer = createTimeSeriesGenerator(labelCol, featuresCol, timeCol)
-    val movingAverage = new MovingAverage[L]()
-      .setLabelCol(labelCol)
+  def prepareMovingAveragePipeline[G](
+    groupBycol: String,
+    featuresCol: String = "features",
+    validationCol: String = "validation",
+    timeCol: String = "Date",
+    windowSize: Int = 8
+  )(implicit kt: ClassTag[G]): Pipeline = {
+    val transformer = createTimeSeriesGenerator(groupBycol, featuresCol, timeCol)
+    val movingAverage = new MovingAverage[G]()
       .setOutputCol(validationCol)
       .setInputCol(featuresCol)
       .setWindowSize(windowSize)

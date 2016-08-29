@@ -16,10 +16,17 @@
 
 package org.apache.spark.ml
 
-import org.apache.spark.annotation.Since
+
 import org.apache.spark.ml.param.{IntParam, ParamMap}
-import org.apache.spark.ml.param.shared.{HasInputCol, HasLabelCol, HasOutputCol}
-import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
+import org.apache.spark.ml.param.shared.{
+  HasInputCol,
+  HasOutputCol
+}
+import org.apache.spark.ml.util.{
+  DefaultParamsReadable,
+  DefaultParamsWritable,
+  Identifiable
+}
 import org.apache.spark.mllib.linalg.{VectorUDT, Vectors}
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.types._
@@ -31,7 +38,6 @@ class MovingAverage[T](override val uid: String)
     extends Transformer
     with HasInputCol
     with HasOutputCol
-    with HasLabelCol
     with DefaultParamsWritable {
 
   def this() = this(Identifiable.randomUID("movingAverage"))
@@ -43,8 +49,6 @@ class MovingAverage[T](override val uid: String)
     * @group param
     */
   val windowSize: IntParam = new IntParam(this, "windowSize", "window size")
-
-  def setLabelCol(value: String): this.type = set(labelCol, value)
 
   /** @group setParam */
   def setWindowSize(value: Int): this.type = set(windowSize, value)
@@ -106,9 +110,7 @@ object MovingAverageCalc {
   }
 }
 
-@Since("1.6.0")
 object MovingAverage extends DefaultParamsReadable[MovingAverage[_]] {
 
-  @Since("1.6.0")
   override def load(path: String): MovingAverage[_] = super.load(path)
 }

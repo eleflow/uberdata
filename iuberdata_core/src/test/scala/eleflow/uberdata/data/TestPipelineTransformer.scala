@@ -41,7 +41,6 @@ class TestPipelineTransformer extends FlatSpec with Matchers with EasyMockSugar 
     val ma = new MovingAverage[Double]()
     ma.setInputCol("timeseries")
     ma.setOutputCol("MovingAverages")
-    ma.setLabelCol("id")
 
     val transformedData = ma.transform(testData)
     val namesArray = transformedData.columns
@@ -69,7 +68,6 @@ class TestPipelineTransformer extends FlatSpec with Matchers with EasyMockSugar 
     val ma = new MovingAverage[Double]()
     ma.setInputCol("timeseries")
     ma.setOutputCol("MovingAverages")
-    ma.setLabelCol("id")
     ma.setWindowSize(2)
     val transformedData = ma.transform(testData)
     val namesArray = transformedData.columns
@@ -101,7 +99,6 @@ class TestPipelineTransformer extends FlatSpec with Matchers with EasyMockSugar 
     val ma = new MovingAverage[Double]()
     ma.setInputCol("timeseries")
     ma.setOutputCol("MovingAverages")
-    ma.setLabelCol("id")
     ma.setWindowSize(2)
 
     val transformedData = ma.transform(testData)
