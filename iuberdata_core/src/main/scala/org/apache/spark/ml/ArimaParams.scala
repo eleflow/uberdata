@@ -24,6 +24,7 @@ import org.apache.spark.ml.param.shared._
 trait ArimaParams
     extends PredictorParams
     with HasSolver
+		with HasGroupByCol
     with HasPredictionCol
     with HasARIMAQ
     with HasARIMAP

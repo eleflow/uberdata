@@ -35,8 +35,7 @@ import scala.reflect.io.File
 /**
   * Created by dirceu on 18/09/15.
   */
-class UberdataNotebookRepo(conf: ZeppelinConfiguration)
-    extends VFSNotebookRepo(conf) {
+class UberdataNotebookRepo(conf: ZeppelinConfiguration) extends VFSNotebookRepo(conf) {
   private val log: Logger =
     LoggerFactory.getLogger(classOf[UberdataNotebookRepo])
   private lazy val fsManager: FileSystemManager = VFS.getManager
@@ -46,8 +45,7 @@ class UberdataNotebookRepo(conf: ZeppelinConfiguration)
     import scala.collection.JavaConversions._
     val allNotes = list()
     allNotes.filter { notebook =>
-      notebook.getName != notebook.getId && !resolveFile(notebook.getName)
-        .exists()
+      notebook.getName != notebook.getId && !resolveFile(notebook.getName).exists()
     }.foreach { notebook =>
       val oldRepo = resolveFile(notebook.getId)
       val localNotes = notebooks
@@ -59,12 +57,10 @@ class UberdataNotebookRepo(conf: ZeppelinConfiguration)
       val out: OutputStream = noteFile.getContent.getOutputStream(false)
       out.write(json.getBytes(conf.getString(ConfVars.ZEPPELIN_ENCODING)))
       out.close
-      localNotes
-        .filter(f => f._2 != notebook.getName && f._1 == notebook.getId())
-        .map { f =>
-          createFolders(f._2).delete(allFileSelector)
-          cleanParentFolders(f._2)
-        }
+      localNotes.filter(f => f._2 != notebook.getName && f._1 == notebook.getId()).map { f =>
+        createFolders(f._2).delete(allFileSelector)
+        cleanParentFolders(f._2)
+      }
 
       remove(notebook.getId)
       oldRepo.delete(new AllFileSelector)
@@ -87,8 +83,7 @@ class UberdataNotebookRepo(conf: ZeppelinConfiguration)
   }
 
   @throws(classOf[IOException])
-  override def remove(noteId: String,
-                      subject: AuthenticationInfo = ???): Unit = {
+  override def remove(noteId: String, subject: AuthenticationInfo = ???): Unit = {
     val noteDir = resolveFile(noteId)
     if (!noteDir.exists) {
       return
@@ -107,8 +102,8 @@ class UberdataNotebookRepo(conf: ZeppelinConfiguration)
 
     children.filter { f =>
       val fileName: String = f.getName.getBaseName
-      !(f.isHidden || fileName.startsWith(".") || fileName.startsWith("#") || fileName
-        .startsWith("~") || !isDirectory(f))
+      !(f.isHidden || fileName.startsWith(".") || fileName.startsWith("#") || fileName.startsWith(
+        "~") || !isDirectory(f))
     }.map {
       case f =>
         try {
@@ -142,9 +137,8 @@ class UberdataNotebookRepo(conf: ZeppelinConfiguration)
       val (folders, _) = children.partition { f =>
         isDirectory(f)
       }
-      val x = folders.headOption
-        .map(_ => folders flatMap (getChildren(_)))
-        .getOrElse(Array(rootDir))
+      val x =
+        folders.headOption.map(_ => folders flatMap (getChildren(_))).getOrElse(Array(rootDir))
       x
     } else Array(rootDir.getParent)
   }
@@ -156,10 +150,7 @@ class UberdataNotebookRepo(conf: ZeppelinConfiguration)
   }
 
   override def get(noteId: String, subject: AuthenticationInfo): Note =
-    getNote(noteId)
-      .map(getNote(_))
-      .headOption
-      .getOrElse(throw new Exception("Notebook not found"))
+    getNote(noteId).map(getNote(_)).headOption.getOrElse(throw new Exception("Notebook not found"))
 
   private def getNote(noteId: String) = {
     import scala.collection.JavaConversions._
@@ -219,10 +210,9 @@ class UberdataNotebookRepo(conf: ZeppelinConfiguration)
       val out: OutputStream = noteFile.getContent.getOutputStream(false)
       out.write(json.getBytes(conf.getString(ConfVars.ZEPPELIN_ENCODING)))
       out.close
-      localNotes.filter(f => f._2 != note.getName && f._1 == note.id()).map {
-        f =>
-          createFolders(f._2).delete(allFileSelector)
-          cleanParentFolders(f._2)
+      localNotes.filter(f => f._2 != note.getName && f._1 == note.id()).map { f =>
+        createFolders(f._2).delete(allFileSelector)
+        cleanParentFolders(f._2)
 
       }
     }

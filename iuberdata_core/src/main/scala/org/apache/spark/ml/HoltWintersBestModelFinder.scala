@@ -20,44 +20,45 @@ import com.cloudera.sparkts.models.UberHoltWintersModel
 import org.apache.spark.Logging
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
+import org.apache.spark.ml.param.shared.HasGroupByCol
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{DataFrame, Row}
 
 import scala.reflect.ClassTag
 
 /**
   * Created by dirceu on 19/05/16.
   */
-class HoltWintersBestModelFinder[L](
+class HoltWintersBestModelFinder[G](
   override val uid: String
-)(implicit kt: ClassTag[L])
-    extends HoltWintersBestModelEvaluation[L, HoltWintersModel[L]]
+)(implicit kt: ClassTag[G])
+    extends HoltWintersBestModelEvaluation[G, HoltWintersModel[G]]
     with DefaultParamsWritable
+    with HasGroupByCol
     with TimeSeriesBestModelFinder
     with Logging {
 
-  import org.apache.spark.sql.DataFrame
 
-  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[L]) =
+  def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[G]): this.type =
     set(timeSeriesEvaluator, eval)
 
   def setEstimatorParamMaps(value: Array[ParamMap]): this.type =
     set(estimatorParamMaps, value)
 
-  def setNFutures(value: Int) = set(nFutures, value)
+  def setNFutures(value: Int): this.type = set(nFutures, value)
 
-  override def setValidationCol(value: String) = set(validationCol, value)
+  override def setValidationCol(value: String): this.type = set(validationCol, value)
 
-  def setFeaturesCol(label: String) = set(featuresCol, label)
+  def setLabelCol(label: String): this.type = set(labelCol, label)
 
-  def setLabelCol(label: String) = set(labelCol, label)
+  def setGroupByCol(groupBy: String): this.type = set(groupByCol, groupBy)
 
-  def this()(implicit kt: ClassTag[L]) = this(Identifiable.randomUID("arima"))
+  def this()(implicit kt: ClassTag[G]) = this(Identifiable.randomUID("arima"))
 
   def modelEvaluation(
-    idModels: RDD[(L, Row, Option[UberHoltWintersModel])]
-  ): RDD[(L, (UberHoltWintersModel, ModelParamEvaluation[L]))] = {
+    idModels: RDD[(G, Row, Option[UberHoltWintersModel])]
+  ): RDD[(G, (UberHoltWintersModel, ModelParamEvaluation[G]))] = {
     val eval = $(timeSeriesEvaluator)
     val broadcastEvaluator = idModels.context.broadcast(eval)
     idModels.filter(_._3.isDefined).map {
@@ -70,16 +71,16 @@ class HoltWintersBestModelFinder[L](
     }
   }
 
-  override protected def train(dataSet: DataFrame): HoltWintersModel[L] = {
+  override protected def train(dataSet: DataFrame): HoltWintersModel[G] = {
     val splitDs = split(dataSet, $(nFutures))
     val idModels = splitDs.rdd.map(train)
-    new HoltWintersModel[L](uid, modelEvaluation(idModels))
+    new HoltWintersModel[G](uid, modelEvaluation(idModels))
       .setValidationCol($(validationCol))
-      .asInstanceOf[HoltWintersModel[L]]
+      .asInstanceOf[HoltWintersModel[G]]
   }
 
-  def train(row: Row): (L, Row, Option[UberHoltWintersModel]) = {
-    val id = row.getAs[L]($(labelCol))
+  def train(row: Row): (G, Row, Option[UberHoltWintersModel]) = {
+    val id = row.getAs[G]($(groupByCol))
 
     val result = try {
       Some(

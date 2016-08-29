@@ -35,19 +35,19 @@ import scala.reflect.ClassTag
   * Created by dirceu on 12/04/16.
   * Conter o melhor modelo para cada loja assim como os parametros de avaliaçãod e todos os modelos
   */
-class ArimaModel[L](
+class ArimaModel[G](
   override val uid: String,
-  val models: RDD[(L, (UberArimaModel, Seq[(ModelParamEvaluation[L])]))]
-)(implicit kt: ClassTag[L], ord: Ordering[L] = null)
-    extends ForecastBaseModel[ArimaModel[L]]
+  val models: RDD[(G, (UberArimaModel, Seq[(ModelParamEvaluation[G])]))]
+)(implicit kt: ClassTag[G], ord: Ordering[G] = null)
+    extends ForecastBaseModel[ArimaModel[G]]
     with ArimaParams
     with HasNFutures
     with MLWritable
     with ForecastPipelineStage {
 
-  private var trainingSummary: Option[ArimaTrainingSummary[L]] = None
+  private var trainingSummary: Option[ArimaTrainingSummary[G]] = None
 
-  def setSummary(summary: ArimaTrainingSummary[L]) = {
+  def setSummary(summary: ArimaTrainingSummary[G]) = {
     trainingSummary = Some(summary)
     this
   }
@@ -57,12 +57,11 @@ class ArimaModel[L](
 
   override def transform(dataSet: DataFrame) = {
     val schema = dataSet.schema
-    val predSchema = transformSchema(schema) //TODO mudar pra groupbycol
-
+    val predSchema = transformSchema(schema)
     val scContext = dataSet.sqlContext.sparkContext
     //TODO fazer com que os modelos invalidos voltem numeros absurdos
 
-    val joined = models.join(dataSet.map(r => (r.getAs[L]($(labelCol)), r)))
+    val joined = models.join(dataSet.map(r => (r.getAs[G]($(groupByCol)), r)))
 
     val featuresColName =
       dataSet.sqlContext.sparkContext.broadcast($(featuresCol))
@@ -91,10 +90,10 @@ class ArimaModel[L](
         )
       )
 
-  override def copy(extra: ParamMap): ArimaModel[L] = {
-    val newModel = copyValues(new ArimaModel[L](uid, models), extra)
+  override def copy(extra: ParamMap): ArimaModel[G] = {
+    val newModel = copyValues(new ArimaModel[G](uid, models), extra)
     trainingSummary.map(summary => newModel.setSummary(summary))
-    newModel.setValidationCol($(validationCol)).asInstanceOf[ArimaModel[L]]
+    newModel.setValidationCol($(validationCol)).asInstanceOf[ArimaModel[G]]
   }
 
 }
