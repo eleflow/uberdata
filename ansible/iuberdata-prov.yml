@@ -46,7 +46,7 @@
       ec2: image={{ image }}
            instance_type={{ instance_type }}
            keypair={{ keypair }}
-           instance_tags='{"Name":"iuberdata-caio"}'
+           instance_tags='{"Name":"iuberdata"}'
            instance_profile_name={{ iamrole }}
            region={{ region }}
            zone={{ zone }}
