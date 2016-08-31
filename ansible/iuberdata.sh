@@ -83,6 +83,14 @@ rm -f /tmp/notebook/interpreter.json
 cp -rf /tmp/notebook/* /usr/share/zeppelin/notebook
 rm -rf /tmp/notebook*
 
+cp /tmp/xgboost4j-0.5-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
+sudo rm -f /tmp/xgboost4j-0.5-jar-with-dependencies.jar
+cp /tmp/sparkts-0.3.0-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
+sudo rm -f /tmp/sparkts-0.3.0-jar-with-dependencies.jar
+
+sudo rm -f /tmp/iuberdata_addon_zeppelin-assembly-0.1.0.jar
+sudo rm -f /tmp/eleflow.uberdata.IUberdata-Zeppelin-0.1.0.jar
+
 chmod +x /etc/init.d/iuberdata
 chown -R iuberdata:iuberdata  /usr/share/zeppelin-*
 chown  iuberdata:iuberdata  /usr/share/zeppelin
