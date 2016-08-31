@@ -20,6 +20,8 @@ import com.cloudera.sparkts.models.UberXGBoostModel
 import eleflow.uberdata.core.data.Dataset
 import eleflow.uberdata.core.data.Dataset._
 import eleflow.uberdata.core.enums.DateSplitType._
+import eleflow.uberdata.core.util.ClusterSettings
+import eleflow.uberdata.enums.SupportedAlgorithm
 import eleflow.uberdata.models.UberXGBOOSTModel
 import ml.dmlc.xgboost4j.scala.spark.XGBoost
 import org.apache.spark.ml.param.{ParamMap, Params}
@@ -38,7 +40,49 @@ class TestXGBoost extends FlatSpec with Matchers with BeforeAndAfterWithContext
 	with HasXGBoostParams {
 	this: Suite =>
 
-		"XGBostAlgorithm" should "execute xgboost bigmodel" in {
+		"XGBostAlgorithm" should "execute xgboost " in {
+//		val train = Dataset(context, s"$defaultFilePath/data/RossmannTrain.csv")
+//
+//		val trainData = train.formatDateValues("Date", DayMonthYear).select("Store", "Sales",
+//			"DayOfWeek", "Date1", "Date2", "Date3", "Open", "Promo", "StateHoliday", "SchoolHoliday")
+//			.cache
+//		val test = Dataset(context, s"$defaultFilePath/data/RossmannTest.csv")
+//
+//		val testData = test.formatDateValues("Date", DayMonthYear).map{
+//		row =>
+//			XGBLabeledPoint.fromDenseVector(row.getAs[Long]("Id"), Array(row.getAs[Long]("Store").toFloat,
+//				row.getAs[Long]("DayOfWeek").toFloat, row.getAs[Int]("Date1").toFloat,
+//				row.getAs[Int]("Date2").toFloat,row.getAs[Int]("Date3").toFloat))
+//		}
+//
+//		val trainLabel = trainData.map{
+//			row =>
+//				LabeledPoint(row.getAs[Long]("Sales").toDouble,
+//					Vectors.dense(Array(row.getAs[Long]("Store").toDouble,
+//						row.getAs[Long]("DayOfWeek").toDouble, row.getAs[Int]("Date1").toDouble,
+//						row.getAs[Int]("Date2").toDouble, row.getAs[Int]("Date3").toDouble)))
+//		}
+//
+//		val model = UberXGBoostModel.train(trainLabel, Map[String, Any](
+//			"silent" -> 1
+//			, "objective" -> "reg:linear"
+//			, "booster" -> "gbtree"
+//			, "eta" -> 0.0225
+//			, "max_depth" -> 26
+//			, "subsample" -> 0.63
+//			, "colsample_btree" -> 0.63
+//			, "min_child_weight" -> 9
+//			, "gamma" -> 0
+//			, "eval_metric" -> "rmse"
+//			, "tree_method" -> "exact"
+//		).map(f => (f._1, f._2.asInstanceOf[AnyRef])), 200, 2)
+//			val prediction = UberXGBoostModel.labelPredict(testData, booster = model).cache
+//			prediction.count()
+//			assert(prediction.count == 288)
+//	}
+//
+//	it should "Accept data and execute xgboost big model" in {
+		ClusterSettings.kryoBufferMaxSize = Some("70m")
 		val train = Dataset(context, s"$defaultFilePath/data/RossmannTrain.csv")
 
 		val trainData = train.formatDateValues("Date", DayMonthYear).select("Store", "Sales",
@@ -46,37 +90,12 @@ class TestXGBoost extends FlatSpec with Matchers with BeforeAndAfterWithContext
 			.cache
 		val test = Dataset(context, s"$defaultFilePath/data/RossmannTest.csv")
 
-		val testData = test.formatDateValues("Date", DayMonthYear).map{
-		row =>
-			XGBLabeledPoint.fromDenseVector(row.getAs[Long]("Id"), Array(row.getAs[Long]("Store").toFloat,
-				row.getAs[Long]("DayOfWeek").toFloat, row.getAs[Int]("Date1").toFloat,
-				row.getAs[Int]("Date2").toFloat,row.getAs[Int]("Date3").toFloat))
-		}
+		val testData = test.formatDateValues("Date", DayMonthYear)
 
-		val trainLabel = trainData.map{
-			row =>
-				LabeledPoint(row.getAs[Long]("Sales").toDouble,
-					Vectors.dense(Array(row.getAs[Long]("Store").toDouble,
-						row.getAs[Long]("DayOfWeek").toDouble, row.getAs[Int]("Date1").toDouble,
-						row.getAs[Int]("Date2").toDouble, row.getAs[Int]("Date3").toDouble)))
-		}
-
-		val model = UberXGBoostModel.train(trainLabel, Map[String, Any](
-			"silent" -> 1
-			, "objective" -> "reg:linear"
-			, "booster" -> "gbtree"
-			, "eta" -> 0.0225
-			, "max_depth" -> 26
-			, "subsample" -> 0.63
-			, "colsample_btree" -> 0.63
-			, "min_child_weight" -> 9
-			, "gamma" -> 0
-			, "eval_metric" -> "rmse"
-			, "tree_method" -> "exact"
-		).map(f => (f._1, f._2.asInstanceOf[AnyRef])), 200, 2)
-			val prediction = UberXGBoostModel.labelPredict(testData, booster = model).cache
-			prediction.count()
-			assert(prediction.count == 36)
+	val (prediction, model) = ForecastPredictor().predictBigModelFuture(trainData, testData,
+		SupportedAlgorithm
+		.XGBoostAlgorithm, "Sales", "Id", Seq("Store", "DayOfWeek", "Date1", "Date2", "Date3") )
+		assert(prediction.count == 288)
 	}
 
 	override def copy(extra: ParamMap): Params = ???

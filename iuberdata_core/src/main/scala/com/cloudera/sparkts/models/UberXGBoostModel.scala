@@ -16,10 +16,9 @@
 
 package com.cloudera.sparkts.models
 
-import ml.dmlc.xgboost4j.scala.{Booster, DMatrix}
+import ml.dmlc.xgboost4j.scala.DMatrix
 import ml.dmlc.xgboost4j.{LabeledPoint => XGBLabeledPoint}
 import ml.dmlc.xgboost4j.scala.spark.{XGBoost, XGBoostModel}
-import org.apache.spark.SparkContext
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
 
@@ -28,9 +27,9 @@ import org.apache.spark.rdd.RDD
   */
 object UberXGBoostModel {
   def train(trainLabel: RDD[LabeledPoint],
-            configMap: Map[String, AnyRef],
+            configMap: Map[String, Any],
             round: Int,
-            nWorkers: Int) = {
+            nWorkers: Int): XGBoostModel = {
     XGBoost.train(trainLabel, configMap, round, nWorkers)
   }
 
@@ -39,12 +38,14 @@ object UberXGBoostModel {
                    booster: XGBoostModel): RDD[(Float, Float)] = {
     val broadcastBooster = testSet.sparkContext.broadcast(booster)
     testSet.mapPartitions { testData =>
-      val prediction = broadcastBooster.value.predict(new DMatrix(testData)).flatten
-      testData.toArray
+      val (auxiliaryIterator, testDataIterator) = testData.duplicate
+      val testDataArray = auxiliaryIterator.toArray
+      val prediction = broadcastBooster.value.predict(new DMatrix(testDataIterator)).flatten
+      testDataArray
         .zip(prediction)
         .map {
-          case (labeledPoint, prediction) =>
-            (labeledPoint.label, prediction)
+          case (labeledPoint, predictionValue) =>
+            (labeledPoint.label, predictionValue)
         }
         .toIterator
     }

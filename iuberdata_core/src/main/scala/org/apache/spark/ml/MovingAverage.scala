@@ -16,17 +16,9 @@
 
 package org.apache.spark.ml
 
-
 import org.apache.spark.ml.param.{IntParam, ParamMap}
-import org.apache.spark.ml.param.shared.{
-  HasInputCol,
-  HasOutputCol
-}
-import org.apache.spark.ml.util.{
-  DefaultParamsReadable,
-  DefaultParamsWritable,
-  Identifiable
-}
+import org.apache.spark.ml.param.shared.{HasInputCol, HasOutputCol}
+import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.mllib.linalg.{VectorUDT, Vectors}
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.types._

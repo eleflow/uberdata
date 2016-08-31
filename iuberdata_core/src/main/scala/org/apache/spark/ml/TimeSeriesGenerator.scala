@@ -32,7 +32,8 @@ import scala.reflect.ClassTag
 class TimeSeriesGenerator[L](
   override val uid: String
 )(implicit ct: ClassTag[L])
-    extends BaseTimeSeriesGenerator with HasGroupByCol {
+    extends BaseTimeSeriesGenerator
+    with HasGroupByCol {
 
   def this()(implicit ct: ClassTag[L]) =
     this(Identifiable.randomUID("TimeSeriesGenerator"))
@@ -100,8 +101,7 @@ class TimeSeriesGenerator[L](
 
 }
 
-object TimeSeriesGenerator
-    extends DefaultParamsReadable[TimeSeriesGenerator[_]] {
+object TimeSeriesGenerator extends DefaultParamsReadable[TimeSeriesGenerator[_]] {
 
   override def load(path: String): TimeSeriesGenerator[_] = super.load(path)
 }

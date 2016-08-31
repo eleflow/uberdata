@@ -16,21 +16,22 @@
 
 package org.apache.spark.ml
 
+import com.cloudera.sparkts.models.UberXGBoostModel
 import eleflow.uberdata.IUberdataForecastUtil
 import eleflow.uberdata.core.data.DataTransformer
-import ml.dmlc.xgboost4j.scala.DMatrix
+import eleflow.uberdata.enums.SupportedAlgorithm
 import ml.dmlc.xgboost4j.scala.spark.XGBoostModel
 import ml.dmlc.xgboost4j.LabeledPoint
 import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.mllib.linalg.{Vector => SparkVector}
+import org.apache.spark.mllib.linalg.{VectorUDT, Vector => SparkVector}
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.{HasIdCol, HasLabelCol}
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.types.{FloatType, StructField, StructType, StringType}
 
 /**
-	* Created by dirceu on 24/08/16.
-	*/
+  * Created by dirceu on 24/08/16.
+  */
 class XGBoostBigModel[I](val uid: String, val models: Seq[(ParamMap, XGBoostModel)])
     extends ForecastBaseModel[XGBoostBigModel[I]]
     with HasLabelCol
@@ -42,19 +43,37 @@ class XGBoostBigModel[I](val uid: String, val models: Seq[(ParamMap, XGBoostMode
 
   override def copy(extra: ParamMap): XGBoostBigModel[I] = new XGBoostBigModel[I](uid, models)
 
-  override def transform(dataset: DataFrame): DataFrame = {
-    val features = dataset.map { row =>
+  override def transform(dataSet: DataFrame): DataFrame = {
+    val prediction = predict(dataSet)
+    val rows = dataSet
+      .map(
+        row =>
+          (DataTransformer.toFloat(row.getAs($(idCol))),
+           row.getAs[SparkVector](IUberdataForecastUtil.FEATURES_COL_NAME)))
+      .join(prediction)
+      .map {
+        case (id, (features, predictValue)) =>
+          Row(id, features, SupportedAlgorithm.XGBoostAlgorithm.toString, predictValue)
+      }
+    dataSet.sqlContext.createDataFrame(rows, transformSchema(dataSet.schema))
+  }
+
+  private def predict(dataSet: DataFrame) = {
+    val features = dataSet.map { row =>
       val features = row.getAs[SparkVector](IUberdataForecastUtil.FEATURES_COL_NAME)
       val id = row.getAs[I]($(idCol))
       LabeledPoint.fromDenseVector(DataTransformer.toFloat(id), features.toArray.map(_.toFloat))
     }
-    val (params, model) = models.head
-
-    val x = features.collect.toIterator
-    val prediction = model.predict(new DMatrix(features.collect.toIterator))
-    dataset
+    val (_, model) = models.head
+    UberXGBoostModel.labelPredict(features, booster = model)
   }
 
   @DeveloperApi
-  override def transformSchema(schema: StructType): StructType = ???
+  override def transformSchema(schema: StructType): StructType =
+    StructType(
+      Array(
+        StructField($(idCol), FloatType),
+        StructField(IUberdataForecastUtil.FEATURES_COL_NAME, new VectorUDT),
+        StructField(IUberdataForecastUtil.ALGORITHM, StringType),
+        StructField("prediction", FloatType)))
 }

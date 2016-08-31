@@ -94,7 +94,7 @@ class XGBoostSmallModel[G](
     dataSet.sqlContext.createDataFrame(predictions, predSchema).cache
   }
 
-  override def transformSchema(schema: StructType) =
+  override def transformSchema(schema: StructType): StructType =
     StructType(
       super
         .transformSchema(schema)

@@ -39,7 +39,6 @@ class HoltWintersBestModelFinder[G](
     with TimeSeriesBestModelFinder
     with Logging {
 
-
   def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[G]): this.type =
     set(timeSeriesEvaluator, eval)
 

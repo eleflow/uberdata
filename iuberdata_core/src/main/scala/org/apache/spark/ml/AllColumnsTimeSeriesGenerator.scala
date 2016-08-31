@@ -75,7 +75,6 @@ class AllColumnsTimeSeriesGenerator[T, U](
     defaultCopy(extra)
 }
 
-
 object AllColumnsTimeSeriesGenerator
     extends DefaultParamsReadable[AllColumnsTimeSeriesGenerator[_, _]] {
 

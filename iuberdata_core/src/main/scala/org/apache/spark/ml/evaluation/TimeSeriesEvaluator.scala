@@ -82,7 +82,7 @@ final class TimeSeriesEvaluator[L](
   setDefault(metricName -> "rmse")
 
   override def evaluate(dataSet: (L, (Int, Vector))): RDD[(L, (Int, Double))] =
-    ???
+    throw new UnsupportedOperationException
 
   def evaluate(dataSet: Array[(Double, Double)]): Double = {
     val metrics = new TimeSeriesSmallModelRegressionMetrics(dataSet)
