@@ -28,4 +28,4 @@ test:
 general:
   branches:
     only:
-      - travis
+      - ci
