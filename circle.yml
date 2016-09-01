@@ -21,7 +21,7 @@ dependencies:
 
 test:
   override:
-    - sbt clean reload compile coverage test coverageReport
+    - sbt test
   post:
     - bash <(curl -s https://codecov.io/bash)
 
