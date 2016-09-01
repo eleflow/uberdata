@@ -1,8 +1,9 @@
 machine:
   environment:
     SBT_VERSION: 0.13.11
-    SBT_OPTS: "-Xms512m -Xmx3G"
-    JAVA_OPTS: "-Xms512m -Xmx3G"
+    SBT_OPTS : "-XX:+CMSClassUnloadingEnabled -XX:MaxMetaspaceSize=2G -XX:MetaspaceSize=2G -Xms2G -Xmx2G"
+    JAVA_OPTS : "-XX:+CMSClassUnloadingEnabled -XX:MaxMetaspaceSize=2G -XX:MetaspaceSize=2G -Xms2G -Xmx2G"
+
   java:
     version: openjdk8
 
@@ -21,7 +22,7 @@ dependencies:
 
 test:
   override:
-    - sbt clean reload compile coverage test coverageReport
+    - sbt test
   post:
     - bash <(curl -s https://codecov.io/bash)
 
