@@ -227,7 +227,6 @@ class ForecastPredictor extends Serializable with Logging {
                                schema: StructType): Array[PipelineStage] = {
 
     val allColumns = schema.map(_.name).toArray
-    //val allColumns = featuresCol.toArray
 
     val stringColumns = schema
       .filter(f => f.dataType.isInstanceOf[StringType] && featuresCol.contains(f.name))
@@ -332,7 +331,7 @@ class ForecastPredictor extends Serializable with Logging {
     val cachedTest = test.cache()
     val model = pipeline.fit(cachedTrain)
     val result = model.transform(cachedTest).cache
-    val joined = result.select(idCol, IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME)
+    val joined = result.select(idCol, IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME, groupByCol, timeCol)
     val dfToBeReturned = joined.withColumnRenamed("featuresPrediction", "prediction")
 
     (dfToBeReturned.sort(idCol), model)
@@ -495,7 +494,11 @@ class ForecastPredictor extends Serializable with Logging {
       }
       .add(StructField("prediction", LongType))
     val df = sqlContext.createDataFrame(forecastResult, schema)
-    (df.sort(idCol), model)
+
+    if(idCol.isEmpty)
+      (df, model)
+    else
+      (df.sort(idCol), model)
   }
 
   def saveResult[T](toBeSaved: RDD[(T, Long)], path: String): Unit = {
