@@ -40,7 +40,7 @@ object UberXGBoostModel {
     testSet.mapPartitions { testData =>
       val (auxiliaryIterator, testDataIterator) = testData.duplicate
       val testDataArray = auxiliaryIterator.toArray
-      val prediction = broadcastBooster.value.predict(new DMatrix(testDataIterator)).flatten
+      val prediction = broadcastBooster.value.booster.predict(new DMatrix(testDataIterator)).flatten
       testDataArray
         .zip(prediction)
         .map {
