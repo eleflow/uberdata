@@ -34,13 +34,15 @@ import org.apache.spark.sql.types.{DoubleType, StringType, TimestampType}
 import org.scalatest.{FlatSpec, Matchers, Suite}
 
 /**
- * Created by dirceu on 25/08/16.
- */
-class TestXGBoost extends FlatSpec with Matchers with BeforeAndAfterWithContext
-	with HasXGBoostParams {
-	this: Suite =>
+  * Created by dirceu on 25/08/16.
+  */
+class TestXGBoost
+    extends FlatSpec
+    with Matchers
+    with BeforeAndAfterWithContext
+    with HasXGBoostParams { this: Suite =>
 
-		"XGBostAlgorithm" should "execute xgboost " in {
+  "XGBostAlgorithm" should "execute xgboost " in {
 //		val train = Dataset(context, s"$defaultFilePath/data/RossmannTrain.csv")
 //
 //		val trainData = train.formatDateValues("Date", DayMonthYear).select("Store", "Sales",
@@ -82,23 +84,38 @@ class TestXGBoost extends FlatSpec with Matchers with BeforeAndAfterWithContext
 //	}
 //
 //	it should "Accept data and execute xgboost big model" in {
-		ClusterSettings.kryoBufferMaxSize = Some("70m")
-		val train = Dataset(context, s"$defaultFilePath/data/RossmannTrain.csv")
+    ClusterSettings.kryoBufferMaxSize = Some("70m")
+    val train = Dataset(context, s"$defaultFilePath/data/RossmannTrain.csv")
 
-		val trainData = train.formatDateValues("Date", DayMonthYear).select("Store", "Sales",
-			"DayOfWeek", "Date1", "Date2", "Date3", "Open", "Promo", "StateHoliday", "SchoolHoliday")
-			.cache
-		val test = Dataset(context, s"$defaultFilePath/data/RossmannTest.csv")
+    val trainData = train
+      .formatDateValues("Date", DayMonthYear)
+      .select(
+        "Store",
+        "Sales",
+        "DayOfWeek",
+        "Date1",
+        "Date2",
+        "Date3",
+        "Open",
+        "Promo",
+        "StateHoliday",
+        "SchoolHoliday")
+      .cache
+    val test = Dataset(context, s"$defaultFilePath/data/RossmannTest.csv")
 
-		val testData = test.formatDateValues("Date", DayMonthYear)
+    val testData = test.formatDateValues("Date", DayMonthYear)
 
-	val (prediction, model) = ForecastPredictor().predictBigModelFuture(trainData, testData,
-		SupportedAlgorithm
-		.XGBoostAlgorithm, "Sales", "Id", Seq("Store", "DayOfWeek", "Date1", "Date2", "Date3") )
-		assert(prediction.count == 288)
-	}
+    val (prediction, model) = ForecastPredictor().predictBigModelFuture(
+      trainData,
+      testData,
+      SupportedAlgorithm.XGBoostAlgorithm,
+      "Sales",
+      "Id",
+      Seq("Store", "DayOfWeek", "Date1", "Date2", "Date3"))
+    assert(prediction.count == 288)
+  }
 
-	override def copy(extra: ParamMap): Params = ???
+  override def copy(extra: ParamMap): Params = ???
 
-	override val uid: String = "aaa"
+  override val uid: String = "aaa"
 }

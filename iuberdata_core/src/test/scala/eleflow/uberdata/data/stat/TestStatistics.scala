@@ -1,18 +1,18 @@
 /*
-* Copyright 2015 eleflow.com.br.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2015 eleflow.com.br.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package eleflow.uberdata.data.stat
 
@@ -30,11 +30,16 @@ import org.scalatest.{FlatSpec, Matchers}
   */
 class TestStatistics extends FlatSpec with Matchers with BeforeAndAfterWithContext {
 
-  lazy val schema = StructType(Array(StructField("click", IntegerType, nullable = false),
-    StructField("c1", IntegerType, nullable = true), StructField("c2", IntegerType, nullable = true),
-    StructField("c3", IntegerType, nullable = true), StructField("c4", IntegerType, nullable = true),
-    StructField("c5", IntegerType, nullable = true), StructField("c6", IntegerType, nullable = true),
-    StructField("c7", IntegerType, nullable = true)))
+  lazy val schema = StructType(
+    Array(
+      StructField("click", IntegerType, nullable = false),
+      StructField("c1", IntegerType, nullable = true),
+      StructField("c2", IntegerType, nullable = true),
+      StructField("c3", IntegerType, nullable = true),
+      StructField("c4", IntegerType, nullable = true),
+      StructField("c5", IntegerType, nullable = true),
+      StructField("c6", IntegerType, nullable = true),
+      StructField("c7", IntegerType, nullable = true)))
 
   def buildDataset = context.sparkContext.parallelize(values)
 
@@ -113,9 +118,11 @@ class TestStatistics extends FlatSpec with Matchers with BeforeAndAfterWithConte
 
   it should "return 1 for two totally correlated columns" in {
     val _dataset = context.sparkContext.parallelize(correlatedValues)
-    val _schema = StructType(Array(
-      StructField("c1", IntegerType, nullable = true), StructField("c2", IntegerType, nullable = true)
-    ))
+    val _schema = StructType(
+      Array(
+        StructField("c1", IntegerType, nullable = true),
+        StructField("c2", IntegerType, nullable = true)
+      ))
 
     val rdd = context.sqlContext.createDataFrame(_dataset, _schema)
     val result = Statistics.correlation(rdd, 3)
@@ -127,10 +134,12 @@ class TestStatistics extends FlatSpec with Matchers with BeforeAndAfterWithConte
 
   it should "return negative correlations sorted by the absolute value" in {
     val _dataset = context.sparkContext.parallelize(negativeCorrelationValues)
-    val _schema = StructType(Array(
-      StructField("c1", IntegerType, nullable = true), StructField("c2", IntegerType, nullable = true),
-      StructField("c3", IntegerType, nullable = true)
-    ))
+    val _schema = StructType(
+      Array(
+        StructField("c1", IntegerType, nullable = true),
+        StructField("c2", IntegerType, nullable = true),
+        StructField("c3", IntegerType, nullable = true)
+      ))
 
     val rdd = context.sqlContext.createDataFrame(_dataset, _schema)
     val result = Statistics.correlation(rdd, 5)
@@ -158,9 +167,15 @@ class TestStatistics extends FlatSpec with Matchers with BeforeAndAfterWithConte
   it should "return the matrix of column correlations for dataset" in {
 
     val dataSet = Dataset(context, s"${defaultFilePath}CorrelationDataSet.csv")
-    dataSet.applyColumnTypes(Seq(StringType,
-      StringType, DecimalType(ClusterSettings.defaultDecimalPrecision, ClusterSettings.defaultDecimalScale), StringType,
-      StringType, LongType, StringType))
+    dataSet.applyColumnTypes(
+      Seq(
+        StringType,
+        StringType,
+        DecimalType(ClusterSettings.defaultDecimalPrecision, ClusterSettings.defaultDecimalScale),
+        StringType,
+        StringType,
+        LongType,
+        StringType))
     val resultWithSizeLimit = Statistics.correlation(dataSet).toArray
     assert(resultWithSizeLimit.count(f => !f._1.isNaN) == 20)
     assert(resultWithSizeLimit(0)._2 == "(string,vl3) | (string2,vl3)")
@@ -174,7 +189,6 @@ class TestStatistics extends FlatSpec with Matchers with BeforeAndAfterWithConte
     assert(resultWithAllColumnCorrelations(20)._2 == "(string3,str05) | (double,)")
     assert(roundDouble(resultWithAllColumnCorrelations(20)._1, 2) == 0.72)
   }
-
 
   "Target Correlation" should "return the distinct values of column correlations with Target" in {
     val rdd = context.sqlContext.createDataFrame(buildDataset, schema)
@@ -211,4 +225,3 @@ class TestStatistics extends FlatSpec with Matchers with BeforeAndAfterWithConte
     BigDecimal(number).setScale(scale, BigDecimal.RoundingMode.HALF_UP).toDouble
   }
 }
-

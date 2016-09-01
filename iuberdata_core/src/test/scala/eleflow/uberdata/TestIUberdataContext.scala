@@ -1,25 +1,24 @@
 /*
-* Copyright 2015 eleflow.com.br.
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-* http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright 2015 eleflow.com.br.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package eleflow.uberdata
 
 /**
- * Created by dirceu on 30/09/14.
- */
-
+  * Created by dirceu on 30/09/14.
+  */
 import java.io.IOException
 import java.net.URI
 
@@ -34,8 +33,8 @@ import org.easymock.EasyMock.anyObject
 import org.scalatest._
 
 /**
- * Created by dirceu on 30/09/14.
- */
+  * Created by dirceu on 30/09/14.
+  */
 class TestIUberdataContext extends FlatSpec with Matchers {
 
   val conf = EasyMock.createMock(classOf[SparkConf])
@@ -112,7 +111,10 @@ class TestIUberdataContext extends FlatSpec with Matchers {
     val path = EasyMock.createMock(classOf[Path])
     val s3ClientMock = EasyMock.createMock(classOf[AmazonS3])
 
-    EasyMock.expect(s3ClientMock.getObject(anyObject())).andThrow(new AmazonClientException("Testing error")).times(1)
+    EasyMock
+      .expect(s3ClientMock.getObject(anyObject()))
+      .andThrow(new AmazonClientException("Testing error"))
+      .times(1)
 
     EasyMock.replay(path, s3ClientMock)
 
@@ -135,7 +137,10 @@ class TestIUberdataContext extends FlatSpec with Matchers {
     val s3ClientMock = EasyMock.createMock(classOf[AmazonS3])
 
     EasyMock.expect(s3ClientMock.getObject(anyObject())).andReturn(s3Object).times(1)
-    EasyMock.expect(s3Object.getObjectContent()).andThrow(new AmazonClientException("TestingError")).times(1)
+    EasyMock
+      .expect(s3Object.getObjectContent())
+      .andThrow(new AmazonClientException("TestingError"))
+      .times(1)
 
     EasyMock.replay(path, s3Object, s3ClientMock)
 
@@ -157,13 +162,18 @@ class TestIUberdataContext extends FlatSpec with Matchers {
     val mockFs = EasyMock.createMock(classOf[FileSystem])
 
     EasyMock.expect(path.getFileSystem(anyObject())).andReturn(mockFs).times(1)
-    EasyMock.expect(mockFs.create(path)).andReturn(EasyMock.createMock(classOf[FSDataOutputStream])).anyTimes()
+    EasyMock
+      .expect(mockFs.create(path))
+      .andReturn(EasyMock.createMock(classOf[FSDataOutputStream]))
+      .anyTimes()
     EasyMock.replay(path, mockFs)
 
     val uberdata = new IUberdataContext(conf) {
       override protected def createPathInstance(input: String) = path
 
-      override protected def copyFromS3(input: URI, localPath: Path, localFileSystem: FileSystem): Unit = {
+      override protected def copyFromS3(input: URI,
+                                        localPath: Path,
+                                        localFileSystem: FileSystem): Unit = {
         assert(input == new URI(s3path))
         assert(path == localPath)
         assert(mockFs == localFileSystem)
@@ -173,7 +183,6 @@ class TestIUberdataContext extends FlatSpec with Matchers {
 
     EasyMock.verify(path, mockFs)
   }
-
 
   it should "correct handle filesystem creation exception" in {
     val path = EasyMock.createMock(classOf[Path])

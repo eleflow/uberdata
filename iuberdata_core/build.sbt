@@ -27,7 +27,7 @@ organization := "eleflow"
 
 name := "IUberdataCore"
 
-version :="0.1.0"
+version := "0.1.0"
 
 resolvers += Resolver.sonatypeRepo("public")
 
@@ -45,12 +45,13 @@ parallelExecution in Test := false
 
 net.virtualvoid.sbt.graph.Plugin.graphSettings
 
-def iUberdataCoreVersion(version:Option[String] = Some("Not a Git Repository"), dir:File) = {
+def iUberdataCoreVersion(version: Option[String] = Some("Not a Git Repository"), dir: File) = {
   val file = dir / "UberdataCoreVersion.scala"
-  IO.write(file,
+  IO.write(
+    file,
     s"""package eleflow.uberdata.core\n  object UberdataCoreVersion{\n          val version = "${version.get}"\n
        |}\n""".stripMargin)
   Seq(file)
 }
 
-sourceGenerators in Compile <+= (git.gitHeadCommit,sourceManaged in Compile) map iUberdataCoreVersion
+sourceGenerators in Compile <+= (git.gitHeadCommit, sourceManaged in Compile) map iUberdataCoreVersion

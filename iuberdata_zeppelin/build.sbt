@@ -32,4 +32,4 @@ net.virtualvoid.sbt.graph.Plugin.graphSettings
 
 resolvers in ThisBuild += Resolver.mavenLocal
 
-resolvers in ThisBuild  += Resolver.sonatypeRepo("snapshots")
+resolvers in ThisBuild += Resolver.sonatypeRepo("snapshots")
