@@ -22,7 +22,7 @@ dependencies:
 
 test:
   override:
-    - sbt test
+    - sbt test-only -- -l eleflow.uberdata.data.TestPredictor
   post:
     - bash <(curl -s https://codecov.io/bash)
 
