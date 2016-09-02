@@ -1,8 +1,8 @@
 machine:
   environment:
     SBT_VERSION: 0.13.11
-    SBT_OPTS : "-XX:+CMSClassUnloadingEnabled -XX:MaxMetaspaceSize=2G -XX:MetaspaceSize=2G -Xms2G -Xmx2G"
-    JAVA_OPTS : "-XX:+CMSClassUnloadingEnabled -XX:MaxMetaspaceSize=2G -XX:MetaspaceSize=2G -Xms2G -Xmx2G"
+    SBT_OPTS : "-XX:+CMSClassUnloadingEnabled -XX:MaxMetaspaceSize=2G -Xmx2G -XX:-UseGCOverheadLimit"
+    JAVA_OPTS : "-XX:+CMSClassUnloadingEnabled -XX:MaxMetaspaceSize=2G -Xmx2G -XX:-UseGCOverheadLimit"
 
   java:
     version: openjdk8
