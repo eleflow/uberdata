@@ -199,7 +199,6 @@ class ForecastPredictor extends Serializable with Logging {
     featuresCol: Seq[String],
     validationCol: String,
     timeCol: String,
-    idCol: String,
     groupByCol: String,
     schema: StructType
   )(implicit kl: ClassTag[L], kg: ClassTag[G]): Pipeline = {
@@ -212,11 +211,11 @@ class ForecastPredictor extends Serializable with Logging {
       .setTimeSeriesEvaluator(timeSeriesEvaluator)
       .setLabelCol(labelCol)
       .setGroupByCol(groupByCol)
-//			.setIdCol(idCol)
       .setValidationCol(validationCol)
+      .setTimeCol(timeCol)
 
     new Pipeline().setStages(
-      smallModelPipelineStages(labelCol, featuresCol, groupByCol, Some(idCol), schema = schema)
+      smallModelPipelineStages(labelCol, featuresCol, groupByCol, None, schema = schema)
         :+ xgboost)
   }
 
@@ -295,7 +294,6 @@ class ForecastPredictor extends Serializable with Logging {
           labelCol,
           featuresCol,
           timeCol,
-          idCol,
           groupByCol,
           algorithm,
           validationCol)
@@ -311,7 +309,6 @@ class ForecastPredictor extends Serializable with Logging {
     labelCol: String,
     featuresCol: Seq[String],
     timeCol: String,
-    idCol: String,
     groupByCol: String,
     algorithm: Algorithm = XGBoostAlgorithm,
     validationCol: String
@@ -324,7 +321,6 @@ class ForecastPredictor extends Serializable with Logging {
       featuresCol,
       validationCol,
       timeCol,
-      idCol,
       groupByCol,
       train.schema)
     val cachedTrain = train.cache
@@ -332,10 +328,10 @@ class ForecastPredictor extends Serializable with Logging {
     val model = pipeline.fit(cachedTrain)
     val result = model.transform(cachedTest).cache
     val joined =
-      result.select(idCol, IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME, groupByCol, timeCol)
+      result.select(IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME, groupByCol, timeCol)
     val dfToBeReturned = joined.withColumnRenamed("featuresPrediction", "prediction")
 
-    (dfToBeReturned.sort(idCol), model)
+    (dfToBeReturned.sort(groupByCol), model)
   }
 
   def prepareSmallModelPipeline[G](train: DataFrame,

@@ -540,7 +540,6 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
       "Sales",
       Seq("Store"),
       "data",
-      "Id",
       "Store",
       SupportedAlgorithm.XGBoostAlgorithm,
       "validationCol")
@@ -617,7 +616,6 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
         "Sales",
         Seq("Store"),
         "Date1",
-        "Id",
         "Store",
         XGBoostAlgorithm,
         "validacaocoluna")
@@ -706,7 +704,6 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
         "Sales",
         Seq("DayOfWeek", "Date2", "Date3", "Open", "Promo", "StateHoliday", "SchoolHoliday"),
         "Date1",
-        "Id",
         "Store",
         XGBoostAlgorithm,
         "validacaocoluna")

@@ -24,7 +24,7 @@ import ml.dmlc.xgboost4j.{LabeledPoint => XGBLabeledPoint}
 import org.apache.hadoop.fs.Path
 import org.apache.spark.ml.XGBoostSmallModel.XGBoostRegressionModelWriter
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.param.shared.{HasFeaturesCol, HasGroupByCol, HasIdCol, HasLabelCol}
+import org.apache.spark.ml.param.shared._
 import org.apache.spark.ml.util.{DefaultParamsReader, _}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
@@ -43,9 +43,9 @@ class XGBoostSmallModel[G](
   ord: Ordering[G] = null)
     extends ForecastBaseModel[XGBoostSmallModel[G]]
     with HasGroupByCol
-    with HasIdCol
     with HasFeaturesCol
     with HasLabelCol
+    with HasTimeCol
     with MLWritable
     with ForecastPipelineStage {
 
@@ -53,9 +53,9 @@ class XGBoostSmallModel[G](
 
   def setGroupByCol(value: String): this.type = set(groupByCol, value)
 
-  def setIdCol(value: String): this.type = set(idCol, value)
-
   def setLabelCol(value: String): this.type = set(labelCol, value)
+
+  def setTimeCol(value: String): this.type = set(timeCol, value)
 
   def setSummary(summary: XGBoostTrainingSummary[G]) = {
     trainingSummary = Some(summary)
@@ -74,12 +74,10 @@ class XGBoostSmallModel[G](
       case (id, ((bestModel, metrics), row)) =>
         val features =
           row.getAs[org.apache.spark.mllib.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
-        val idColumnIndex = row.fieldIndex($(idCol))
         val featuresIndex = row.fieldIndex(IUberdataForecastUtil.FEATURES_COL_NAME)
         val groupByColumnIndex = row.fieldIndex($(groupByCol))
         val rowValues = row.toSeq.zipWithIndex.filter {
           case (_, index) =>
-            index == idColumnIndex ||
               index == featuresIndex || index == groupByColumnIndex
         }.map(_._1)
         val featuresAsFloat = features.toArray.map(_.toFloat)
@@ -101,10 +99,10 @@ class XGBoostSmallModel[G](
         .filter(
           f =>
             Seq(
-              $(idCol),
               IUberdataForecastUtil.FEATURES_COL_NAME,
               $(featuresCol),
               $(groupByCol),
+              $(timeCol),
               IUberdataForecastUtil.ALGORITHM,
               IUberdataForecastUtil.PARAMS).contains(f.name)))
       .add(StructField(IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME, DoubleType))
@@ -114,7 +112,7 @@ class XGBoostSmallModel[G](
     trainingSummary.map(summary => newModel.setSummary(summary))
     newModel
       .setGroupByCol($(groupByCol))
-      .setIdCol($(idCol))
+      .setTimeCol($(timeCol))
       .setValidationCol($(validationCol))
       .asInstanceOf[XGBoostSmallModel[G]]
   }
