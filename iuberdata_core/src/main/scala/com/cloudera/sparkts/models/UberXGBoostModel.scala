@@ -41,14 +41,13 @@ object UberXGBoostModel {
   def labelPredict(testSet: RDD[XGBLabeledPoint],
                    useExternalCache: Boolean = false,
                    booster: XGBoostModel): RDD[(Float, Float)] = {
-    import scala.collection.JavaConverters._
     val broadcastBooster = testSet.sparkContext.broadcast(booster)
     testSet.mapPartitions { testData =>
       val (auxiliaryIterator, testDataIterator) = testData.duplicate
       val testDataArray = auxiliaryIterator.toArray
       val rabitEnv = Array("DMLC_TASK_ID" -> TaskContext.getPartitionId().toString).toMap
       Rabit.init(rabitEnv.asJava)
-      val prediction = broadcastBooster.value.predict(new DMatrix(testDataIterator)).flatten
+      val prediction = broadcastBooster.value.booster.predict(new DMatrix(testDataIterator)).flatten
       val iterator = testDataArray
         .zip(prediction)
         .map {
