@@ -23,6 +23,7 @@ import ml.dmlc.xgboost4j.scala.spark.{XGBoost, XGBoostModel}
 import org.apache.spark.TaskContext
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
+import scala.collection.JavaConverters._
 
 /**
   * Created by dirceu on 25/08/16.
