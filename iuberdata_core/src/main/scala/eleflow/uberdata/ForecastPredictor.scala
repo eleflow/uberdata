@@ -513,9 +513,13 @@ class ForecastPredictor extends Serializable with Logging {
                             algorithm: Algorithm,
                             labelCol: String,
                             idCol: String,
-                            featuresCol: Seq[String]): (DataFrame, PipelineModel) = {
+                            featuresCol: Seq[String],
+                            rounds: Int = 2000,
+                            params: Map[String, Any] = Map.empty[String,Any]):
+  (DataFrame, PipelineModel) = {
     val pipeline = algorithm match {
-      case XGBoostAlgorithm => prepareXGBoostBigModel(labelCol, idCol, featuresCol, train.schema)
+      case XGBoostAlgorithm => prepareXGBoostBigModel(labelCol, idCol, featuresCol, train.schema,
+        rounds, params)
       case _ => throw new UnsupportedOperationException()
     }
     val model = pipeline.fit(train.cache)
@@ -527,7 +531,10 @@ class ForecastPredictor extends Serializable with Logging {
     labelCol: String,
     idCol: String,
     featuresCol: Seq[String],
-    schema: StructType)(implicit ct: ClassTag[L], gt: ClassTag[G]): Pipeline = {
+    schema: StructType,
+    rounds: Int,
+    params: Map[String, Any])(implicit ct: ClassTag[L], gt: ClassTag[G]):
+  Pipeline = {
     val validationCol: String = "validation"
     val timeSeriesEvaluator: TimeSeriesEvaluator[G] = new TimeSeriesEvaluator[G]()
       .setValidationCol(validationCol)
@@ -537,6 +544,8 @@ class ForecastPredictor extends Serializable with Logging {
       .setTimeSeriesEvaluator(timeSeriesEvaluator)
       .setLabelCol(labelCol)
       .setIdCol(idCol)
+      .setXGBoostParams(params)
+      .setXGBoostRounds(rounds)
       .setValidationCol(validationCol)
 
     new Pipeline().setStages(

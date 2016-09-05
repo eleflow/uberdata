@@ -83,8 +83,10 @@ rm -f /tmp/notebook/interpreter.json
 cp -rf /tmp/notebook/* /usr/share/zeppelin/notebook
 rm -rf /tmp/notebook*
 
+cp /tmp/xgboost4j-spark-0.5-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
 cp /tmp/xgboost4j-0.5-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
 sudo rm -f /tmp/xgboost4j-0.5-jar-with-dependencies.jar
+sudo rm -f /tmp/xgboost4j-spark-0.5-jar-with-dependencies.jar
 cp /tmp/sparkts-0.3.0-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
 sudo rm -f /tmp/sparkts-0.3.0-jar-with-dependencies.jar
 

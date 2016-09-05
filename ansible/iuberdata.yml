@@ -1,5 +1,5 @@
 ---
-- hosts: tag_Name_iuberdata
+- hosts: tag_Name_iuberdata-dirceu
   gather_facts: True
   user: ec2-user
   sudo: yes
@@ -18,6 +18,9 @@
       ignore_errors: yes
     - name: copy local xgboost
       copy: src=../../xgboost/jvm-packages/xgboost4j/target/xgboost4j-0.5-jar-with-dependencies.jar dest=/tmp/xgboost4j-0.5-jar-with-dependencies.jar
+      ignore_errors: yes
+    - name: copy local xgboost-spark
+      copy: src=../../xgboost/jvm-packages/xgboost4j-spark/target/xgboost4j-spark-0.5-jar-with-dependencies.jar dest=/tmp/xgboost4j-spark-0.5-jar-with-dependencies.jar
       ignore_errors: yes
     - name: copy local sparkts
       copy: src=../../spark-timeseries/target/sparkts-0.3.0-jar-with-dependencies.jar dest=/tmp/sparkts-0.3.0-jar-with-dependencies.jar

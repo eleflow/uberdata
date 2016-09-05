@@ -50,7 +50,7 @@ trait HasXGBoostParams extends Params {
       "min_child_weight" -> 9,
       "gamma" -> 0,
       "eval_metric" -> "rmse",
-      "tree_method" -> "exact"
+      "tree_method" -> "auto"
     ).map(f => (f._1, f._2.asInstanceOf[AnyRef]))
   )
 

@@ -16,9 +16,11 @@
 
 package com.cloudera.sparkts.models
 
+import ml.dmlc.xgboost4j.java.Rabit
 import ml.dmlc.xgboost4j.scala.DMatrix
 import ml.dmlc.xgboost4j.{LabeledPoint => XGBLabeledPoint}
 import ml.dmlc.xgboost4j.scala.spark.{XGBoost, XGBoostModel}
+import org.apache.spark.TaskContext
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
 
@@ -30,24 +32,32 @@ object UberXGBoostModel {
             configMap: Map[String, Any],
             round: Int,
             nWorkers: Int): XGBoostModel = {
-    XGBoost.train(trainLabel, configMap, round, nWorkers)
+    val trainData = if (trainLabel.getNumPartitions > nWorkers) trainLabel.coalesce(nWorkers).cache
+    else if (trainLabel.getNumPartitions < nWorkers) trainLabel.repartition(nWorkers).cache
+    else trainLabel.cache
+    XGBoost.train(trainData, configMap, round, nWorkers)
   }
 
   def labelPredict(testSet: RDD[XGBLabeledPoint],
                    useExternalCache: Boolean = false,
                    booster: XGBoostModel): RDD[(Float, Float)] = {
+    import scala.collection.JavaConverters._
     val broadcastBooster = testSet.sparkContext.broadcast(booster)
     testSet.mapPartitions { testData =>
       val (auxiliaryIterator, testDataIterator) = testData.duplicate
       val testDataArray = auxiliaryIterator.toArray
+      val rabitEnv = Array("DMLC_TASK_ID" -> TaskContext.getPartitionId().toString).toMap
+      Rabit.init(rabitEnv.asJava)
       val prediction = broadcastBooster.value.predict(new DMatrix(testDataIterator)).flatten
-      testDataArray
+      val iterator = testDataArray
         .zip(prediction)
         .map {
           case (labeledPoint, predictionValue) =>
             (labeledPoint.label, predictionValue)
         }
         .toIterator
+      Rabit.shutdown()
+      iterator
     }
   }
 }

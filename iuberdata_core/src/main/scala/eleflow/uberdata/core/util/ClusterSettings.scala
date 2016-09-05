@@ -43,7 +43,7 @@ object ClusterSettings {
   var resume = false
   var executorMemory: Option[String] = None
   var defaultParallelism: Option[Int] = None
-  var xgBoostWorkers: Int = 16
+  var xgBoostWorkers: Int = 1
   var master: Option[String] = None
   var baseDir: String = "/tmp"
   var localDir: String = "/tmp"

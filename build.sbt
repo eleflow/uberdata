@@ -36,15 +36,23 @@ lazy val iuberdata_core = project settings (libraryDependencies ++= Seq(
     "org.apache.spark" %% "spark-repl" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
+    "org.apache.spark" % "spark-mllib_2.10" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-hive-thriftserver" % sparkVersion % "provided",
     "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.4" % "provided",
     "com.typesafe" % "config" % "1.3.0",
     "org.scalatest" %% "scalatest" % "2.2.4",
     "org.easymock" % "easymock" % "3.4" % "test",
     "com.typesafe.play" %% "play-json" % "2.4.6",
-    "com.cloudera.sparkts" % "sparkts" % "0.3.0" % "provided",
+    "com.cloudera.sparkts" % "sparkts" % "0.3.0",
     "ml.dmlc" % "xgboost4j" % "0.5" % "provided",
-    "ml.dmlc" % "xgboost4j-spark" % "0.5"  % "provided",
+//      excludeAll ExclusionRule(
+//      organization = "com.esotericsoftware.kryo") excludeAll ExclusionRule(
+//      organization = "com.esotericsoftware.minlog"),
+    "ml.dmlc" % "xgboost4j-spark" % "0.5" % "provided",
+//      excludeAll ExclusionRule(
+//      organization = "org.apache.spark") excludeAll ExclusionRule(
+//      organization = "com.esotericsoftware.kryo") excludeAll ExclusionRule(
+//      organization = "com.esotericsoftware.minlog"),
     "mysql" % "mysql-connector-java" % mysqlV % "runtime"
   )) settings (dependencyOverrides ++= Set(
     "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.4"

@@ -60,7 +60,11 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
 
   def setIdCol(id: String): this.type = set(idCol, id)
 
-  def setXGBoostParams(params: Map[String, Any]): this.type = set(xGBoostParams, params)
+  def setXGBoostParams(params: Map[String, Any]): this.type = if (params.nonEmpty) {
+    set(xGBoostParams, params)
+  } else this
+
+  def setXGBoostRounds(rounds: Int): this.type = set(xGBoostRounds, rounds)
 
   def getOrdering(metricName: String): Ordering[Double] = {
     metricName match {
@@ -97,14 +101,12 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
         .toArray
       val label = DataTransformer.toFloat(row.getAs[L]($(labelCol)))
       LabeledPoint(label, Vectors.dense(values))
-    }
+    }.cache
     val booster = UberXGBoostModel.train(
       labeledPointDataSet,
       $(xGBoostParams),
       $(xGBoostRounds),
-      ClusterSettings.defaultParallelism.getOrElse(
-        dataSet.sqlContext.sparkContext.getConf
-          .getInt("spark.default.parallelism", ClusterSettings.xgBoostWorkers)))
+      ClusterSettings.xgBoostWorkers)
     new XGBoostBigModel[G](uid, Seq((new ParamMap(), booster)))
   }
 }

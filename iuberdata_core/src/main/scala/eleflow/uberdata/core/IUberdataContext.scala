@@ -270,7 +270,7 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
       value => conf.set("spark.default.parallelism", value.toString)
     )
     ClusterSettings.kryoBufferMaxSize.map(
-      value => conf.set("spark.kryoserializer.buffer.max.mb", value.toString)
+      value => conf.set("spark.kryoserializer.buffer.max", value.toString)
     )
     //according to keo, in Making Sense of Spark Performance webcast, this codec is better than default
     conf.set("spark.io.compression.codec", "lzf")
