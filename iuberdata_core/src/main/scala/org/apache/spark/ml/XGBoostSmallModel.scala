@@ -75,10 +75,11 @@ class XGBoostSmallModel[G](
         val features =
           row.getAs[org.apache.spark.mllib.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
         val featuresIndex = row.fieldIndex(IUberdataForecastUtil.FEATURES_COL_NAME)
+        val timeColIndex = row.fieldIndex($(timeCol))
         val groupByColumnIndex = row.fieldIndex($(groupByCol))
         val rowValues = row.toSeq.zipWithIndex.filter {
           case (_, index) =>
-              index == featuresIndex || index == groupByColumnIndex
+              index == featuresIndex || index == groupByColumnIndex || index == timeColIndex
         }.map(_._1)
         val featuresAsFloat = features.toArray.map(_.toFloat)
         val labeledPoints = Iterator(XGBLabeledPoint.fromDenseVector(0, featuresAsFloat))
