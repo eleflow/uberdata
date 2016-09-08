@@ -216,15 +216,15 @@ class ForecastPredictor extends Serializable with Logging {
       .setValidationCol(validationCol)
 
     new Pipeline().setStages(
-      smallModelPipelineStages(labelCol, featuresCol, groupByCol, Some(idCol), schema = schema)
+      createXGBoostPipelineStages(labelCol, featuresCol, groupByCol, Some(idCol), schema = schema)
         :+ xgboost)
   }
 
-  def smallModelPipelineStages(labelCol: String,
-                               featuresCol: Seq[String],
-                               groupByCol: String,
-                               idCol: Option[String] = None,
-                               schema: StructType): Array[PipelineStage] = {
+  def createXGBoostPipelineStages(labelCol: String,
+                                  featuresCol: Seq[String],
+                                  groupByCol: String,
+                                  idCol: Option[String] = None,
+                                  schema: StructType): Array[PipelineStage] = {
 
     val allColumns = schema.map(_.name).toArray
 
@@ -549,7 +549,7 @@ class ForecastPredictor extends Serializable with Logging {
       .setValidationCol(validationCol)
 
     new Pipeline().setStages(
-      smallModelPipelineStages(labelCol, featuresCol, "", Some(idCol), schema = schema)
+      createXGBoostPipelineStages(labelCol, featuresCol, "", Some(idCol), schema = schema)
         :+ xgboost)
   }
 }

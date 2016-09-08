@@ -44,7 +44,6 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
     extends BaseXGBoostBestModelFinder[G, XGBoostSmallModel[G]]
     with DefaultParamsWritable
     with HasXGBoostParams
-//    with HasIdCol
     with TimeSeriesBestModelFinder
     with Logging {
   def this()(implicit gt: ClassTag[G]) =
@@ -61,8 +60,6 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
   def setLabelCol(label: String): this.type = set(labelCol, label)
 
   def setGroupByCol(toGroupBy: String): this.type = set(groupByCol, toGroupBy)
-
-//  def setIdCol(id: String): this.type = set(idCol, id)
 
   def setXGBoostParams(params: Map[String, Any]): this.type = set(xGBoostParams, params)
 
@@ -100,12 +97,11 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
       row.getAs[G]($(groupByCol))
     }.map(f => train(f._1, f._2.toIterator, trainSchema))
     new XGBoostSmallModel[G](uid, modelEvaluation(idModels))
-//      .setIdCol($(idCol))
       .setValidationCol($(validationCol))
       .asInstanceOf[XGBoostSmallModel[G]]
   }
 
-  def train(id: G,
+  def train(groupedByCol: G,
             rows: Iterator[Row],
             trainSchema: Broadcast[StructType]): (G, Row, Seq[(ParamMap, UberXGBOOSTModel)]) = {
 
@@ -124,7 +120,7 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
         Vectors.dense(DataTransformer.toDouble(row.getAs($(labelCol))) +: vector.toArray)
       }
 
-      val matrixRow = new GenericRowWithSchema(Array(id, valuesVector), trainSchema.value)
+      val matrixRow = new GenericRowWithSchema(Array(groupedByCol, valuesVector), trainSchema.value)
 
       val matrix = new DMatrix(values)
       val booster = UberXGBOOSTModel.fitModel(matrix, $(xGBoostParams), $(xGBoostRounds))
@@ -134,10 +130,10 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
       case e: Exception =>
         log.error(
           s"Got the following Exception ${e.getLocalizedMessage} when doing XGBoost " +
-            s"in id $id")
-        (Row(id, Iterator.empty), Seq.empty[(ParamMap, UberXGBOOSTModel)])
+            s"in id $groupedByCol")
+        (Row(groupedByCol, Iterator.empty), Seq.empty[(ParamMap, UberXGBOOSTModel)])
     }
-    (id, matrixRow, result)
+    (groupedByCol, matrixRow, result)
   }
 }
 

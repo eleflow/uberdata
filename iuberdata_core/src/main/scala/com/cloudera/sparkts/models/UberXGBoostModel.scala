@@ -33,31 +33,39 @@ object UberXGBoostModel {
             configMap: Map[String, Any],
             round: Int,
             nWorkers: Int): XGBoostModel = {
-    val trainData = if (trainLabel.getNumPartitions > nWorkers) trainLabel.coalesce(nWorkers).cache
-    else if (trainLabel.getNumPartitions < nWorkers) trainLabel.repartition(nWorkers).cache
-    else trainLabel.cache
+    val trainData =       trainLabel.cache
+    trainData.mapPartitions{
+      f => println(f.size)
+        f
+    }.count
     XGBoost.train(trainData, configMap, round, nWorkers)
   }
 
   def labelPredict(testSet: RDD[XGBLabeledPoint],
                    useExternalCache: Boolean = false,
                    booster: XGBoostModel): RDD[(Float, Float)] = {
+    import ml.dmlc.xgboost4j.scala.spark.DataUtils._
     val broadcastBooster = testSet.sparkContext.broadcast(booster)
-    testSet.mapPartitions { testData =>
-      val (auxiliaryIterator, testDataIterator) = testData.duplicate
-      val testDataArray = auxiliaryIterator.toArray
-      val rabitEnv = Array("DMLC_TASK_ID" -> TaskContext.getPartitionId().toString).toMap
-      Rabit.init(rabitEnv.asJava)
-      val prediction = broadcastBooster.value.booster.predict(new DMatrix(testDataIterator)).flatten
-      val iterator = testDataArray
-        .zip(prediction)
-        .map {
-          case (labeledPoint, predictionValue) =>
-            (labeledPoint.label, predictionValue)
+    val appName = testSet.context.appName
+    testSet.mapPartitions { testSamples =>
+      if (testSamples.hasNext) {
+        val rabitEnv = Array("DMLC_TASK_ID" -> TaskContext.getPartitionId().toString).toMap
+        Rabit.init(rabitEnv.asJava)
+        val cacheFileName = {
+          if (useExternalCache) {
+            s"$appName-dtest_cache-${TaskContext.getPartitionId()}"
+          } else {
+            null
+          }
         }
-        .toIterator
-      Rabit.shutdown()
-      iterator
+        val dMatrix = new DMatrix(testSamples, cacheFileName)
+        val res = broadcastBooster.value.booster.predict(dMatrix).flatten
+        val labels = dMatrix.getLabel
+        Rabit.shutdown()
+        (labels zip res).toIterator
+      } else {
+        Iterator()
+      }
     }
   }
 }

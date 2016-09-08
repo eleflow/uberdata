@@ -266,6 +266,7 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
     conf.set("spark.sql.parquet.compression.codec", "snappy")
     conf.set("spark.local.dir", ClusterSettings.localDir)
     conf.set("spark.externalBlockStore.baseDir", ClusterSettings.baseDir)
+    conf.set("spark.task.cpus", ClusterSettings.taskCpus.toString)
     ClusterSettings.defaultParallelism.map(
       value => conf.set("spark.default.parallelism", value.toString)
     )
