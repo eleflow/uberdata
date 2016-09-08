@@ -25,9 +25,9 @@ import ml.dmlc.xgboost4j.LabeledPoint
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.mllib.linalg.{VectorUDT, Vector => SparkVector}
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.param.shared.{HasIdCol, HasLabelCol}
+import org.apache.spark.ml.param.shared.{HasIdCol, HasLabelCol, HasTimeCol}
 import org.apache.spark.sql.{DataFrame, Row}
-import org.apache.spark.sql.types.{FloatType, StructField, StructType, StringType}
+import org.apache.spark.sql.types.{StructField, _}
 
 /**
   * Created by dirceu on 24/08/16.
@@ -35,11 +35,14 @@ import org.apache.spark.sql.types.{FloatType, StructField, StructType, StringTyp
 class XGBoostBigModel[I](val uid: String, val models: Seq[(ParamMap, XGBoostModel)])
     extends ForecastBaseModel[XGBoostBigModel[I]]
     with HasLabelCol
-    with HasIdCol {
+    with HasIdCol
+    with HasTimeCol{
 
   def setLabelcol(label: String): this.type = set(labelCol, label)
 
   def setIdcol(id: String): this.type = set(idCol, id)
+
+  def setTimecol(time: String): this.type = set(timeCol, time)
 
   override def copy(extra: ParamMap): XGBoostBigModel[I] = new XGBoostBigModel[I](uid, models)
 
@@ -48,12 +51,14 @@ class XGBoostBigModel[I](val uid: String, val models: Seq[(ParamMap, XGBoostMode
     val rows = dataSet
       .map(
         row =>
-          (DataTransformer.toFloat(row.getAs($(idCol))),
-           row.getAs[SparkVector](IUberdataForecastUtil.FEATURES_COL_NAME)))
+            (DataTransformer.toFloat(row.getAs($(idCol))),
+              (row.getAs[SparkVector](IUberdataForecastUtil.FEATURES_COL_NAME),
+                row.getAs[TimestampType]($(timeCol))))
+      )
       .join(prediction)
       .map {
-        case (id, (features, predictValue)) =>
-          Row(id, features, SupportedAlgorithm.XGBoostAlgorithm.toString, predictValue)
+        case (id, ((features, time), predictValue)) =>
+            Row(id, features, time, SupportedAlgorithm.XGBoostAlgorithm.toString, predictValue)
       }
     dataSet.sqlContext.createDataFrame(rows, transformSchema(dataSet.schema))
   }
@@ -74,6 +79,8 @@ class XGBoostBigModel[I](val uid: String, val models: Seq[(ParamMap, XGBoostMode
       Array(
         StructField($(idCol), FloatType),
         StructField(IUberdataForecastUtil.FEATURES_COL_NAME, new VectorUDT),
+        StructField($(timeCol), TimestampType),
         StructField(IUberdataForecastUtil.ALGORITHM, StringType),
-        StructField("prediction", FloatType)))
+        StructField("prediction", FloatType)
+        ))
 }
