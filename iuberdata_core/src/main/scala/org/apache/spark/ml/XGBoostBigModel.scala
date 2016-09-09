@@ -16,6 +16,8 @@
 
 package org.apache.spark.ml
 
+import java.sql.Timestamp
+
 import com.cloudera.sparkts.models.UberXGBoostModel
 import eleflow.uberdata.IUberdataForecastUtil
 import eleflow.uberdata.core.data.DataTransformer
@@ -53,7 +55,7 @@ class XGBoostBigModel[I](val uid: String, val models: Seq[(ParamMap, XGBoostMode
         row =>
             (DataTransformer.toFloat(row.getAs($(idCol))),
               (row.getAs[SparkVector](IUberdataForecastUtil.FEATURES_COL_NAME),
-                row.getAs[TimestampType]($(timeCol))))
+                row.getAs[Timestamp]($(timeCol))))
       )
       .join(prediction)
       .map {

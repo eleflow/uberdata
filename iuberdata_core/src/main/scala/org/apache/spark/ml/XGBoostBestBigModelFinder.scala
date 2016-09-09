@@ -107,8 +107,11 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
       ClusterSettings.defaultParallelism.getOrElse(
         dataSet.sqlContext.sparkContext.getConf
           .getInt("spark.default.parallelism", ClusterSettings.xgBoostWorkers)))
-    new XGBoostBigModel[G](uid, Seq((new ParamMap(), booster))).setIdcol($(idCol))
-			.setLabelcol($(labelCol)).setTimecol($(timeCol))
+
+    new XGBoostBigModel[G](uid, Seq((new ParamMap(), booster)))
+      .setIdcol($(idCol))
+			.setLabelcol($(labelCol))
+      .setTimecol($(timeCol))
   }
 }
 
