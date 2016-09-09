@@ -88,14 +88,11 @@ class TestXGBoost
     val train = Dataset(context, s"$defaultFilePath/data/RossmannTrain.csv")
 
     val trainData = train
-      .formatDateValues("Date", DayMonthYear)
       .select(
         "Store",
         "Sales",
         "DayOfWeek",
-        "Date1",
-        "Date2",
-        "Date3",
+        "Date",
         "Open",
         "Promo",
         "StateHoliday",
@@ -103,7 +100,7 @@ class TestXGBoost
       .cache
     val test = Dataset(context, s"$defaultFilePath/data/RossmannTest.csv")
 
-    val testData = test.formatDateValues("Date", DayMonthYear)
+    val testData = test
 
     val (prediction, model) = ForecastPredictor().predictBigModelFuture(
       trainData,
@@ -111,7 +108,8 @@ class TestXGBoost
       SupportedAlgorithm.XGBoostAlgorithm,
       "Sales",
       "Id",
-      Seq("Store", "DayOfWeek", "Date1", "Date2", "Date3"))
+      "Date",
+      Seq("Store", "DayOfWeek", "Date"))
     assert(prediction.count == 288)
   }
 

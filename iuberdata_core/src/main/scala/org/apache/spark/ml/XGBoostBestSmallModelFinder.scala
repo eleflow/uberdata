@@ -26,7 +26,7 @@ import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.param.shared.{HasGroupByCol, HasIdCol, HasXGBoostParams}
+import org.apache.spark.ml.param.shared.{HasGroupByCol, HasIdCol, HasTimeCol, HasXGBoostParams}
 import org.apache.spark.ml.regression.XGBoostLinearSummary
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.mllib.linalg.{VectorUDT, Vectors}
@@ -44,8 +44,9 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
     extends BaseXGBoostBestModelFinder[G, XGBoostSmallModel[G]]
     with DefaultParamsWritable
     with HasXGBoostParams
-//    with HasIdCol
     with TimeSeriesBestModelFinder
+    with HasIdCol
+    with HasTimeCol
     with Logging {
   def this()(implicit gt: ClassTag[G]) =
     this(Identifiable.randomUID("xgboostsmall"))
@@ -62,7 +63,9 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
 
   def setGroupByCol(toGroupBy: String): this.type = set(groupByCol, toGroupBy)
 
-//  def setIdCol(id: String): this.type = set(idCol, id)
+  def setIdCol(id: String): this.type = set(idCol, id)
+
+  def setTimeCol(time: String): this.type = set(timeCol, time)
 
   def setXGBoostParams(params: Map[String, Any]): this.type = set(xGBoostParams, params)
 
@@ -100,8 +103,9 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
       row.getAs[G]($(groupByCol))
     }.map(f => train(f._1, f._2.toIterator, trainSchema))
     new XGBoostSmallModel[G](uid, modelEvaluation(idModels))
-//      .setIdCol($(idCol))
       .setValidationCol($(validationCol))
+      .setIdCol($(idCol))
+      .setTimeCol($(timeCol))
       .asInstanceOf[XGBoostSmallModel[G]]
   }
 

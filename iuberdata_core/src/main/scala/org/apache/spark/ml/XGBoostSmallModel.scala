@@ -24,7 +24,7 @@ import ml.dmlc.xgboost4j.{LabeledPoint => XGBLabeledPoint}
 import org.apache.hadoop.fs.Path
 import org.apache.spark.ml.XGBoostSmallModel.XGBoostRegressionModelWriter
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.param.shared.{HasFeaturesCol, HasGroupByCol, HasIdCol, HasLabelCol}
+import org.apache.spark.ml.param.shared._
 import org.apache.spark.ml.util.{DefaultParamsReader, _}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
@@ -43,9 +43,10 @@ class XGBoostSmallModel[G](
   ord: Ordering[G] = null)
     extends ForecastBaseModel[XGBoostSmallModel[G]]
     with HasGroupByCol
-    with HasIdCol
     with HasFeaturesCol
     with HasLabelCol
+    with HasIdCol
+    with HasTimeCol
     with MLWritable
     with ForecastPipelineStage {
 
@@ -53,9 +54,11 @@ class XGBoostSmallModel[G](
 
   def setGroupByCol(value: String): this.type = set(groupByCol, value)
 
-  def setIdCol(value: String): this.type = set(idCol, value)
-
   def setLabelCol(value: String): this.type = set(labelCol, value)
+
+  def setIdCol(value: String): this.type  = set(idCol, value)
+
+  def setTimeCol(value: String): this.type = set(timeCol, value)
 
   def setSummary(summary: XGBoostTrainingSummary[G]) = {
     trainingSummary = Some(summary)
@@ -74,13 +77,16 @@ class XGBoostSmallModel[G](
       case (id, ((bestModel, metrics), row)) =>
         val features =
           row.getAs[org.apache.spark.mllib.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
-        val idColumnIndex = row.fieldIndex($(idCol))
         val featuresIndex = row.fieldIndex(IUberdataForecastUtil.FEATURES_COL_NAME)
+        val idColIndex = row.fieldIndex($(idCol))
+        val timeColIndex = row.fieldIndex($(timeCol))
         val groupByColumnIndex = row.fieldIndex($(groupByCol))
         val rowValues = row.toSeq.zipWithIndex.filter {
           case (_, index) =>
-            index == idColumnIndex ||
-              index == featuresIndex || index == groupByColumnIndex
+              index == idColIndex ||
+              index == featuresIndex ||
+              index == groupByColumnIndex ||
+              index == timeColIndex
         }.map(_._1)
         val featuresAsFloat = features.toArray.map(_.toFloat)
         val labeledPoints = Iterator(XGBLabeledPoint.fromDenseVector(0, featuresAsFloat))
@@ -101,10 +107,11 @@ class XGBoostSmallModel[G](
         .filter(
           f =>
             Seq(
-              $(idCol),
               IUberdataForecastUtil.FEATURES_COL_NAME,
               $(featuresCol),
               $(groupByCol),
+              $(idCol),
+              $(timeCol),
               IUberdataForecastUtil.ALGORITHM,
               IUberdataForecastUtil.PARAMS).contains(f.name)))
       .add(StructField(IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME, DoubleType))
@@ -115,6 +122,7 @@ class XGBoostSmallModel[G](
     newModel
       .setGroupByCol($(groupByCol))
       .setIdCol($(idCol))
+      .setTimeCol($(timeCol))
       .setValidationCol($(validationCol))
       .asInstanceOf[XGBoostSmallModel[G]]
   }
