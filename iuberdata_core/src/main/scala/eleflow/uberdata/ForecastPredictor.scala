@@ -499,10 +499,7 @@ class ForecastPredictor extends Serializable with Logging {
       .add(StructField("prediction", LongType))
     val df = sqlContext.createDataFrame(forecastResult, schema)
 
-    if (idCol.isEmpty)
-      (df, model)
-    else
-      (df.sort(idCol), model)
+    (df, model)
   }
 
   def saveResult[T](toBeSaved: RDD[(T, Long)], path: String): Unit = {
