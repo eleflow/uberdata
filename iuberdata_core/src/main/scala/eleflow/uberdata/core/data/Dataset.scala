@@ -32,6 +32,7 @@ import org.apache.spark.sql.types.{StringType, StructField, StructType, DataType
 
 import scala.collection.immutable.TreeSet
 import dataset._
+import eleflow.uberdata.core.io.IUberdataIO
 
 /**
  * SparkNotebook
@@ -355,10 +356,6 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 																	//                                  , schema2: Option[StructType]
 																 ) extends Serializable {
 
-	//  def this(@transient uc: IUberdataContext, file: String, separator: String = ",",
-	//           header: Option[String] = None, dateTimeParser: DateTimeParser = DateTimeParser()) = this(uc, file,
-	//    separator, header, dateTimeParser, None)
-
 	lazy val numberOfPartitions = 4 * ClusterSettings.getNumberOfCores
 	lazy val firstLine: String = loadedRDD.first
 	lazy val columnNames: Array[String] =
@@ -375,7 +372,7 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 			f.getScheme != null && f.getScheme.startsWith("s3")
 		}.map { vl =>
 			val destURI = s"hdfs:///tmp${vl.getPath}"
-			uc.copy(file, destURI)
+			IUberdataIO().copy(file, destURI)
 			destURI
 		}.getOrElse(file)
 		destURI

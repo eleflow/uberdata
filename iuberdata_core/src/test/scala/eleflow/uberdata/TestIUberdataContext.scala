@@ -25,7 +25,7 @@ import java.net.URI
 import com.amazonaws.AmazonClientException
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.{S3Object, S3ObjectInputStream}
-import eleflow.uberdata.core.IUberdataContext
+import eleflow.uberdata.core.io.IUberdataIO
 import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem, Path}
 import org.apache.spark.SparkConf
 import org.easymock.EasyMock
@@ -63,16 +63,13 @@ class TestIUberdataContext extends FlatSpec with Matchers {
 
     EasyMock.replay(path, s3Object, s3ClientMock, inputStream, outputStream, fileSystem)
 
-    val uberdata = new IUberdataContext(conf) {
+    val uberdata = new IUberdataIO {
       override def copy(input: String, output: String): Unit = {
         copyFromS3(new URI(input), path, fileSystem)
       }
-
       override lazy val s3Client = s3ClientMock
     }
-
     uberdata.copy(hdfspath, "outputFile")
-
     EasyMock.verify(path, s3Object, s3ClientMock, inputStream, outputStream, fileSystem)
   }
 
@@ -94,7 +91,7 @@ class TestIUberdataContext extends FlatSpec with Matchers {
 
     EasyMock.replay(path, s3Object, s3ClientMock, inputStream, outputStream, fileSystem)
 
-    val uberdata = new IUberdataContext(conf) {
+    val uberdata = new IUberdataIO {
       override def copy(input: String, output: String): Unit = {
         copyFromS3(new URI(input), path, fileSystem)
       }
@@ -118,7 +115,7 @@ class TestIUberdataContext extends FlatSpec with Matchers {
 
     EasyMock.replay(path, s3ClientMock)
 
-    val uberdata = new IUberdataContext(conf) {
+    val uberdata = new IUberdataIO {
       override def copy(input: String, output: String): Unit = {
         copyFromS3(new URI(input), path, EasyMock.createMock(classOf[FileSystem]))
       }
@@ -144,7 +141,7 @@ class TestIUberdataContext extends FlatSpec with Matchers {
 
     EasyMock.replay(path, s3Object, s3ClientMock)
 
-    val uberdata = new IUberdataContext(conf) {
+    val uberdata = new IUberdataIO {
       override def copy(input: String, output: String): Unit = {
         copyFromS3(new URI(input), path, EasyMock.createMock(classOf[FileSystem]))
       }
@@ -168,7 +165,7 @@ class TestIUberdataContext extends FlatSpec with Matchers {
       .anyTimes()
     EasyMock.replay(path, mockFs)
 
-    val uberdata = new IUberdataContext(conf) {
+    val uberdata = new IUberdataIO {
       override protected def createPathInstance(input: String) = path
 
       override protected def copyFromS3(input: URI,
@@ -192,7 +189,7 @@ class TestIUberdataContext extends FlatSpec with Matchers {
     EasyMock.expect(path.getFileSystem(anyObject())).andThrow(new IOException()).times(1)
     EasyMock.replay(path, fs, s3ClientMock)
 
-    val uberdata = new IUberdataContext(conf) {
+    val uberdata = new IUberdataIO {
       override lazy val s3Client = s3ClientMock
 
       override protected def createPathInstance(input: String) = path
@@ -205,7 +202,7 @@ class TestIUberdataContext extends FlatSpec with Matchers {
   }
 
   it should "throw exception for unsuported protocol" in {
-    val uberdata = new IUberdataContext(conf)
+    val uberdata = new IUberdataIO
     intercept[NotImplementedError] {
       uberdata.copy(s3path, s3path)
     }

@@ -31,6 +31,7 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import ml.dmlc.xgboost4j.{LabeledPoint => XGBLabeledPoint}
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
 import org.apache.spark.sql.types.{DoubleType, StringType, TimestampType}
+import org.apache.spark.util.random
 import org.scalatest.{FlatSpec, Matchers, Suite}
 
 /**
@@ -85,6 +86,8 @@ class TestXGBoost
 //
 //	it should "Accept data and execute xgboost big model" in {
     ClusterSettings.kryoBufferMaxSize = Some("70m")
+//    ClusterSettings.taskCpus = 4
+    ClusterSettings.xgBoostWorkers = 12
     val train = Dataset(context, s"$defaultFilePath/data/RossmannTrain.csv")
 
     val trainData = train
@@ -105,14 +108,27 @@ class TestXGBoost
 
     val testData = test.formatDateValues("Date", DayMonthYear)
 
-    val (prediction, model) = ForecastPredictor().predictBigModelFuture(
-      trainData,
-      testData,
-      SupportedAlgorithm.XGBoostAlgorithm,
-      "Sales",
-      "Id",
-      Seq("Store", "DayOfWeek", "Date1", "Date2", "Date3"))
-    assert(prediction.count == 288)
+//    val (prediction, model) = ForecastPredictor().predictBigModelFuture(
+//      trainData,
+//      testData,
+//      SupportedAlgorithm.XGBoostAlgorithm,
+//      "Sales",
+//      "Id",
+////      "Date1",
+//      Seq("Store", "DayOfWeek", "Date1", "Date2", "Date3"))
+//    assert(prediction.count == 288)
+  }
+  it should "run Felix problem" in {
+    val n = 1000
+    val slices = 100
+    val count = context.sparkContext.parallelize(1 to n, slices).map { i =>
+      val random = new scala.util.Random(1000)
+      val x =  random.nextInt() * 2 - 1
+      val y = random.nextInt() * 2 - 1
+      if (x*x + y*y < 1) 1 else 0
+    }.reduce(_ + _)
+    println("aaa")
+//    val test = count
   }
 
   override def copy(extra: ParamMap): Params = ???
