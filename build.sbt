@@ -23,7 +23,7 @@ resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repos
 //TODO when moving spark to 1.5, we can update to scala version 2.11.7 according to this issue https://issues.apache.org/jira/browse/SPARK-8013
 val scalaV = "2.10.6"
 
-lazy val zeppelin_version = "0.6.0"
+lazy val zeppelin_version = "0.6.1"
 lazy val sparkVersion = "1.6.2"
 lazy val mysqlV = "5.1.34"
 
@@ -61,7 +61,8 @@ lazy val iuberdata_core = project settings (libraryDependencies ++= Seq(
 lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;compile->compile") settings
     (libraryDependencies ++= Seq(
       "org.apache.zeppelin" % "zeppelin-interpreter" % zeppelin_version % "provided",
-      "org.apache.zeppelin" % "zeppelin-spark" % zeppelin_version % "provided" excludeAll ExclusionRule(
+      "org.apache.zeppelin" %% "zeppelin-spark" % zeppelin_version % "provided" excludeAll
+        ExclusionRule(
         organization = "org.rosuda.REngine"),
       "org.apache.zeppelin" % "zeppelin-shell" % zeppelin_version excludeAll ExclusionRule(
         organization = "org.mortbay.jetty") excludeAll ExclusionRule(organization = "org.slf4j"),

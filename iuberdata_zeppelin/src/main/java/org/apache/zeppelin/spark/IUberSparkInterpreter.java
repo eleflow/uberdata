@@ -71,6 +71,7 @@ import scala.collection.JavaConverters;
 import scala.collection.immutable.Seq;
 import scala.collection.mutable.HashMap;
 import scala.reflect.io.AbstractFile;
+import scala.tools.nsc.Global;
 import scala.tools.nsc.Settings;
 import scala.tools.nsc.interpreter.Completion.Candidates;
 import scala.tools.nsc.interpreter.Completion.ScalaCompleter;
@@ -133,7 +134,7 @@ IUberSparkInterpreter extends Interpreter {
 
     public IUberSparkInterpreter(Properties property) {
         super(property);
-        out = new SparkOutputStream();
+        out = new SparkOutputStream(logger);
     }
 
     private void initUberdataContext() {
@@ -304,7 +305,8 @@ IUberSparkInterpreter extends Interpreter {
 
     public SparkDependencyResolver getDependencyResolver() {
         if (dep == null) {
-            dep = new SparkDependencyResolver(intp,
+            dep = new SparkDependencyResolver((Global) Utils.invokeMethod(intp, "global"),
+                    (ClassLoader) Utils.invokeMethod(Utils.invokeMethod(intp, "classLoader"), "getParent"),
                     uc.sparkContext(),
                     getProperty("zeppelin.dep.localrepo"),
                     getProperty("zeppelin.dep.additionalRemoteRepository"));

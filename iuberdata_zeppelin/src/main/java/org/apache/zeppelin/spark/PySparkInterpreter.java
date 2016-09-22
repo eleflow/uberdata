@@ -213,7 +213,7 @@ public class PySparkInterpreter extends Interpreter implements ExecuteResultHand
     //TODO possivel lugar de nullpointer analisar pra ver se o contexto já foi criado aqui
     cmd.addArgument(Integer.toString(SparkVersion.fromVersionString(getUberdataContext().sparkContext().version()).toNumber()), false);
     executor = new DefaultExecutor();
-    outputStream = new SparkOutputStream();
+    outputStream = new SparkOutputStream(logger);
     PipedOutputStream ps = new PipedOutputStream();
     in = null;
     try {

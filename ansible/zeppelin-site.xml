@@ -120,7 +120,7 @@
 
   <property>
     <name>zeppelin.notebook.storage</name>
-    <value>eleflow.uberdata.notebook.UberdataNotebookRepo</value>
+    <value>org.apache.zeppelin.notebook.repo.VFSNotebookRepo</value>
     <description>notebook persistence layer implementation</description>
   </property>
 
