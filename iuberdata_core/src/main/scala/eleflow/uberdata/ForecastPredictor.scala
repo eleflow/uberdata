@@ -514,7 +514,7 @@ class ForecastPredictor extends Serializable with Logging {
     algorithm: Algorithm,
     labelCol: String,
     idCol: String,
-		timeCol: String
+		timeCol: String,
     featuresCol: Seq[String],
     rounds: Int = 2000,
     params: Map[String, Any] = Map.empty[String, Any]): (DataFrame, PipelineModel) = {

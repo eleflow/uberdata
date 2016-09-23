@@ -69,8 +69,6 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
 
 	def setTimeCol(time: String): this.type = set(timeCol, time)
 
-  def setXGBoostParams(params: Map[String, Any]): this.type = set(xGBoostParams, params)
-
   def getOrdering(metricName: String): Ordering[Double] = {
     metricName match {
       case "re" => Ordering.Double.reverse

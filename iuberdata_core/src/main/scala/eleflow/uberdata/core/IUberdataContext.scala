@@ -78,7 +78,6 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
     ClusterSettings.resume = true
     sc.foreach { f =>
       f.cancelAllJobs()
-//        HiveThriftServer2.listener.server.stop() // stop ThriftServer
       f.stop()
     }
     _sqlContext = None
@@ -97,7 +96,6 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
       out.append(o)
       logInfo(o)
     }, (e: String) => {
-      println(e)
       logInfo(e)
     })
     command ! logger

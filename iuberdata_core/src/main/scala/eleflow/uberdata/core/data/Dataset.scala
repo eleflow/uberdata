@@ -34,6 +34,7 @@ import org.apache.spark.sql.types.{StringType, StructField, StructType, DataType
 import scala.collection.immutable.TreeSet
 import dataset._
 import eleflow.uberdata.core.io.IUberdataIO
+import org.apache.spark.Logging
 
 /**
   * SparkNotebook
@@ -355,17 +356,14 @@ class FileDataset protected[data] (@transient uc: IUberdataContext,
                                    header: Option[String] = None,
                                    dateTimeParser: DateTimeParser = DateTimeParser()
                                    //                                  , schema2: Option[StructType]
-) extends Serializable {
+) extends Serializable with Logging {
 
   lazy val numberOfPartitions = 4 * ClusterSettings.getNumberOfCores
   lazy val firstLine: String = loadedRDD.first
   lazy val columnNames: Array[String] =
     headerOrFirstLine().split(separator, -1)
   lazy val loadedRDD = {
-    println(s"localFileName:$localFileName")
-    if (localFileName.startsWith("file")) {
-      uc.sparkContext.textFile()
-    }
+    logInfo(s"localFileName:$localFileName")
     val file = uc.sparkContext.textFile(localFileName)
     file
   }

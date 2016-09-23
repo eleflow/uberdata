@@ -63,7 +63,7 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
 
   def setGroupByCol(toGroupBy: String): this.type = set(groupByCol, toGroupBy)
 
-//  def setIdCol(id: String): this.type = set(idCol, id)
+  def setIdCol(id: String): this.type = set(idCol, id)
 
   def setTimeCol(time: String): this.type = set(timeCol, time)
 
