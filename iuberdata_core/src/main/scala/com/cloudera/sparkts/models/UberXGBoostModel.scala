@@ -33,39 +33,19 @@ object UberXGBoostModel {
             configMap: Map[String, Any],
             round: Int,
             nWorkers: Int): XGBoostModel = {
-    val trainData =       trainLabel.cache
-    trainData.mapPartitions{
-      f => println(f.size)
-        f
-    }.count
+    val trainData = trainLabel.cache
     XGBoost.train(trainData, configMap, round, nWorkers)
   }
 
   def labelPredict(testSet: RDD[XGBLabeledPoint],
                    useExternalCache: Boolean = false,
                    booster: XGBoostModel): RDD[(Float, Float)] = {
-    import ml.dmlc.xgboost4j.scala.spark.DataUtils._
     val broadcastBooster = testSet.sparkContext.broadcast(booster)
-    val appName = testSet.context.appName
-    testSet.mapPartitions { testSamples =>
-      if (testSamples.hasNext) {
-        val rabitEnv = Array("DMLC_TASK_ID" -> TaskContext.getPartitionId().toString).toMap
-        Rabit.init(rabitEnv.asJava)
-        val cacheFileName = {
-          if (useExternalCache) {
-            s"$appName-dtest_cache-${TaskContext.getPartitionId()}"
-          } else {
-            null
-          }
-        }
-        val dMatrix = new DMatrix(testSamples, cacheFileName)
-        val res = broadcastBooster.value.booster.predict(dMatrix).flatten
-        val labels = dMatrix.getLabel
-        Rabit.shutdown()
-        (labels zip res).toIterator
-      } else {
-        Iterator()
-      }
+    testSet.mapPartitions { testData =>
+      val (toPredict, toLabel) = testData.duplicate
+      val dMatrix = new DMatrix(toPredict)
+      val prediction = broadcastBooster.value.booster.predict(dMatrix).flatten.toIterator
+      toLabel.map(_.label).zip(prediction)
     }
   }
 }
