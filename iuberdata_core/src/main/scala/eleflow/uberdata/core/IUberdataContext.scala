@@ -297,7 +297,9 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
     _sqlContext match {
       case None =>
         _sqlContext = Some(new HiveContext(sparkContext))
-        HiveThriftServer2.startWithContext(_sqlContext.get)
+				if(!sparkConf.get("spark.master").startsWith("yarn")) {
+					HiveThriftServer2.startWithContext(_sqlContext.get)
+				}
         _sqlContext.get
 
       case Some(ctx) => ctx
