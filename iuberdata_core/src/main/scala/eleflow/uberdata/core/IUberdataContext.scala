@@ -54,7 +54,7 @@ object IUberdataContext {
   * Date: 8/15/14 12:24 PM
   */
 class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable with Logging {
-	protected def this(sparkConf: SparkConf, data: String) = this(sparkConf)
+  protected def this(sparkConf: SparkConf, data: String) = this(sparkConf)
 //  @transient protected lazy val s3Client: AmazonS3 = new AmazonS3Client()
   val version = UberdataCoreVersion.version
   protected val basePath: String = "/"
@@ -137,10 +137,10 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
   def sparkContext: SparkContext = sc getOrElse {
     val context =
       if (ClusterSettings.master.isDefined) {
-				createSparkContextForProvisionedCluster(sparkConf)
-			} else {
-				createSparkContextForNewCluster(sparkConf)
-			}
+        createSparkContextForProvisionedCluster(sparkConf)
+      } else {
+        createSparkContextForNewCluster(sparkConf)
+      }
     addClasspathToSparkContext(context)
     sc = Some(context)
     val listener = new UberdataSparkListener(context.getConf)
@@ -297,9 +297,9 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
     _sqlContext match {
       case None =>
         _sqlContext = Some(new HiveContext(sparkContext))
-				if(!sparkConf.get("spark.master").startsWith("yarn")) {
-					HiveThriftServer2.startWithContext(_sqlContext.get)
-				}
+        if (!sparkConf.get("spark.master").startsWith("yarn")) {
+          HiveThriftServer2.startWithContext(_sqlContext.get)
+        }
         _sqlContext.get
 
       case Some(ctx) => ctx

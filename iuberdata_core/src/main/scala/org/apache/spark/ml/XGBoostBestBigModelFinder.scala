@@ -60,9 +60,10 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
 
   def setIdCol(id: String): this.type = set(idCol, id)
 
-  def setXGBoostParams(params: Map[String, Any]): this.type = if (params.nonEmpty) {
-    set(xGBoostParams, params)
-  } else this
+  def setXGBoostParams(params: Map[String, Any]): this.type =
+    if (params.nonEmpty) {
+      set(xGBoostParams, params)
+    } else this
 
   def setXGBoostRounds(rounds: Int): this.type = set(xGBoostRounds, rounds)
 

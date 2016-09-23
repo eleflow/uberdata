@@ -120,7 +120,8 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
         Vectors.dense(DataTransformer.toDouble(row.getAs($(labelCol))) +: vector.toArray)
       }
 
-      val matrixRow = new GenericRowWithSchema(Array(groupedByCol, valuesVector), trainSchema.value)
+      val matrixRow =
+        new GenericRowWithSchema(Array(groupedByCol, valuesVector), trainSchema.value)
 
       val matrix = new DMatrix(values)
       val booster = UberXGBOOSTModel.fitModel(matrix, $(xGBoostParams), $(xGBoostRounds))

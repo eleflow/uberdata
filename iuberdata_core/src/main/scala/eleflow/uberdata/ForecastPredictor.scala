@@ -508,18 +508,18 @@ class ForecastPredictor extends Serializable with Logging {
     }.coalesce(1).saveAsTextFile(path)
   }
 
-  def predictBigModelFuture(train: DataFrame,
-                            test: DataFrame,
-                            algorithm: Algorithm,
-                            labelCol: String,
-                            idCol: String,
-                            featuresCol: Seq[String],
-                            rounds: Int = 2000,
-                            params: Map[String, Any] = Map.empty[String,Any]):
-  (DataFrame, PipelineModel) = {
+  def predictBigModelFuture(
+    train: DataFrame,
+    test: DataFrame,
+    algorithm: Algorithm,
+    labelCol: String,
+    idCol: String,
+    featuresCol: Seq[String],
+    rounds: Int = 2000,
+    params: Map[String, Any] = Map.empty[String, Any]): (DataFrame, PipelineModel) = {
     val pipeline = algorithm match {
-      case XGBoostAlgorithm => prepareXGBoostBigModel(labelCol, idCol, featuresCol, train.schema,
-        rounds, params)
+      case XGBoostAlgorithm =>
+        prepareXGBoostBigModel(labelCol, idCol, featuresCol, train.schema, rounds, params)
       case _ => throw new UnsupportedOperationException()
     }
     val model = pipeline.fit(train.cache)
@@ -533,8 +533,7 @@ class ForecastPredictor extends Serializable with Logging {
     featuresCol: Seq[String],
     schema: StructType,
     rounds: Int,
-    params: Map[String, Any])(implicit ct: ClassTag[L], gt: ClassTag[G]):
-  Pipeline = {
+    params: Map[String, Any])(implicit ct: ClassTag[L], gt: ClassTag[G]): Pipeline = {
     val validationCol: String = "validation"
     val timeSeriesEvaluator: TimeSeriesEvaluator[G] = new TimeSeriesEvaluator[G]()
       .setValidationCol(validationCol)
