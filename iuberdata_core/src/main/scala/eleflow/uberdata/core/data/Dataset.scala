@@ -15,6 +15,7 @@
  */
 package eleflow.uberdata.core.data
 
+import java.io.IOException
 import java.net.URI
 import java.sql.Timestamp
 
@@ -362,6 +363,9 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 		headerOrFirstLine().split(separator, -1)
 	lazy val loadedRDD = {
 		println(s"localFileName:$localFileName")
+		if(localFileName.startsWith("file")) {
+			uc.sparkContext.textFile()
+		}
 		val file = uc.sparkContext.textFile(localFileName)
 		file
 	}
@@ -371,8 +375,12 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 		val destURI = uri.filter { f =>
 			f.getScheme != null && f.getScheme.startsWith("s3")
 		}.map { vl =>
-			val destURI = s"hdfs:///tmp${vl.getPath}"
-			IUberdataIO().copy(file, destURI)
+			val destURI = s"hdfs:/${ClusterSettings.hdfsHost}//tmp${vl.getPath}"
+			try{
+				IUberdataIO().copy(file, destURI)
+			} catch {
+				case e: IOException => e.printStackTrace()
+			}
 			destURI
 		}.getOrElse(file)
 		destURI

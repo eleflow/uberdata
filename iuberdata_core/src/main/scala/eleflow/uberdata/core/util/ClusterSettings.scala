@@ -24,6 +24,7 @@ object ClusterSettings {
   /**
     * This config will transform every double values from the input to a BigDecimal value
     */
+	var hdfsHost: String = ""
   var enforceDoubleAsBigDecimal: Boolean = false
   var defaultDecimalScale: Int = 18
   var defaultDecimalPrecision: Int = 38
