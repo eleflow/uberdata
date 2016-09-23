@@ -93,10 +93,6 @@ sudo rm -f /tmp/sparkts-0.3.0-jar-with-dependencies.jar
 sudo rm -f /tmp/iuberdata_addon_zeppelin-assembly-0.1.0.jar
 sudo rm -f /tmp/eleflow.uberdata.IUberdata-Zeppelin-0.1.0.jar
 
-chmod +x /etc/init.d/iuberdata
-chown -R iuberdata:iuberdata  /usr/share/zeppelin-*
-chown  iuberdata:iuberdata  /usr/share/zeppelin
-
 file="~/.ssh/id_rsa"
 if ! sudo su - iuberdata -c "test $file"
  then
@@ -110,3 +106,7 @@ tar -xzvf mysql-connector-java-$mySqlConnectorVersion.tar.gz mysql-connector-jav
 mv mysql-connector-java-$mySqlConnectorVersion/mysql-connector-java-$mySqlConnectorVersion-bin.jar ./
 rm -rf mysql-connector-java-$mySqlConnectorVersion
 rm -f mysql-connector-java-$mySqlConnectorVersion.tar.gz
+
+chmod +x /etc/init.d/iuberdata
+chown -R iuberdata:iuberdata  /usr/share/zeppelin-*
+chown  iuberdata:iuberdata  /usr/share/zeppelin

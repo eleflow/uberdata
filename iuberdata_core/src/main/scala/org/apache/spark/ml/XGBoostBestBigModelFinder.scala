@@ -22,10 +22,9 @@ import eleflow.uberdata.core.data.DataTransformer
 import eleflow.uberdata.core.util.ClusterSettings
 import eleflow.uberdata.models.UberXGBOOSTModel
 import org.apache.spark.Logging
-
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.param.shared.{HasIdCol, HasXGBoostParams}
+import org.apache.spark.ml.param.shared.{HasIdCol, HasTimeCol, HasXGBoostParams}
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
@@ -43,6 +42,7 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
     with DefaultParamsWritable
     with HasXGBoostParams
     with HasIdCol
+		with HasTimeCol
     with TimeSeriesBestModelFinder
     with Logging {
   def this()(implicit gt: ClassTag[G], lt: ClassTag[L]) =
@@ -66,6 +66,10 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
     } else this
 
   def setXGBoostRounds(rounds: Int): this.type = set(xGBoostRounds, rounds)
+
+	def setTimeCol(time: String): this.type = set(timeCol, time)
+
+  def setXGBoostParams(params: Map[String, Any]): this.type = set(xGBoostParams, params)
 
   def getOrdering(metricName: String): Ordering[Double] = {
     metricName match {
@@ -109,6 +113,9 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
       $(xGBoostRounds),
       ClusterSettings.xgBoostWorkers)
     new XGBoostBigModel[G](uid, Seq((new ParamMap(), booster)))
+      .setIdcol($(idCol))
+			.setLabelcol($(labelCol))
+      .setTimecol($(timeCol))
   }
 }
 

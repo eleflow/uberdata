@@ -62,13 +62,13 @@ class ForecastPredictor extends Serializable with Logging {
           f.get[Int](estimator.arimaQ).getOrElse(0) != 0)
 
   def prepareARIMAPipeline[L](
-    groupByCol: String,
-    labelCol: String = "label",
-    validationCol: String = "validation",
-    timeCol: String = "Date",
-    nFutures: Int,
-    paramRange: Array[Int] = defaultRange
-  )(implicit kt: ClassTag[L]): Pipeline = {
+                               groupByCol: String,
+                               labelCol: String = "label",
+                               validationCol: String = "validation",
+                               timeCol: String = "Date",
+                               nFutures: Int,
+                               paramRange: Array[Int] = defaultRange
+                             )(implicit kt: ClassTag[L]): Pipeline = {
 
     val transformer =
       createTimeSeriesGenerator[L](groupByCol, labelCol, timeCol)
@@ -84,13 +84,13 @@ class ForecastPredictor extends Serializable with Logging {
   val metricName: String = "rmspe"
 
   protected def prepareARIMAPipelineInt[L](
-    groupBycol: String,
-    labelCol: String,
-    validationCol: String,
-    nFutures: Int,
-    paramRange: Array[Int],
-    transformer: Array[Transformer]
-  )(implicit kt: ClassTag[L]) = {
+                                            groupBycol: String,
+                                            labelCol: String,
+                                            validationCol: String,
+                                            nFutures: Int,
+                                            paramRange: Array[Int],
+                                            transformer: Array[Transformer]
+                                          )(implicit kt: ClassTag[L]) = {
     val timeSeriesEvaluator: TimeSeriesEvaluator[L] =
       new TimeSeriesEvaluator[L]()
         .setValidationCol(validationCol)
@@ -107,12 +107,12 @@ class ForecastPredictor extends Serializable with Logging {
   }
 
   def prepareHOLTWintersPipeline[T](
-    groupByCol: String,
-    labelCol: String = "label",
-    validationCol: String = "validation",
-    timeCol: String = "Date",
-    nFutures: Int = 6
-  )(implicit kt: ClassTag[T]): Pipeline = {
+                                     groupByCol: String,
+                                     labelCol: String = "label",
+                                     validationCol: String = "validation",
+                                     timeCol: String = "Date",
+                                     nFutures: Int = 6
+                                   )(implicit kt: ClassTag[T]): Pipeline = {
     val transformer = createTimeSeriesGenerator(groupByCol, labelCol, timeCol)
     val timeSeriesEvaluator: TimeSeriesEvaluator[T] =
       new TimeSeriesEvaluator[T]()
@@ -131,12 +131,12 @@ class ForecastPredictor extends Serializable with Logging {
   }
 
   def prepareMovingAveragePipeline[G](
-    groupBycol: String,
-    featuresCol: String = "features",
-    validationCol: String = "validation",
-    timeCol: String = "Date",
-    windowSize: Int = 8
-  )(implicit kt: ClassTag[G]): Pipeline = {
+                                       groupBycol: String,
+                                       featuresCol: String = "features",
+                                       validationCol: String = "validation",
+                                       timeCol: String = "Date",
+                                       windowSize: Int = 8
+                                     )(implicit kt: ClassTag[G]): Pipeline = {
     val transformer = createTimeSeriesGenerator(groupBycol, featuresCol, timeCol)
     val movingAverage = new MovingAverage[G]()
       .setOutputCol(validationCol)
@@ -147,10 +147,10 @@ class ForecastPredictor extends Serializable with Logging {
   }
 
   private def createTimeSeriesGenerator[L](
-    groupByCol: String,
-    featuresCol: String,
-    timeCol: String
-  )(implicit kt: ClassTag[L]): TimeSeriesGenerator[L] = {
+                                            groupByCol: String,
+                                            featuresCol: String,
+                                            timeCol: String
+                                          )(implicit kt: ClassTag[L]): TimeSeriesGenerator[L] = {
     new TimeSeriesGenerator[L]()
       .setFeaturesCol(featuresCol)
       .setGroupByCol(groupByCol)
@@ -165,14 +165,14 @@ class ForecastPredictor extends Serializable with Logging {
   }
 
   def prepareBestForecastPipeline[L](
-    labelCol: String,
-    featuresCol: String,
-    validationCol: String,
-    timeCol: String,
-    nFutures: Int,
-    meanAverageWindowSize: Seq[Int],
-    paramRange: Array[Int]
-  )(implicit kt: ClassTag[L]): Pipeline = {
+                                      labelCol: String,
+                                      featuresCol: String,
+                                      validationCol: String,
+                                      timeCol: String,
+                                      nFutures: Int,
+                                      meanAverageWindowSize: Seq[Int],
+                                      paramRange: Array[Int]
+                                    )(implicit kt: ClassTag[L]): Pipeline = {
     val transformer =
       createTimeSeriesGenerator[L](labelCol, featuresCol, timeCol)
     val timeSeriesEvaluator: TimeSeriesEvaluator[L] =
@@ -195,14 +195,14 @@ class ForecastPredictor extends Serializable with Logging {
   }
 
   def prepareXGBoostSmallModel[L, G](
-    labelCol: String,
-    featuresCol: Seq[String],
-    validationCol: String,
-    timeCol: String,
-    idCol: String,
-    groupByCol: String,
-    schema: StructType
-  )(implicit kl: ClassTag[L], kg: ClassTag[G]): Pipeline = {
+                                      labelCol: String,
+                                      featuresCol: Seq[String],
+                                      validationCol: String,
+                                      timeCol: String,
+                                      idCol: String,
+                                      groupByCol: String,
+                                      schema: StructType
+                                    )(implicit kl: ClassTag[L], kg: ClassTag[G]): Pipeline = {
     val timeSeriesEvaluator: TimeSeriesEvaluator[G] =
       new TimeSeriesEvaluator[G]()
         .setValidationCol(validationCol)
@@ -212,19 +212,21 @@ class ForecastPredictor extends Serializable with Logging {
       .setTimeSeriesEvaluator(timeSeriesEvaluator)
       .setLabelCol(labelCol)
       .setGroupByCol(groupByCol)
-//			.setIdCol(idCol)
+      .setIdCol(idCol)
       .setValidationCol(validationCol)
+      .setTimeCol(timeCol)
 
     new Pipeline().setStages(
-      createXGBoostPipelineStages(labelCol, featuresCol, groupByCol, Some(idCol), schema = schema)
-        :+ xgboost)
+			createXGBoostPipelineStages(labelCol, featuresCol, groupByCol, Some(idCol), timeCol,
+        schema = schema) :+ xgboost)
   }
 
   def createXGBoostPipelineStages(labelCol: String,
-                                  featuresCol: Seq[String],
-                                  groupByCol: String,
-                                  idCol: Option[String] = None,
-                                  schema: StructType): Array[PipelineStage] = {
+                               featuresCol: Seq[String],
+                               groupByCol: String,
+                               idCol: Option[String] = None,
+                               timeCol:String = "",
+                               schema: StructType): Array[PipelineStage] = {
 
     val allColumns = schema.map(_.name).toArray
 
@@ -248,6 +250,7 @@ class ForecastPredictor extends Serializable with Logging {
       .setLabelCol(labelCol)
       .setGroupByCol(groupByCol)
       .setIdCol(idCol.getOrElse(""))
+      .setTimeCol(timeCol)
 
     val assembler = new VectorAssembler()
       .setInputCols(stringColumns.map(f => s"${f}Index").toArray :+ nonStringIndex)
@@ -268,14 +271,14 @@ class ForecastPredictor extends Serializable with Logging {
                     nFutures: Int = 6,
                     meanAverageWindowSize: Seq[Int] = Seq(8, 16, 26),
                     paramRange: Array[Int] = defaultRange)(
-    implicit kt: ClassTag[L],
-    ord: Ordering[L] = null,
-    gt: ClassTag[G]): (DataFrame, PipelineModel) = {
+                     implicit kt: ClassTag[L],
+                     ord: Ordering[L] = null,
+                     gt: ClassTag[G]): (DataFrame, PipelineModel) = {
     require(featuresCol.nonEmpty, "featuresCol parameter can't be empty")
     val validationCol = idCol + algorithm.toString
     algorithm match {
       case Arima | HoltWinters | MovingAverage8 | MovingAverage16 | MovingAverage26 |
-          FindBestForecast =>
+           FindBestForecast =>
         predictSmallModelFuture[L](
           train,
           test,
@@ -306,16 +309,16 @@ class ForecastPredictor extends Serializable with Logging {
   }
 
   def predictSmallModelFeatureBased[L, G](
-    train: DataFrame,
-    test: DataFrame,
-    labelCol: String,
-    featuresCol: Seq[String],
-    timeCol: String,
-    idCol: String,
-    groupByCol: String,
-    algorithm: Algorithm = XGBoostAlgorithm,
-    validationCol: String
-  )(implicit kt: ClassTag[L], ord: Ordering[L], gt: ClassTag[G]): (DataFrame, PipelineModel) = {
+                                           train: DataFrame,
+                                           test: DataFrame,
+                                           labelCol: String,
+                                           featuresCol: Seq[String],
+                                           timeCol: String,
+                                           idCol: String,
+                                           groupByCol: String,
+                                           algorithm: Algorithm = XGBoostAlgorithm,
+                                           validationCol: String
+                                         )(implicit kt: ClassTag[L], ord: Ordering[L], gt: ClassTag[G]): (DataFrame, PipelineModel) = {
     require(
       algorithm == XGBoostAlgorithm,
       "The accepted algorithm for this method is XGBoostAlgorithm")
@@ -400,18 +403,18 @@ class ForecastPredictor extends Serializable with Logging {
   }
 
   def predictSmallModelFuture[G](
-    train: DataFrame,
-    test: DataFrame,
-    groupByCol: String,
-    labelCol: String,
-    timeCol: String,
-    idCol: String,
-    algorithm: Algorithm = FindBestForecast,
-    validationCol: String,
-    nFutures: Int = 6,
-    meanAverageWindowSize: Seq[Int] = Seq(8, 16, 26),
-    paramRange: Array[Int] = defaultRange
-  )(implicit kt: ClassTag[G], ord: Ordering[G] = null): (DataFrame, PipelineModel) = {
+                                  train: DataFrame,
+                                  test: DataFrame,
+                                  groupByCol: String,
+                                  labelCol: String,
+                                  timeCol: String,
+                                  idCol: String,
+                                  algorithm: Algorithm = FindBestForecast,
+                                  validationCol: String,
+                                  nFutures: Int = 6,
+                                  meanAverageWindowSize: Seq[Int] = Seq(8, 16, 26),
+                                  paramRange: Array[Int] = defaultRange
+                                )(implicit kt: ClassTag[G], ord: Ordering[G] = null): (DataFrame, PipelineModel) = {
     require(
       algorithm != XGBoostAlgorithm,
       "The accepted algorithms for this method doesn't include XGBoost")
@@ -457,12 +460,12 @@ class ForecastPredictor extends Serializable with Logging {
       .map(
         row =>
           (row.getAs[G](labelColBc.value),
-           (row
+            (row
               .getAs[org.apache.spark.mllib.linalg.Vector](
-                validationColBc.value
-              )
+              validationColBc.value
+            )
               .toArray,
-            row))
+              row))
       )
       .cache
     val forecastResult = keyValueResult.join(groupedTest).flatMap {
@@ -496,10 +499,7 @@ class ForecastPredictor extends Serializable with Logging {
       .add(StructField("prediction", LongType))
     val df = sqlContext.createDataFrame(forecastResult, schema)
 
-    if (idCol.isEmpty)
-      (df, model)
-    else
-      (df.sort(idCol), model)
+    (df, model)
   }
 
   def saveResult[T](toBeSaved: RDD[(T, Long)], path: String): Unit = {
@@ -514,12 +514,13 @@ class ForecastPredictor extends Serializable with Logging {
     algorithm: Algorithm,
     labelCol: String,
     idCol: String,
+		timeCol: String
     featuresCol: Seq[String],
     rounds: Int = 2000,
     params: Map[String, Any] = Map.empty[String, Any]): (DataFrame, PipelineModel) = {
     val pipeline = algorithm match {
       case XGBoostAlgorithm =>
-        prepareXGBoostBigModel(labelCol, idCol, featuresCol, train.schema, rounds, params)
+        prepareXGBoostBigModel(labelCol, idCol, featuresCol, timeCol, train.schema, rounds, params)
       case _ => throw new UnsupportedOperationException()
     }
     val model = pipeline.fit(train.cache)
@@ -531,6 +532,7 @@ class ForecastPredictor extends Serializable with Logging {
     labelCol: String,
     idCol: String,
     featuresCol: Seq[String],
+		timeCol: String,
     schema: StructType,
     rounds: Int,
     params: Map[String, Any])(implicit ct: ClassTag[L], gt: ClassTag[G]): Pipeline = {
@@ -545,10 +547,11 @@ class ForecastPredictor extends Serializable with Logging {
       .setIdCol(idCol)
       .setXGBoostParams(params)
       .setXGBoostRounds(rounds)
+        .setTimeCol(timeCol)
       .setValidationCol(validationCol)
 
     new Pipeline().setStages(
-      createXGBoostPipelineStages(labelCol, featuresCol, "", Some(idCol), schema = schema)
+			createXGBoostPipelineStages(labelCol, featuresCol, "", Some(idCol), timeCol, schema = schema)
         :+ xgboost)
   }
 }

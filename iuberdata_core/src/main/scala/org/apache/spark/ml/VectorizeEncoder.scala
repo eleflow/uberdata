@@ -31,6 +31,7 @@ import org.apache.spark.sql.types.{StructField, StructType}
 class VectorizeEncoder(override val uid: String)
     extends Transformer
     with HasIdCol
+    with HasTimeCol
     with HasInputCols
     with HasLabelCol
     with HasGroupByCol
@@ -47,17 +48,19 @@ class VectorizeEncoder(override val uid: String)
 
   def setInputCol(input: Array[String]) = set(inputCols, input)
 
+  def setTimeCol(time: String) = set(timeCol,time)
+
   def setOutputCol(output: String) = set(outputCol, output)
 
   override def transform(dataSet: DataFrame): DataFrame = {
     val context = dataSet.sqlContext.sparkContext
     val input = context.broadcast($(inputCols))
     val allColumnNames = dataSet.schema.map(_.name)
+
     val nonInputColumnIndexes = context.broadcast(
       allColumnNames.zipWithIndex.filter(
-        f => !$(inputCols).contains(f._1) || f._1 == $(groupByCol) || f._1 == $(idCol)
-      )
-    )
+        f => !$(inputCols).contains(f._1) || f._1 == $(groupByCol) || f._1 == $(idCol) || f._1 ==
+          $(timeCol)))
     val result = dataSet.map { row =>
       val rowSeq = row.toSeq
       val nonInputColumns = nonInputColumnIndexes.value.map {
@@ -88,10 +91,8 @@ class VectorizeEncoder(override val uid: String)
     StructType(
       schema.filter(
         col =>
-          !$(inputCols).contains(col.name) || col.name == $(groupByCol) || col.name == $(
-            idCol
-          )
-            || col.name == $(labelCol)
+          !$(inputCols).contains(col.name) || col.name == $(groupByCol) || col.name == $(idCol)
+            || col.name == $(labelCol) || col.name == $(timeCol)
       )
     ).add(StructField($(outputCol), new VectorUDT))
 }

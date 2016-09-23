@@ -91,14 +91,11 @@ class TestXGBoost
     val train = Dataset(context, s"$defaultFilePath/data/RossmannTrain.csv")
 
     val trainData = train
-      .formatDateValues("Date", DayMonthYear)
       .select(
         "Store",
         "Sales",
         "DayOfWeek",
-        "Date1",
-        "Date2",
-        "Date3",
+        "Date",
         "Open",
         "Promo",
         "StateHoliday",
@@ -106,17 +103,17 @@ class TestXGBoost
       .cache
     val test = Dataset(context, s"$defaultFilePath/data/RossmannTest.csv")
 
-    val testData = test.formatDateValues("Date", DayMonthYear)
+    val testData = test
 
-//    val (prediction, model) = ForecastPredictor().predictBigModelFuture(
-//      trainData,
-//      testData,
-//      SupportedAlgorithm.XGBoostAlgorithm,
-//      "Sales",
-//      "Id",
-////      "Date1",
-//      Seq("Store", "DayOfWeek", "Date1", "Date2", "Date3"))
-//    assert(prediction.count == 288)
+    val (prediction, model) = ForecastPredictor().predictBigModelFuture(
+      trainData,
+      testData,
+      SupportedAlgorithm.XGBoostAlgorithm,
+      "Sales",
+      "Id",
+      "Date",
+      Seq("Store", "DayOfWeek", "Date", "Date2", "Date3"))
+    assert(prediction.count == 288)
   }
   it should "run Felix problem" in {
     val n = 1000
@@ -127,8 +124,17 @@ class TestXGBoost
       val y = random.nextInt() * 2 - 1
       if (x*x + y*y < 1) 1 else 0
     }.reduce(_ + _)
-    println("aaa")
+
 //    val test = count
+    val (prediction, model) = ForecastPredictor().predictBigModelFuture(
+      trainData,
+      testData,
+      SupportedAlgorithm.XGBoostAlgorithm,
+      "Sales",
+      "Id",
+      "Date",
+      Seq("Store", "DayOfWeek", "Date"))
+    assert(prediction.count == 288)
   }
 
   override def copy(extra: ParamMap): Params = ???
