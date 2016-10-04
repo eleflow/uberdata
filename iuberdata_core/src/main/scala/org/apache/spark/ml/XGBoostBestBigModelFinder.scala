@@ -67,33 +67,12 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
 
   def setXGBoostRounds(rounds: Int): this.type = set(xGBoostRounds, rounds)
 
-	def setTimeCol(time: String): this.type = set(timeCol, time)
+	def setTimeCol(time: String): this.type = set(timeCol, Some(time))
 
   def getOrdering(metricName: String): Ordering[Double] = {
     metricName match {
       case "re" => Ordering.Double.reverse
       case _ => Ordering.Double
-    }
-  }
-
-  def modelEvaluation(idModels: RDD[(G, Row, Seq[(ParamMap, UberXGBOOSTModel)])])
-    : RDD[(G, (UberXGBOOSTModel, Seq[ModelParamEvaluation[G]]))] = {
-    val eval = $(timeSeriesEvaluator)
-    val broadcastEvaluator = idModels.context.broadcast(eval)
-    val ordering = TimeSeriesEvaluator.ordering(eval.getMetricName)
-    idModels.map {
-      case (id, row, models) =>
-        val evaluatedModels = models.map {
-          case (parameters, model) =>
-            (model,
-             xGBoostEvaluation(row, model.boosterInstance, broadcastEvaluator, id, parameters))
-        }
-        val sorted = evaluatedModels.sortBy(_._2.metricResult)(ordering)
-        log.warn(s"best model reach ${sorted.head._2.metricResult}")
-        log.warn(s"best model params ${sorted.head._2.params}")
-
-        val (bestModel, _) = sorted.head
-        (id, (bestModel, sorted.map(_._2)))
     }
   }
 
@@ -110,10 +89,17 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
       $(xGBoostParams),
       $(xGBoostRounds),
       ClusterSettings.xgBoostWorkers)
-    new XGBoostBigModel[G](uid, Seq((new ParamMap(), booster)))
-      .setIdcol($(idCol))
-			.setLabelcol($(labelCol))
-      .setTimecol($(timeCol))
+
+    $(timeCol).isDefined match {
+      case true => new XGBoostBigModelTimeSeries[G](uid, Seq((new ParamMap(), booster)))
+        .setIdcol($(idCol))
+        .setLabelcol($(labelCol))
+        .setTimecol($(timeCol).get)
+
+      case _ => new XGBoostBigModel[G](uid, Seq((new ParamMap(), booster)))
+        .setIdcol($(idCol))
+        .setLabelcol($(labelCol))
+    }
   }
 }
 

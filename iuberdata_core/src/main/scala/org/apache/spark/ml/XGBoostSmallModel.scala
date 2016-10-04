@@ -52,13 +52,13 @@ class XGBoostSmallModel[G](
 
   private var trainingSummary: Option[XGBoostTrainingSummary[G]] = None
 
-  def setGroupByCol(value: String): this.type = set(groupByCol, value)
+  def setGroupByCol(value: String): this.type = set(groupByCol, Some(value))
 
   def setLabelCol(value: String): this.type = set(labelCol, value)
 
   def setIdCol(value: String): this.type  = set(idCol, value)
 
-  def setTimeCol(value: String): this.type = set(timeCol, value)
+  def setTimeCol(value: String): this.type = set(timeCol, Some(value))
 
   def setSummary(summary: XGBoostTrainingSummary[G]) = {
     trainingSummary = Some(summary)
@@ -71,7 +71,7 @@ class XGBoostSmallModel[G](
     val schema = dataSet.schema
     val predSchema = transformSchema(schema)
 
-    val joined = models.join(dataSet.map(r => (r.getAs[G]($(groupByCol)), r)))
+    val joined = models.join(dataSet.map(r => (r.getAs[G]($(groupByCol).get), r)))
 
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
@@ -79,8 +79,8 @@ class XGBoostSmallModel[G](
           row.getAs[org.apache.spark.mllib.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
         val featuresIndex = row.fieldIndex(IUberdataForecastUtil.FEATURES_COL_NAME)
         val idColIndex = row.fieldIndex($(idCol))
-        val timeColIndex = row.fieldIndex($(timeCol))
-        val groupByColumnIndex = row.fieldIndex($(groupByCol))
+        val timeColIndex = row.fieldIndex($(timeCol).get)
+        val groupByColumnIndex = row.fieldIndex($(groupByCol).get)
         val rowValues = row.toSeq.zipWithIndex.filter {
           case (_, index) =>
               index == idColIndex ||
@@ -109,9 +109,9 @@ class XGBoostSmallModel[G](
             Seq(
               IUberdataForecastUtil.FEATURES_COL_NAME,
               $(featuresCol),
-              $(groupByCol),
+              $(groupByCol).get,
               $(idCol),
-              $(timeCol),
+              $(timeCol).get,
               IUberdataForecastUtil.ALGORITHM,
               IUberdataForecastUtil.PARAMS).contains(f.name)))
       .add(StructField(IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME, DoubleType))
@@ -120,9 +120,9 @@ class XGBoostSmallModel[G](
     val newModel = copyValues(new XGBoostSmallModel[G](uid, models), extra)
     trainingSummary.map(summary => newModel.setSummary(summary))
     newModel
-      .setGroupByCol($(groupByCol))
+      .setGroupByCol($(groupByCol).get)
       .setIdCol($(idCol))
-      .setTimeCol($(timeCol))
+      .setTimeCol($(timeCol).get)
       .setValidationCol($(validationCol))
       .asInstanceOf[XGBoostSmallModel[G]]
   }

@@ -51,7 +51,7 @@ class HoltWintersBestModelFinder[G](
 
   def setLabelCol(label: String): this.type = set(labelCol, label)
 
-  def setGroupByCol(groupBy: String): this.type = set(groupByCol, groupBy)
+  def setGroupByCol(groupBy: String): this.type = set(groupByCol, Some(groupBy))
 
   def this()(implicit kt: ClassTag[G]) = this(Identifiable.randomUID("arima"))
 
@@ -79,7 +79,7 @@ class HoltWintersBestModelFinder[G](
   }
 
   def train(row: Row): (G, Row, Option[UberHoltWintersModel]) = {
-    val id = row.getAs[G]($(groupByCol))
+    val id = row.getAs[G]($(groupByCol).get)
 
     val result = try {
       Some(

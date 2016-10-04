@@ -61,7 +61,7 @@ class ArimaModel[G](
     val scContext = dataSet.sqlContext.sparkContext
     //TODO fazer com que os modelos invalidos voltem numeros absurdos
 
-    val joined = models.join(dataSet.map(r => (r.getAs[G]($(groupByCol)), r)))
+    val joined = models.join(dataSet.map(r => (r.getAs[G]($(groupByCol).get), r)))
 
     val featuresColName =
       dataSet.sqlContext.sparkContext.broadcast($(featuresCol))

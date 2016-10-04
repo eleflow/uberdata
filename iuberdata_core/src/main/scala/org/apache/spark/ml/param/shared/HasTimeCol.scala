@@ -28,11 +28,11 @@ trait HasTimeCol extends Params {
     *
     * @group param
     */
-  final val timeCol: Param[String] =
-    new Param[String](this, "timeCol", "time series column name")
+  final val timeCol: Param[Option[String]] =
+    new Param[Option[String]](this, "timeCol", "time series column name")
 
-  setDefault(timeCol, "date")
+  setDefault(timeCol, None)
 
   /** @group getParam */
-  final def getTimeCol: String = $(timeCol)
+  final def getTimeCol: Option[String] = $(timeCol)
 }

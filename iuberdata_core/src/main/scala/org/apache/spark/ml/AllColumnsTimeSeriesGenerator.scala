@@ -37,7 +37,7 @@ class AllColumnsTimeSeriesGenerator[T, U](
 
   def setLabelCol(value: String): this.type = set(labelCol, value)
 
-  def setTimeCol(colName: String): this.type = set(timeCol, colName)
+  def setTimeCol(colName: String): this.type = set(timeCol, Some(colName))
 
   def setFeaturesCol(value: String): this.type = set(featuresCol, value)
 

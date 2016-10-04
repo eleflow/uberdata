@@ -57,7 +57,7 @@ class ArimaBestModelFinder[G](
 
   def setFeaturesCol(features: String): this.type = set(featuresCol, features)
 
-  def setGroupByCol(groupBy: String): this.type = set(groupByCol, groupBy)
+  def setGroupByCol(groupBy: String): this.type = set(groupByCol, Some(groupBy))
 
   def getOrdering(metricName: String): Ordering[Double] = {
     metricName match {
@@ -96,7 +96,7 @@ class ArimaBestModelFinder[G](
   }
 
   def train(row: Row): (G, Row, Seq[(ParamMap, UberArimaModel)]) = {
-    val groupId = row.getAs[G]($(groupByCol))
+    val groupId = row.getAs[G]($(groupByCol).get)
     val result = $(estimatorParamMaps).flatMap { params =>
       val q = params.getOrElse(arimaQ, 0)
       val p = params.getOrElse(arimaP, 0)

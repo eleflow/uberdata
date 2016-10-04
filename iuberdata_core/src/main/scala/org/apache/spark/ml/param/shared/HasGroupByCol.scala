@@ -23,12 +23,14 @@ import org.apache.spark.ml.param.{Param, Params}
   */
 trait HasGroupByCol extends Params {
 
-  final val groupByCol: Param[String] = new Param[String](
+  final val groupByCol: Param[Option[String]] = new Param[Option[String]](
     this,
     "groupBycol",
     "column name that group small models"
   )
 
+  setDefault(groupByCol, Some(""))
+
   /** @group getParam */
-  final def getGroupByCol: String = $(groupByCol)
+  final def getGroupByCol: String = $(groupByCol).get
 }

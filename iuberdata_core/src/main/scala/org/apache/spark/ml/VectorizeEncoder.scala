@@ -44,11 +44,11 @@ class VectorizeEncoder(override val uid: String)
 
   def setLabelCol(input: String) = set(labelCol, input)
 
-  def setGroupByCol(toGroupBy: String) = set(groupByCol, toGroupBy)
+  def setGroupByCol(toGroupBy: String) = set(groupByCol, Some(toGroupBy))
 
   def setInputCol(input: Array[String]) = set(inputCols, input)
 
-  def setTimeCol(time: String) = set(timeCol,time)
+  def setTimeCol(time: String) = set(timeCol, Some(time))
 
   def setOutputCol(output: String) = set(outputCol, output)
 
@@ -59,8 +59,8 @@ class VectorizeEncoder(override val uid: String)
 
     val nonInputColumnIndexes = context.broadcast(
       allColumnNames.zipWithIndex.filter(
-        f => !$(inputCols).contains(f._1) || f._1 == $(groupByCol) || f._1 == $(idCol) || f._1 ==
-          $(timeCol)))
+        f => !$(inputCols).contains(f._1) || f._1 == $(groupByCol).get || f._1 == $(idCol)
+          || f._1 == $(timeCol).getOrElse("")))
     val result = dataSet.map { row =>
       val rowSeq = row.toSeq
       val nonInputColumns = nonInputColumnIndexes.value.map {
@@ -91,8 +91,8 @@ class VectorizeEncoder(override val uid: String)
     StructType(
       schema.filter(
         col =>
-          !$(inputCols).contains(col.name) || col.name == $(groupByCol) || col.name == $(idCol)
-            || col.name == $(labelCol) || col.name == $(timeCol)
+          !$(inputCols).contains(col.name) || col.name == $(groupByCol).getOrElse("") || col.name == $(idCol)
+            || col.name == $(labelCol) || col.name == $(timeCol).getOrElse("")
       )
     ).add(StructField($(outputCol), new VectorUDT))
 }

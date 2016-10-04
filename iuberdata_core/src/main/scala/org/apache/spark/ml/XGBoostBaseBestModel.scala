@@ -40,7 +40,7 @@ trait BaseXGBoostBestModelFinder[G, M <: org.apache.spark.ml.ForecastBaseModel[M
   protected def buildTrainSchema(sparkContext: SparkContext) = sparkContext.broadcast {
     StructType(
       Seq(
-        StructField($(groupByCol), FloatType),
+        StructField($(groupByCol).get, FloatType),
         StructField(IUberdataForecastUtil.FEATURES_COL_NAME, ArrayType(new VectorUDT))))
   }
 

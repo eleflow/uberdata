@@ -61,11 +61,11 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
 
   def setLabelCol(label: String): this.type = set(labelCol, label)
 
-  def setGroupByCol(toGroupBy: String): this.type = set(groupByCol, toGroupBy)
+  def setGroupByCol(toGroupBy: String): this.type = set(groupByCol, Some(toGroupBy))
 
   def setIdCol(id: String): this.type = set(idCol, id)
 
-  def setTimeCol(time: String): this.type = set(timeCol, time)
+  def setTimeCol(time: String): this.type = set(timeCol, Some(time))
 
   def setXGBoostParams(params: Map[String, Any]): this.type = set(xGBoostParams, params)
 
@@ -100,12 +100,12 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
   override protected def train(dataSet: DataFrame): XGBoostSmallModel[G] = {
     val trainSchema = buildTrainSchema(dataSet.sqlContext.sparkContext)
     val idModels = dataSet.rdd.groupBy { row =>
-      row.getAs[G]($(groupByCol))
+      row.getAs[G]($(groupByCol).get)
     }.map(f => train(f._1, f._2.toIterator, trainSchema))
     new XGBoostSmallModel[G](uid, modelEvaluation(idModels))
       .setValidationCol($(validationCol))
       .setIdCol($(idCol))
-      .setTimeCol($(timeCol))
+      .setTimeCol($(timeCol).get)
       .asInstanceOf[XGBoostSmallModel[G]]
   }
 

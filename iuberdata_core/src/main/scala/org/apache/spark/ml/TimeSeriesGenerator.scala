@@ -38,11 +38,11 @@ class TimeSeriesGenerator[L](
   def this()(implicit ct: ClassTag[L]) =
     this(Identifiable.randomUID("TimeSeriesGenerator"))
 
-  def setGroupByCol(value: String): this.type = set(groupByCol, value)
+  def setGroupByCol(value: String): this.type = set(groupByCol, Some(value))
 
   def setLabelCol(value: String): this.type = set(labelCol, value)
 
-  def setTimeCol(colName: String): this.type = set(timeCol, colName)
+  def setTimeCol(colName: String): this.type = set(timeCol, Some(colName))
 
   def setFeaturesCol(value: String): this.type = set(featuresCol, value)
 
@@ -56,9 +56,9 @@ class TimeSeriesGenerator[L](
     val rdd = dataSet.rdd
 
     val sparkContext = dataSet.sqlContext.sparkContext
-    val index = sparkContext.broadcast(dataSet.schema.fieldIndex($(timeCol)))
+    val index = sparkContext.broadcast(dataSet.schema.fieldIndex($(timeCol).get))
     val labelColIndex =
-      sparkContext.broadcast(dataSet.schema.fieldIndex($(groupByCol)))
+      sparkContext.broadcast(dataSet.schema.fieldIndex($(groupByCol).get))
     val featuresColIndex =
       sparkContext.broadcast(dataSet.schema.fieldIndex($(featuresCol)))
     val grouped = rdd.map { row =>
@@ -87,7 +87,7 @@ class TimeSeriesGenerator[L](
   }
 
   override def transformSchema(schema: StructType): StructType = {
-    val labelIndex = schema.fieldIndex($(groupByCol))
+    val labelIndex = schema.fieldIndex($(groupByCol).get)
     StructType(
       Seq(
         schema.fields(labelIndex),

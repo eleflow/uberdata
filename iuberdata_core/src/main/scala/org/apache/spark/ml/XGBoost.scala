@@ -57,7 +57,7 @@ class XGBoost[I](override val uid: String,
     val schema = dataSet.schema
     val predSchema = transformSchema(schema)
 
-    val joined = models.join(dataSet.map(r => (r.getAs[I]($(groupByCol)), r)))
+    val joined = models.join(dataSet.map(r => (r.getAs[I]($(groupByCol).get), r)))
 
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>

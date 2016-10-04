@@ -54,7 +54,7 @@ class HoltWintersModel[T](
     val scContext = dataSet.sqlContext.sparkContext
     //TODO fazer com que os modelos invalidos voltem numeros absurdos
 
-    val joined = models.join(dataSet.map(r => (r.getAs[T]($(groupByCol)), r)))
+    val joined = models.join(dataSet.map(r => (r.getAs[T]($(groupByCol).get), r)))
 
     val featuresColName = scContext.broadcast($(featuresCol))
     val nFut = scContext.broadcast($(nFutures))
