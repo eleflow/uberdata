@@ -23,12 +23,20 @@ import org.apache.spark.ml.param.{Param, Params}
   */
 trait HasXGBoostParams extends Params {
 
-  final val xGBoostParams: Param[Map[String, Any]] =
+  final val xGBoostRegLinearParams: Param[Map[String, Any]] =
     new Param[Map[String, Any]](
       this,
-      "xgboostparams",
-      "XGBoost algorithm parameters"
+      "xgboostreglinearparams",
+      "XGBoost algorithm reg linear parameters"
     )
+
+  final val xGBoostBinaryParams: Param[Map[String, Any]] =
+    new Param[Map[String, Any]](
+      this,
+      "xgboostbinaryparams",
+      "XGBoost algorithm binary parameters"
+    )
+
   final val xGBoostRounds: Param[Int] = new Param[Int](
     this,
     "xgboostRounds",
@@ -38,7 +46,7 @@ trait HasXGBoostParams extends Params {
   setDefault(xGBoostRounds, 2000)
 
   setDefault(
-    xGBoostParams,
+    xGBoostRegLinearParams,
     Map[String, Any](
       "silent" -> 1,
       "objective" -> "reg:linear",
@@ -54,7 +62,22 @@ trait HasXGBoostParams extends Params {
     ).map(f => (f._1, f._2.asInstanceOf[AnyRef]))
   )
 
+  setDefault(
+    xGBoostBinaryParams,
+    Map[String, Any](
+      "booster" -> "gbtree",
+      "objective" -> "binary:logistic",
+      "eta" -> 0.01,
+      "gamma" -> 1.0,
+      "min_child_weight" -> 1,
+      "max_depth" -> 3,
+      "save_period" -> 0,
+      "eval_metric" -> "auc"
+    ).map(f => (f._1, f._2.asInstanceOf[AnyRef]))
+  )
+
   /** @group getParam */
-  final def getXGBoostParams: Map[String, Any] = $(xGBoostParams)
+  final def getXGBoostRegLinearParams: Map[String, Any] = $(xGBoostRegLinearParams)
+  final def getXGBoostBinaryParams: Map[String, Any] = $(xGBoostBinaryParams)
   final def getXGBoostRounds: Int = $(xGBoostRounds)
 }

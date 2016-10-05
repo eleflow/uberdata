@@ -29,10 +29,14 @@ import org.apache.spark.ml.param.shared.HasXGBoostParams
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import ml.dmlc.xgboost4j.{LabeledPoint => XGBLabeledPoint}
+import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
 import org.apache.spark.sql.types.{DoubleType, StringType, TimestampType}
 import org.apache.spark.util.random
 import org.scalatest.{FlatSpec, Matchers, Suite}
+import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.DataFrame
 
 /**
   * Created by dirceu on 25/08/16.
@@ -116,6 +120,41 @@ class TestXGBoost
       Seq("Store", "DayOfWeek", "Date", "Date2", "Date3"))
     assert(prediction.count == 288)
   }
+
+	it should "execute xgboost big model to binary classification" in {
+		ClusterSettings.kryoBufferMaxSize = Some("70m")
+		val train = Dataset(context, s"$defaultFilePath/data/bank-train.csv")
+		val test = Dataset(context, s"$defaultFilePath/data/bank-test.csv")
+
+		val trainIdCol = IUberdataForecastUtil.createIdColColumn(train, context)
+		val testIdCol = IUberdataForecastUtil.createIdColColumn(test, context).drop(test.col("y"))
+
+		val (prediction, model) = BinaryClassification().predict(
+			trainIdCol,
+			testIdCol,
+			SupportedAlgorithm.XGBoostAlgorithm,
+			"y",
+			"idCol",
+			Seq("age", "job", "marital",
+				"education", "housing", "loan", "default", "contact",
+				"day_of_week", "duration", "campaign", "pdays",
+				"previous", "poutcome", "empvarrate",
+				"conspriceidx", "consconfidx", "euribor3m", "nremployed"))
+		assert(prediction.count == 199)
+
+		val metrics = new BinaryClassificationMetrics(joinTestPredictionDfMetrics(prediction, testIdCol, "idCol", "idCol"))
+		assert(metrics.areaUnderPR > 0.25 )
+	}
+
+	def joinTestPredictionDfMetrics(prediction : DataFrame,
+	                                test : DataFrame,
+	                                idPredit : String,
+	                                idTest : String): RDD[(Double, Double)] = {
+		val joindf = prediction.join(test, test("idCol") === prediction("idCol"), "inner")
+		joindf.select(joindf("prediction").cast(DoubleType).as("prediction"),
+									joindf("y").cast(DoubleType).as("y")).rdd
+			.map(x => (x.toSeq(0).asInstanceOf[Double], x.toSeq(1).asInstanceOf[Double]))
+	}
 
   override def copy(extra: ParamMap): Params = ???
 

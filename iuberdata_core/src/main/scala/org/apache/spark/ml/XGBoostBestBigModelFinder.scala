@@ -21,6 +21,7 @@ import eleflow.uberdata.IUberdataForecastUtil
 import eleflow.uberdata.core.data.DataTransformer
 import eleflow.uberdata.core.util.ClusterSettings
 import eleflow.uberdata.models.UberXGBOOSTModel
+import ml.dmlc.xgboost4j.scala.spark.XGBoostModel
 import org.apache.spark.Logging
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
@@ -60,9 +61,14 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
 
   def setIdCol(id: String): this.type = set(idCol, id)
 
-  def setXGBoostParams(params: Map[String, Any]): this.type =
+  def setXGBoostLinearParams(params: Map[String, Any]): this.type =
     if (params.nonEmpty) {
-      set(xGBoostParams, params)
+      set(xGBoostRegLinearParams, params)
+    } else this
+
+  def setXGBoostBinaryParams(params: Map[String, Any]): this.type =
+    if (params.nonEmpty) {
+      set(xGBoostBinaryParams, params)
     } else this
 
   def setXGBoostRounds(rounds: Int): this.type = set(xGBoostRounds, rounds)
@@ -84,22 +90,34 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
       val label = DataTransformer.toFloat(row.getAs[L]($(labelCol)))
       LabeledPoint(label, Vectors.dense(values))
     }.cache
-    val booster = UberXGBoostModel.train(
-      labeledPointDataSet,
-      $(xGBoostParams),
-      $(xGBoostRounds),
-      ClusterSettings.xgBoostWorkers)
 
     $(timeCol).isDefined match {
-      case true => new XGBoostBigModelTimeSeries[G](uid, Seq((new ParamMap(), booster)))
+      case true =>
+        val booster: XGBoostModel = getBooster(labeledPointDataSet,
+          $(xGBoostRegLinearParams), $(xGBoostRounds))
+        new XGBoostBigModelTimeSeries[G](uid, Seq((new ParamMap(), booster)))
         .setIdcol($(idCol))
         .setLabelcol($(labelCol))
         .setTimecol($(timeCol).get)
 
-      case _ => new XGBoostBigModel[G](uid, Seq((new ParamMap(), booster)))
+      case _ =>
+        val booster: XGBoostModel = getBooster(labeledPointDataSet,
+          $(xGBoostBinaryParams), $(xGBoostRounds))
+        new XGBoostBigModel[G](uid, Seq((new ParamMap(), booster)))
         .setIdcol($(idCol))
         .setLabelcol($(labelCol))
     }
+  }
+
+  def getBooster(labeledPointDataSet: RDD[LabeledPoint],
+                 xgboostParams : Map[String, Any],
+                 rounds : Int ): XGBoostModel = {
+    val booster = UberXGBoostModel.train(
+      labeledPointDataSet,
+      xgboostParams,
+      rounds,
+      ClusterSettings.xgBoostWorkers)
+    booster
   }
 }
 

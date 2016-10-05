@@ -16,7 +16,9 @@
 
 package eleflow.uberdata
 
-import org.apache.spark.sql.Row
+import eleflow.uberdata.core.IUberdataContext
+import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.functions.lit
 
 /**
   * Created by dirceu on 31/05/16.
@@ -68,4 +70,14 @@ object IUberdataForecastUtil {
     }
     result
   }
+
+  def createIdColColumn(dataFrame : DataFrame, context : IUberdataContext) : DataFrame = {
+    val arrId = dataFrame.rdd.zipWithIndex.map(
+      x => x._1.toSeq :+ x._2
+    ).map(
+      x => Row.fromSeq(x))
+    context.sqlContext.createDataFrame(arrId,
+      dataFrame.withColumn("idCol", lit(1L : Long)).schema)
+  }
+
 }

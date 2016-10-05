@@ -67,7 +67,7 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
 
   def setTimeCol(time: String): this.type = set(timeCol, Some(time))
 
-  def setXGBoostParams(params: Map[String, Any]): this.type = set(xGBoostParams, params)
+  def setXGBoostParams(params: Map[String, Any]): this.type = set(xGBoostRegLinearParams, params)
 
   def getOrdering(metricName: String): Ordering[Double] = {
     metricName match {
@@ -132,9 +132,9 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
         new GenericRowWithSchema(Array(groupedByCol, valuesVector), trainSchema.value)
 
       val matrix = new DMatrix(values)
-      val booster = UberXGBOOSTModel.fitModel(matrix, $(xGBoostParams), $(xGBoostRounds))
+      val booster = UberXGBOOSTModel.fitModel(matrix, $(xGBoostRegLinearParams), $(xGBoostRounds))
       (matrixRow,
-       Seq((new ParamMap(), new UberXGBOOSTModel($(xGBoostParams), $(xGBoostRounds), booster))))
+       Seq((new ParamMap(), new UberXGBOOSTModel($(xGBoostRegLinearParams), $(xGBoostRounds), booster))))
     } catch {
       case e: Exception =>
         log.error(

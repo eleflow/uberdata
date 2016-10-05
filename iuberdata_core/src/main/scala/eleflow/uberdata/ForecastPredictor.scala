@@ -545,7 +545,7 @@ class ForecastPredictor extends Serializable with Logging {
       .setTimeSeriesEvaluator(timeSeriesEvaluator)
       .setLabelCol(labelCol)
       .setIdCol(idCol)
-      .setXGBoostParams(params)
+      .setXGBoostLinearParams(params)
       .setXGBoostRounds(rounds)
         .setTimeCol(timeCol)
       .setValidationCol(validationCol)
