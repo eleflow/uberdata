@@ -21,12 +21,11 @@ import org.apache.spark.mllib.linalg.Vector
 /**
   * Created by dirceu on 24/08/16.
   */
-class UberHoltWintersModel(override val modelType: String,
-                           override val period: Int,
+class UberHoltWintersModel(override val m: Int,
                            override val alpha: Double,
                            override val beta: Double,
                            override val gamma: Double)
-    extends HoltWintersModel(modelType, period, alpha, beta, gamma) {
+    extends HoltWintersModel(m, alpha, beta, gamma) {
   lazy val params = Map(
     "HoltWintersAlpha" -> alpha.toString,
     "HoltWintersBeta" -> beta.toString,
@@ -35,14 +34,11 @@ class UberHoltWintersModel(override val modelType: String,
 }
 
 object UberHoltWintersModel {
-  def fitModel(ts: Vector,
-               period: Int,
-               modelType: String = "additive",
-               method: String = "BOBYQA"): UberHoltWintersModel = {
-    val model = HoltWinters.fitModel(ts, period, modelType, method)
+  def fitModelWithBOBYQA(ts: Vector,
+                         m: Int): UberHoltWintersModel = {
+    val model = HoltWinters.fitModelWithBOBYQA(ts, m)
     new UberHoltWintersModel(
-      modelType,
-      period,
+      m,
       model.alpha,
       model.beta,
       model.gamma

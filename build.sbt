@@ -23,6 +23,7 @@ resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repos
 //TODO when moving spark to 1.5, we can update to scala version 2.11.7 according to this issue https://issues.apache.org/jira/browse/SPARK-8013
 val scalaV = "2.10.6"
 
+//WARNING: changing the zeppelin version requires changing the dependency version in setup_zeppelin_local.sh and iuberdata.sh
 lazy val zeppelin_version = "0.6.1"
 lazy val sparkVersion = "1.6.2"
 lazy val mysqlV = "5.1.34"
@@ -44,8 +45,8 @@ lazy val iuberdata_core = project settings (libraryDependencies ++= Seq(
     "org.easymock" % "easymock" % "3.4" % "test",
     "com.typesafe.play" %% "play-json" % "2.4.6",
     "com.cloudera.sparkts" % "sparkts" % "0.3.0" % "provided",
-    "ml.dmlc" % "xgboost4j" % "0.7" % "provided",
-   "ml.dmlc" % "xgboost4j-spark" % "0.7" % "provided",
+    "ml.dmlc" % "xgboost4j" % "0.5" % "provided",
+    "ml.dmlc" % "xgboost4j-spark" % "0.5" % "provided",
     "mysql" % "mysql-connector-java" % mysqlV % "runtime"
   )) settings (dependencyOverrides ++= Set(
     "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.4"

@@ -138,7 +138,7 @@ class ForecastBestModelFinder[I, M <: ForecastBaseModel[M]](
 
     val holtWintersResults = try {
       val holtWinters =
-        UberHoltWintersModel.fitModel(row.getAs($(featuresCol)), $(nFutures))
+        UberHoltWintersModel.fitModelWithBOBYQA(row.getAs($(featuresCol)), $(nFutures))
       val params = ParamMap()
         .put(ParamPair(alpha, holtWinters.alpha))
         .put(ParamPair(beta, holtWinters.beta))

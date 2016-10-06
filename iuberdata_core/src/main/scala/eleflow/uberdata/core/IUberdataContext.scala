@@ -153,6 +153,8 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
     val guavaJar = "com.google.guava.*".r
     val mySqlDriver = "mysql-connector-java.*".r
     val oracle = "ojdbc6.*".r
+    val sparkts = "com.cloudera.sparkts.*jar".r
+    val xgboost = "ml.dmlc.*xgboost4j.*jar".r
     val urls = this.getClass.getClassLoader.asInstanceOf[java.net.URLClassLoader].getURLs
     val jarUrls = urls.filter(
       url =>
@@ -162,6 +164,8 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
           || guavaJar.findFirstIn(url.getFile).isDefined
           || mySqlDriver.findFirstIn(url.getFile).isDefined
           || oracle.findFirstIn(url.getFile).isDefined
+          || sparkts.findFirstIn(url.getFile).isDefined
+          || xgboost.findFirstIn(url.getFile).isDefined
     )
     jarUrls.foreach { url =>
       logInfo(s"adding ${url.getPath} to spark context jars")

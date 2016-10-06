@@ -1,10 +1,13 @@
 #!/bin/bash
 buildVersion=1.6.2-bin-2.6.0-cdh5.4.2
 
+rm -rf /opt/spark
+rm -rf /tmp/spark-$buildVersion.tgz*
+
 mkdir -p /opt/spark
 mkdir -p /opt/spark/conf
 echo "donwloading spark"
-wget https://uberdata-public.s3.amazonaws.com/spark/spark-$buildVersion.tgz -P /tmp
+wget -c https://uberdata-public.s3.amazonaws.com/spark/spark-$buildVersion.tgz -P /tmp
 
 tar -xzf /tmp/spark-$buildVersion.tgz --no-same-owner --strip-components 1 --wildcards --no-anchored 'spark-assembly*.jar'
 tar -xzf /tmp/spark-$buildVersion.tgz --no-same-owner --strip-components 1 --wildcards --no-anchored 'datanucleus*.jar'

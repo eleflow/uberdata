@@ -5,7 +5,9 @@ yum -y groupinstall "Development Tools"
 
 uberdataVersion="0.1.0"
 mySqlConnectorVersion="5.1.34"
-zeppelinVersion="0.6.0"
+
+# WARNING: changing the zeppelin version requires changing the dependency version in build.sbt and setup_zeppelin_local.sh
+zeppelinVersion="0.6.1"
 zeppelinInterpreterUberdataDir="/usr/share/zeppelin/interpreter/uberdata/"
 
 # java-devel
@@ -48,6 +50,9 @@ mkdir -p $zeppelinInterpreterUberdataDir
 
 cd $zeppelinInterpreterUberdataDir
 
+sudo rm -rf ../spark
+bash /usr/share/zeppelin/bin/install-interpreter.sh --name spark --artifact org.apache.zeppelin:zeppelin-spark_2.10:0.6.1
+
 cp ../spark/zeppelin-spark*jar ./
 rm -rf ../spark
 rm -rf ../hive
@@ -83,12 +88,9 @@ rm -f /tmp/notebook/interpreter.json
 cp -rf /tmp/notebook/* /usr/share/zeppelin/notebook
 rm -rf /tmp/notebook*
 
-cp /tmp/xgboost4j-spark-0.5-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
-cp /tmp/xgboost4j-0.5-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
-sudo rm -f /tmp/xgboost4j-0.5-jar-with-dependencies.jar
-sudo rm -f /tmp/xgboost4j-spark-0.5-jar-with-dependencies.jar
-cp /tmp/sparkts-0.3.0-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
-sudo rm -f /tmp/sparkts-0.3.0-jar-with-dependencies.jar
+mv /tmp/xgboost4j-spark-0.5-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
+mv /tmp/xgboost4j-0.5-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
+mv /tmp/sparkts-0.3.0-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
 
 sudo rm -f /tmp/iuberdata_addon_zeppelin-assembly-0.1.0.jar
 sudo rm -f /tmp/eleflow.uberdata.IUberdata-Zeppelin-0.1.0.jar

@@ -488,7 +488,7 @@ def launch_cluster(conn, opts, cluster_name):
   # Launch slaves
   if opts.spot_price != None:
     zones = get_zones(conn, opts)
-    
+
     num_zones = len(zones)
     i = 0
     my_req_ids = []
@@ -681,7 +681,7 @@ def get_existing_cluster(conn, opts, cluster_name, die_on_error=True):
     print("Spark standalone cluster started at http://%s:8080" % master_nodes[0].public_dns_name, file=sys.stderr)
     print(("Found %d master(s), %d slaves" %
            (len(master_nodes), len(slave_nodes))), file=sys.stderr)
-    #get_master_setup_files(master_nodes[0].private_dns_name, opts)
+    get_master_setup_files(master_nodes[0].private_dns_name, opts)
     if opts.ganglia:
       print("Ganglia started at http://%s:5080/ganglia" % master_nodes[0].public_dns_name, file=sys.stderr)
   if master_nodes != [] or not die_on_error:

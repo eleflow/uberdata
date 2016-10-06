@@ -83,7 +83,7 @@ class HoltWintersBestModelFinder[G](
 
     val result = try {
       Some(
-        UberHoltWintersModel.fitModel(row.getAs($(featuresCol)), $(nFutures))
+        UberHoltWintersModel.fitModelWithBOBYQA(row.getAs($(featuresCol)), $(nFutures))
       )
     } catch {
       case e: Exception =>
