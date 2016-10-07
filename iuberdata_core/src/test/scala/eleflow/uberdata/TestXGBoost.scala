@@ -136,14 +136,15 @@ class TestXGBoost
 			"y",
 			"idCol",
 			Seq("age", "job", "marital",
-				"education", "housing", "loan", "default", "contact",
-				"day_of_week", "duration", "campaign", "pdays",
-				"previous", "poutcome", "empvarrate",
+				"education", "housing", "loan", "default",
+				"duration", "campaign", "pdays",
+				"previous", "empvarrate",
 				"conspriceidx", "consconfidx", "euribor3m", "nremployed"))
-		assert(prediction.count == 199)
+		assert(prediction.count == 250)
 
 		val metrics = new BinaryClassificationMetrics(joinTestPredictionDfMetrics(prediction, testIdCol, "idCol", "idCol"))
-		assert(metrics.areaUnderPR > 0.25 )
+		print(metrics.areaUnderPR )
+		assert(metrics.areaUnderPR > 0.44 )
 	}
 
 	def joinTestPredictionDfMetrics(prediction : DataFrame,
