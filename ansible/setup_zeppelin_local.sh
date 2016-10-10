@@ -62,9 +62,9 @@ mvn clean install -DskipTests -Dgpg.skip
 sudo cp target/sparkts-0.3.0-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
 
 cd $SCRIPTPATH
-cd ../
+cd ../..
 
-echo "clonning and building xgboost v0.5"
+echo "clonning and building xgboost v0.6"
 git clone --recursive https://github.com/eleflow/xgboost.git
 cd xgboost
 git checkout -b version6 v0.60
