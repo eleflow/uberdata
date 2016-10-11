@@ -149,6 +149,7 @@ class TestPipelineTransformer
       .setOutputCol("features")
       .setGroupByCol("store")
       .setFeaturesCol("sales")
+      .setTimeCol("date")
     val transformedData = tsg.transform(testData)
     val namesArray = transformedData.columns
     val labelArray = transformedData.map(f => f.get(0)).collect
@@ -185,6 +186,7 @@ class TestPipelineTransformer
     val tsg = new TimeSeriesGenerator[Double]().setOutputCol("features")
     tsg.setGroupByCol("store")
     tsg.setFeaturesCol("sales")
+    tsg.setTimeCol("date")
     val transformedData = tsg.transform(testData)
     val namesArray = transformedData.columns
     val labelArray = transformedData.map(f => f.get(0)).collect
@@ -222,6 +224,8 @@ class TestPipelineTransformer
     val tsg = new TimeSeriesGenerator[Double]().setOutputCol("features")
     tsg.setGroupByCol("store")
     tsg.setFeaturesCol("sales")
+    tsg.setTimeCol("date")
+
     val transformedData = tsg.transform(testData)
     val namesArray = transformedData.columns
     val labelArray = transformedData.map(f => f.get(0)).collect
