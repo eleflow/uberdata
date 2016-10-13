@@ -105,7 +105,7 @@ if ! sudo su - iuberdata -c "test $file"
 #download and deploy mysql-connector-java
 wget http://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-$mySqlConnectorVersion.tar.gz
 tar -xzvf mysql-connector-java-$mySqlConnectorVersion.tar.gz mysql-connector-java-$mySqlConnectorVersion/mysql-connector-java-$mySqlConnectorVersion-bin.jar
-mv mysql-connector-java-$mySqlConnectorVersion/mysql-connector-java-$mySqlConnectorVersion-bin.jar ./
+mv mysql-connector-java-$mySqlConnectorVersion/mysql-connector-java-$mySqlConnectorVersion-bin.jar $zeppelinInterpreterUberdataDir
 rm -rf mysql-connector-java-$mySqlConnectorVersion
 rm -f mysql-connector-java-$mySqlConnectorVersion.tar.gz
 
