@@ -36,16 +36,21 @@ import scala.util.matching.Regex
 
 object IUberdataContext {
 
+  def apply(): IUberdataContext = {
+    this.conf = new SparkConf
+    uc
+  }
+
+  def apply(conf: SparkConf): IUberdataContext = {
+    this.conf = conf
+    uc
+  }
+
   var conf: SparkConf = new SparkConf
 
   private lazy val uc: IUberdataContext = new IUberdataContext(conf)
 
   def getUC = uc
-
-  def getUC(conf: SparkConf) = {
-    this.conf = conf
-    uc
-  }
 
 }
 
@@ -155,6 +160,8 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
     val oracle = "ojdbc6.*".r
     val sparkts = "com.cloudera.sparkts.*jar".r
     val xgboost = "ml.dmlc.*xgboost4j.*jar".r
+    val csv = ".*csv.*jar".r
+    var iuberdata = "iuberdata.*jar".r
     val urls = this.getClass.getClassLoader.asInstanceOf[java.net.URLClassLoader].getURLs
     val jarUrls = urls.filter(
       url =>
@@ -166,6 +173,8 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
           || oracle.findFirstIn(url.getFile).isDefined
           || sparkts.findFirstIn(url.getFile).isDefined
           || xgboost.findFirstIn(url.getFile).isDefined
+          || csv.findFirstIn(url.getFile).isDefined
+          || iuberdata.findFirstIn(url.getFile).isDefined
     )
     jarUrls.foreach { url =>
       logInfo(s"adding ${url.getPath} to spark context jars")
