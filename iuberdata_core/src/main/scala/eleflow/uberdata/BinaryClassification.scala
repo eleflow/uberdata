@@ -18,14 +18,16 @@ package eleflow.uberdata
 
 import eleflow.uberdata.enums.SupportedAlgorithm._
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.{StringType, StructType}
+import org.apache.spark.sql.types.{StringType, StructType, LongType, StructField}
 import org.apache.spark.ml._
 import org.apache.spark.ml.evaluation.{BinaryClassificationEvaluator, TimeSeriesEvaluator}
 import org.apache.spark.ml.feature.{OneHotEncoder, StringIndexer, VectorAssembler}
 import org.apache.spark.ml.param.shared.HasXGBoostParams
-
-
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.expressions.Window
+import org.apache.spark.sql.functions._
 import scala.reflect.ClassTag
+import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 
 /**
   * Created by caio.martins on 22/09/16.
@@ -36,6 +38,67 @@ object BinaryClassification {
 }
 
 class BinaryClassification {
+
+  def predictUsingWindowsApproach(
+                                   train: DataFrame,
+                                   test: DataFrame,
+                                   algorithm: Algorithm,
+                                   labelCol: String,
+                                   idCol: String,
+                                   featuresCol: Seq[String],
+                                   rounds: Int = 2000,
+                                   params: Map[String, Any] = Map.empty[String, Any],
+                                   trainingWindowSize: Int) : (DataFrame, DataFrame, Double, Double) = {
+
+    val testDataSize = test.count().toInt
+    val trainDataSize = train.count().toInt
+    val numberOfPredictionsByModelUpdate = testDataSize
+    val privateid = "privateid"
+    val decile = "decile"
+
+    if(trainingWindowSize >= trainDataSize) {
+      throw new IllegalArgumentException( "trainingWindowSize is greater than train dataframe size ")
+    }
+
+    if(trainDataSize < testDataSize) {
+      throw new IllegalArgumentException( "train dataframe size has to be greater than test dataframe size")
+    }
+
+    val orderedTrainDataFrame = dfZipWithIndex(train.orderBy(idCol), 1, privateid)
+
+    var indexes = (1 to (trainDataSize-(testDataSize+trainingWindowSize)+1) by numberOfPredictionsByModelUpdate).toArray
+
+    if(indexes.size == 0) {
+      indexes = Array(1)
+    }
+
+    val predictionsForTrainingSet = indexes.map { index =>
+      val clause1 = privateid + " >= " + index
+      val clause2 = privateid + " <= " + (index + trainingWindowSize-1)
+      val clause3 = privateid + " > " + (index + trainingWindowSize-1)
+      val clause4 = privateid + " <= " + (index + trainingWindowSize + numberOfPredictionsByModelUpdate - 1)
+      val trainingPartial = orderedTrainDataFrame.where(clause1).where(clause2).drop(privateid).repartition(1)
+      val testPartial = orderedTrainDataFrame.where(clause3).where(clause4).drop(privateid).repartition(1)
+
+      val (predictionsPartial, modelPartial) = predict(trainingPartial, testPartial, algorithm, labelCol, idCol, featuresCol, rounds, params )
+      val window = Window.orderBy("prediction")
+      predictionsPartial.withColumn(decile, ntile(10).over(window) ).sort(idCol)
+    }
+
+    val allPredictionsForTrainingSetDF = predictionsForTrainingSet.toSeq.reduce( _.unionAll(_)).withColumnRenamed(idCol, "id1")
+    val predictionsForTrainingSetStats = allPredictionsForTrainingSetDF.join(orderedTrainDataFrame, allPredictionsForTrainingSetDF("id1") === orderedTrainDataFrame(idCol)).select(idCol, decile, labelCol)
+    val conversionRateDF = predictionsForTrainingSetStats.groupBy(decile).agg("y" -> "avg").withColumnRenamed("avg(y)", "conversion_rate")
+
+    val clause1 = privateid + " > " + (trainDataSize - trainingWindowSize)
+    val clause2 = privateid + " <= " + trainDataSize
+    val trainDataForPredictionToBeReturned = orderedTrainDataFrame.where(clause1).where(clause2).drop(privateid).repartition(1)
+    val (predictionsForTestSet, modelForTestSet) = predict(trainDataForPredictionToBeReturned, test.repartition(1), algorithm, labelCol, idCol, featuresCol, rounds, params)
+
+    val predictionsAndLabels = allPredictionsForTrainingSetDF.join(orderedTrainDataFrame, allPredictionsForTrainingSetDF("id1") === orderedTrainDataFrame(idCol)).select("prediction", labelCol)
+    val metricsAUC = new BinaryClassificationMetrics(predictionsAndLabels.rdd.map{case Row(a: Float, b: Long) => (a.toDouble,b.toDouble)})
+
+    (conversionRateDF, predictionsForTestSet, metricsAUC.areaUnderPR, metricsAUC.areaUnderROC)
+  }
 
   def predict(
                train: DataFrame,
@@ -110,4 +173,27 @@ class BinaryClassification {
 
     stringIndexers ++ encoder :+ columnIndexers :+ assembler
   }
+
+  private def dfZipWithIndex(
+                      df: DataFrame,
+                      offset: Int = 1,
+                      colName: String = "id",
+                      inFront: Boolean = true
+                    ) : DataFrame = {
+    df.sqlContext.createDataFrame(
+      df.rdd.zipWithIndex.map(ln =>
+        Row.fromSeq(
+          (if (inFront) Seq(ln._2 + offset) else Seq())
+            ++ ln._1.toSeq ++
+            (if (inFront) Seq() else Seq(ln._2 + offset))
+        )
+      ),
+      StructType(
+        (if (inFront) Array(StructField(colName,LongType,false)) else Array[StructField]())
+          ++ df.schema.fields ++
+          (if (inFront) Array[StructField]() else Array(StructField(colName,LongType,false)))
+      )
+    )
+  }
+
 }

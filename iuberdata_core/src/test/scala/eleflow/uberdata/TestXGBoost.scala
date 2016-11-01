@@ -147,11 +147,89 @@ class TestXGBoost
 		assert(metrics.areaUnderPR > 0.44 )
 	}
 
+	it should "execute xgboost big model to binary classification using windows approach" in {
+		ClusterSettings.kryoBufferMaxSize = Some("70m")
+		val train = Dataset(context, s"$defaultFilePath/data/bank-train.csv")
+		val test = Dataset(context, s"$defaultFilePath/data/bank-test.csv")
+
+		val trainIdCol = IUberdataForecastUtil.createIdColColumn(train, context)
+		val testIdCol = IUberdataForecastUtil.createIdColColumn(test, context).drop(test.col("y"))
+
+		val (conversionRate, prediction, areaUnderPR, areaUnderROC) = BinaryClassification().predictUsingWindowsApproach(
+			trainIdCol,
+			testIdCol,
+			SupportedAlgorithm.XGBoostAlgorithm,
+			"y",
+			"idCol",
+			Seq("age", "marital", "housing", "loan", "duration", "campaign",
+				"pdays", "previous", "empvarrate", "conspriceidx", "consconfidx", "euribor3m", "nremployed"),
+			2000,
+			Map.empty[String, Any],
+			200)
+
+		assert(conversionRate.count == 10)
+		assert(conversionRate.filter("decile=10").first.getDouble(1) > 0.10)
+		assert(prediction.count == 250)
+		assert(areaUnderPR > 0.60)
+		assert(areaUnderROC > 0.80)
+
+	}
+
+	it should "throw an exception if trainingWindowSize is greater than train dataframe size while executing " +
+		"xgboost big model to binary classification using windows approach" in {
+		ClusterSettings.kryoBufferMaxSize = Some("70m")
+		val train = Dataset(context, s"$defaultFilePath/data/bank-train.csv")
+		val test = Dataset(context, s"$defaultFilePath/data/bank-test.csv")
+
+		val trainIdCol = IUberdataForecastUtil.createIdColColumn(train, context)
+		val testIdCol = IUberdataForecastUtil.createIdColColumn(test, context).drop(test.col("y"))
+
+		intercept[IllegalArgumentException] {
+			val (conversionRate, prediction, areaUnderPR, areaUnderROC) = BinaryClassification().predictUsingWindowsApproach(
+				trainIdCol,
+				testIdCol,
+				SupportedAlgorithm.XGBoostAlgorithm,
+				"y",
+				"idCol",
+				Seq("age", "marital", "housing", "loan", "duration", "campaign",
+					"pdays", "previous", "empvarrate", "conspriceidx", "consconfidx", "euribor3m", "nremployed"),
+				2000,
+				Map.empty[String, Any],
+				2000)
+		}
+
+	}
+
+	it should "throw an exception if train dataframe size is smaller than test dataframe size while executing " +
+		"xgboost big model to binary classification using windows approach" in {
+		ClusterSettings.kryoBufferMaxSize = Some("70m")
+		val train = Dataset(context, s"$defaultFilePath/data/bank-train.csv")
+		val test = Dataset(context, s"$defaultFilePath/data/bank-test.csv")
+
+		val trainIdCol = IUberdataForecastUtil.createIdColColumn(train, context)
+		val testIdCol = IUberdataForecastUtil.createIdColColumn(test, context).drop(test.col("y"))
+
+		intercept[IllegalArgumentException] {
+			val (conversionRate, prediction, areaUnderPR, areaUnderROC) = BinaryClassification().predictUsingWindowsApproach(
+				trainIdCol.where("idCol <= 100"),
+				testIdCol,
+				SupportedAlgorithm.XGBoostAlgorithm,
+				"y",
+				"idCol",
+				Seq("age", "marital", "housing", "loan", "duration", "campaign",
+					"pdays", "previous", "empvarrate", "conspriceidx", "consconfidx", "euribor3m", "nremployed"),
+				2000,
+				Map.empty[String, Any],
+				200)
+		}
+
+	}
+
 	def joinTestPredictionDfMetrics(prediction : DataFrame,
 	                                test : DataFrame,
 	                                idPredit : String,
 	                                idTest : String): RDD[(Double, Double)] = {
-		val joindf = prediction.join(test, test("idCol") === prediction("idCol"), "inner")
+		val joindf = prediction.join(test, test(idTest) === prediction(idPredit), "inner")
 		joindf.select(joindf("prediction").cast(DoubleType).as("prediction"),
 									joindf("y").cast(DoubleType).as("y")).rdd
 			.map(x => (x.toSeq(0).asInstanceOf[Double], x.toSeq(1).asInstanceOf[Double]))
