@@ -427,7 +427,7 @@ IUberSparkInterpreter extends Interpreter {
         }
 
 //        IUberdataContext.conf_$eq(conf);
-        return IUberdataContext(getSparkConf());
+        return new IUberdataContext(getSparkConf());
     }
 
 
