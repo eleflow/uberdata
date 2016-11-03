@@ -18,7 +18,7 @@ package eleflow.uberdata
 
 import eleflow.uberdata.enums.SupportedAlgorithm._
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.{StringType, StructType, LongType, StructField}
+import org.apache.spark.sql.types._
 import org.apache.spark.ml._
 import org.apache.spark.ml.evaluation.{BinaryClassificationEvaluator, TimeSeriesEvaluator}
 import org.apache.spark.ml.feature.{OneHotEncoder, StringIndexer, VectorAssembler}
@@ -28,6 +28,7 @@ import org.apache.spark.sql.expressions.Window
 import org.apache.spark.sql.functions._
 import scala.reflect.ClassTag
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
+
 
 /**
   * Created by caio.martins on 22/09/16.
@@ -82,7 +83,14 @@ class BinaryClassification {
 
       val (predictionsPartial, modelPartial) = predict(trainingPartial, testPartial, algorithm, labelCol, idCol, featuresCol, rounds, params )
       val window = Window.orderBy("prediction")
-      predictionsPartial.withColumn(decile, ntile(10).over(window) ).sort(idCol)
+      val predictionsPartialWithInvertedDeciles =  predictionsPartial.withColumn(decile, ntile(10).over(window) ).sort(idCol)
+
+      val predictionsPartialRdd = predictionsPartialWithInvertedDeciles.select(idCol, "prediction", decile).rdd.map {
+        case Row(id: Float, prediction: Float, dec: Int) => Row(id, prediction, Math.abs(11 - dec))
+      }
+
+      predictionsPartialWithInvertedDeciles.sqlContext.createDataFrame(predictionsPartialRdd, StructType(Array(StructField(idCol,FloatType),StructField("prediction", FloatType),StructField(decile,IntegerType))))
+
     }
 
     val allPredictionsForTrainingSetDF = predictionsForTrainingSet.toSeq.reduce( _.unionAll(_)).withColumnRenamed(idCol, "id1")
