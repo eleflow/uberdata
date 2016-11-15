@@ -41,7 +41,7 @@ trait BeforeAndAfterWithContext extends BeforeAndAfterEach { this: Suite =>
   import TestSparkConf._
   ClusterSettings.master = Some("local[*]")
   conf.set("spark.driver.allowMultipleContexts", "true")
-  val context = IUberdataContext(conf)
+  val context = IUberdataContext.getUC(conf)
 
   override def beforeEach() = {
     setLogLevels(Level.INFO, Seq("spark", "org.eclipse.jetty", "akka"))

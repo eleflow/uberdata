@@ -36,21 +36,16 @@ import scala.util.matching.Regex
 
 object IUberdataContext {
 
-  def apply(): IUberdataContext = {
-    this.conf = new SparkConf
-    uc
-  }
-
-  def apply(conf: SparkConf): IUberdataContext = {
-    this.conf = conf
-    uc
-  }
-
   var conf: SparkConf = new SparkConf
 
   private lazy val uc: IUberdataContext = new IUberdataContext(conf)
 
   def getUC = uc
+
+  def getUC(conf: SparkConf) = {
+    this.conf = conf
+    uc
+  }
 
 }
 
