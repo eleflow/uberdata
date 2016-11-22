@@ -82,20 +82,15 @@ class BinaryClassification {
       val testPartial = orderedTrainDataFrame.where(clause3).where(clause4).drop(privateid).repartition(1)
 
       val (predictionsPartial, modelPartial) = predict(trainingPartial, testPartial, algorithm, labelCol, idCol, featuresCol, rounds, params )
-      val window = Window.orderBy("prediction")
-      val predictionsPartialWithInvertedDeciles =  predictionsPartial.withColumn(decile, ntile(10).over(window) ).sort(idCol)
-
-      val predictionsPartialRdd = predictionsPartialWithInvertedDeciles.select(idCol, "prediction", decile).rdd.map {
-        case Row(id: Float, prediction: Float, dec: Int) => Row(id, prediction, Math.abs(11 - dec))
-      }
-
-      predictionsPartialWithInvertedDeciles.sqlContext.createDataFrame(predictionsPartialRdd, StructType(Array(StructField(idCol,FloatType),StructField("prediction", FloatType),StructField(decile,IntegerType))))
+      insertDecileColumn(predictionsPartial, idCol, decile)
 
     }
 
     val allPredictionsForTrainingSetDF = predictionsForTrainingSet.toSeq.reduce( _.unionAll(_)).withColumnRenamed(idCol, "id1")
     val predictionsForTrainingSetStats = allPredictionsForTrainingSetDF.join(orderedTrainDataFrame, allPredictionsForTrainingSetDF("id1") === orderedTrainDataFrame(idCol)).select(idCol, decile, labelCol)
-    val conversionRateDF = predictionsForTrainingSetStats.groupBy(decile).agg("y" -> "avg").withColumnRenamed("avg(y)", "conversion_rate")
+    val conversionRateDF0 = predictionsForTrainingSetStats.groupBy(decile).agg("y" -> "sum").withColumnRenamed("sum(y)", "soma_convertidos")
+    val totalConversions= conversionRateDF0.rdd.map(_(1).asInstanceOf[Long]).reduce(_+_)
+    val conversionRateDF = conversionRateDF0.withColumn("conversion_rate", conversionRateDF0("soma_convertidos")/totalConversions).select("decile", "conversion_rate")
 
     val clause1 = privateid + " > " + (trainDataSize - trainingWindowSize)
     val clause2 = privateid + " <= " + trainDataSize
@@ -202,6 +197,22 @@ class BinaryClassification {
           (if (inFront) Array[StructField]() else Array(StructField(colName,LongType,false)))
       )
     )
+  }
+
+  private def insertDecileColumn (
+                                   df: DataFrame,
+                                   idCol: String,
+                                   decile: String
+                                 ): DataFrame = {
+    val window = Window.orderBy("prediction")
+    val predictionsPartialWithInvertedDeciles =  df.withColumn(decile, ntile(10).over(window) ).sort(idCol)
+
+    val predictionsPartialRdd = predictionsPartialWithInvertedDeciles.select(idCol, "prediction", decile).rdd.map {
+      case Row(id: Float, prediction: Float, dec: Int) => Row(id, prediction, Math.abs(11 - dec))
+    }
+
+    df.sqlContext.createDataFrame(predictionsPartialRdd, StructType(Array(StructField(idCol,FloatType),StructField("prediction", FloatType),StructField(decile,IntegerType))))
+
   }
 
 }

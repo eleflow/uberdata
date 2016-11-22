@@ -168,7 +168,7 @@ class TestXGBoost
 			200)
 
 		assert(conversionRate.count == 10)
-		assert(conversionRate.filter("decile=1").first.getDouble(1) > 0.10)
+		assert(conversionRate.filter("decile=1").first.getDouble(1) > 0.50)
 		assert(prediction.count == 250)
 		assert(areaUnderPR > 0.60)
 		assert(areaUnderROC > 0.80)
