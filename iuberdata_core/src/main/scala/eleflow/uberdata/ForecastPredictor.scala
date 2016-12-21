@@ -530,12 +530,17 @@ class ForecastPredictor extends Serializable with Logging {
     val index = (train.count()*0.2).toInt
     val trainForValidation = train.limit(index)
 
-    val validation = model.transform(trainForValidation).cache.withColumnRenamed(idCol, "id1").select("id1", "prediction")
-    val joined = validation.join(train, validation("id1") === train(idCol)).select(idCol, "prediction", labelCol)
-      .filter(s"${labelCol} > 0")
-    val joinedWithError = joined.withColumn("Error",  abs(joined(labelCol) - joined("prediction"))/joined(labelCol))
+    if(train.columns.contains(idCol)) {
 
-    (predictions.sort(idCol), model, calculateAccuracyBigModelFuture(joinedWithError))
+      val validation = model.transform(trainForValidation).cache.withColumnRenamed(idCol, "id1").select("id1", "prediction")
+      val joined = validation.join(train, validation("id1") === train(idCol)).select(idCol, "prediction", labelCol)
+        .filter(s"${labelCol} > 0")
+      val joinedWithError = joined.withColumn("Error", abs(joined(labelCol) - joined("prediction")) / joined(labelCol))
+
+      (predictions.sort(idCol), model, calculateAccuracyBigModelFuture(joinedWithError))
+    }else{
+      (predictions.sort(idCol), model, 0.0)
+    }
   }
 
   def prepareXGBoostBigModel[L, G](
