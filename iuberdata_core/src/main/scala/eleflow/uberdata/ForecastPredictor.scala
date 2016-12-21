@@ -598,8 +598,4 @@ class ForecastPredictor extends Serializable with Logging {
     accuracy
   }
 
-  private def roundTo2Decimals(value: Double): String = {
-    DecimalFormat df2 = new DecimalFormat("###.##");
-    Double.valueOf(df2.format(value)).toString ;
-  }
 }
