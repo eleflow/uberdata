@@ -17,9 +17,11 @@
 package eleflow.uberdata
 
 import java.sql.Timestamp
+import java.text.DecimalFormat
 
 import eleflow.uberdata.core.exception.UnexpectedValueException
 import eleflow.uberdata.enums.SupportedAlgorithm._
+import ml.dmlc.xgboost4j.scala.spark.XGBoostModel
 import org.apache.spark.Logging
 import org.apache.spark.ml._
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
@@ -28,6 +30,7 @@ import org.apache.spark.ml.tuning.ParamGridBuilder
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.functions._
 
 import scala.reflect.ClassTag
 
@@ -273,7 +276,7 @@ class ForecastPredictor extends Serializable with Logging {
                     paramRange: Array[Int] = defaultRange)(
                      implicit kt: ClassTag[L],
                      ord: Ordering[L] = null,
-                     gt: ClassTag[G]): (DataFrame, PipelineModel) = {
+                     gt: ClassTag[G]): (DataFrame, PipelineModel, Double) = {
     require(featuresCol.nonEmpty, "featuresCol parameter can't be empty")
     val validationCol = idCol + algorithm.toString
     algorithm match {
@@ -318,7 +321,7 @@ class ForecastPredictor extends Serializable with Logging {
                                            groupByCol: String,
                                            algorithm: Algorithm = XGBoostAlgorithm,
                                            validationCol: String
-                                         )(implicit kt: ClassTag[L], ord: Ordering[L], gt: ClassTag[G]): (DataFrame, PipelineModel) = {
+                                         )(implicit kt: ClassTag[L], ord: Ordering[L], gt: ClassTag[G]): (DataFrame, PipelineModel, Double) = {
     require(
       algorithm == XGBoostAlgorithm,
       "The accepted algorithm for this method is XGBoostAlgorithm")
@@ -335,10 +338,10 @@ class ForecastPredictor extends Serializable with Logging {
     val model = pipeline.fit(cachedTrain)
     val result = model.transform(cachedTest).cache
     val joined =
-      result.select(idCol, IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME, groupByCol, timeCol)
-    val dfToBeReturned = joined.withColumnRenamed("featuresPrediction", "prediction")
+      result.select(idCol, IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME, groupByCol, timeCol, IUberdataForecastUtil.METRIC_COL_NAME)
+    val dfToBeReturned = joined.withColumnRenamed("featuresPrediction", "prediction").select(idCol, "prediction", groupByCol, timeCol)
 
-    (dfToBeReturned.sort(idCol), model)
+    (dfToBeReturned.sort(idCol), model, calculateAccuracySmallModelFeatureBased(joined))
   }
 
   def prepareSmallModelPipeline[G](train: DataFrame,
@@ -414,7 +417,7 @@ class ForecastPredictor extends Serializable with Logging {
                                   nFutures: Int = 6,
                                   meanAverageWindowSize: Seq[Int] = Seq(8, 16, 26),
                                   paramRange: Array[Int] = defaultRange
-                                )(implicit kt: ClassTag[G], ord: Ordering[G] = null): (DataFrame, PipelineModel) = {
+                                )(implicit kt: ClassTag[G], ord: Ordering[G] = null): (DataFrame, PipelineModel, Double) = {
     require(
       algorithm != XGBoostAlgorithm,
       "The accepted algorithms for this method doesn't include XGBoost")
@@ -498,8 +501,7 @@ class ForecastPredictor extends Serializable with Logging {
       }
       .add(StructField("prediction", LongType))
     val df = sqlContext.createDataFrame(forecastResult, schema)
-
-    (df, model)
+    (df, model, calculateAccuracySmallModelFuture(result))
   }
 
   def saveResult[T](toBeSaved: RDD[(T, Long)], path: String): Unit = {
@@ -517,7 +519,7 @@ class ForecastPredictor extends Serializable with Logging {
 		timeCol: String,
     featuresCol: Seq[String],
     rounds: Int = 2000,
-    params: Map[String, Any] = Map.empty[String, Any]): (DataFrame, PipelineModel) = {
+    params: Map[String, Any] = Map.empty[String, Any]): (DataFrame, PipelineModel, Double) = {
     val pipeline = algorithm match {
       case XGBoostAlgorithm =>
         prepareXGBoostBigModel(labelCol, idCol, featuresCol, timeCol, train.schema, rounds, params)
@@ -525,7 +527,15 @@ class ForecastPredictor extends Serializable with Logging {
     }
     val model = pipeline.fit(train.cache)
     val predictions = model.transform(test).cache
-    (predictions.sort(idCol), model)
+    val index = (train.count()*0.2).toInt
+    val trainForValidation = train.limit(index)
+
+    val validation = model.transform(trainForValidation).cache.withColumnRenamed(idCol, "id1").select("id1", "prediction")
+    val joined = validation.join(train, validation("id1") === train(idCol)).select(idCol, "prediction", labelCol)
+      .filter(s"${labelCol} > 0")
+    val joinedWithError = joined.withColumn("Error",  abs(joined(labelCol) - joined("prediction"))/joined(labelCol))
+
+    (predictions.sort(idCol), model, calculateAccuracyBigModelFuture(joinedWithError))
   }
 
   def prepareXGBoostBigModel[L, G](
@@ -553,5 +563,43 @@ class ForecastPredictor extends Serializable with Logging {
     new Pipeline().setStages(
 			createXGBoostPipelineStages(labelCol, featuresCol, "", Some(idCol), timeCol, schema = schema)
         :+ xgboost)
+  }
+
+  private def calculateAccuracySmallModelFuture(df: DataFrame): Double = {
+    if(df.columns.contains("featuresValidation")) {
+      val errorsArray = df.select("features", "featuresValidation").map { case Row(v1: org.apache.spark.mllib.linalg.Vector, v2: org.apache.spark.mllib.linalg.Vector) =>
+        val zipArray = v1.toArray.zip(v2.toArray).map {
+          f => if (f._1 == 0) {
+            0
+          } else {
+            Math.abs(f._1 - f._2) / f._1
+          }
+        }
+        zipArray.sum / zipArray.length
+      }.collect
+
+      1.0 - errorsArray.sum / errorsArray.length
+    }else{
+      //TODO: Precisa implementar acuracia para quando nao existir 'featuresValidation' - por exemplo: ARIMA
+      1.0
+    }
+  }
+
+  private def calculateAccuracySmallModelFeatureBased(df: DataFrame): Double = {
+    val rmspe_medio = df.agg(avg("metric")).first.get(0).asInstanceOf[Double]
+    val n = df.count
+    val accuracy = 1.0 - ((rmspe_medio*rmspe_medio*n)*(rmspe_medio*rmspe_medio*n))/n
+    accuracy
+  }
+
+  private def calculateAccuracyBigModelFuture(df: DataFrame): Double = {
+    val erro_medio = df.agg(avg("Error")).first.get(0).asInstanceOf[Double]
+    val accuracy = 1.0 - erro_medio
+    accuracy
+  }
+
+  private def roundTo2Decimals(value: Double): String = {
+    DecimalFormat df2 = new DecimalFormat("###.##");
+    Double.valueOf(df2.format(value)).toString ;
   }
 }

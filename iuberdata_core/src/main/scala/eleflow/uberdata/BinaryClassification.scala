@@ -199,7 +199,7 @@ class BinaryClassification {
     )
   }
 
-  private def insertDecileColumn (
+  def insertDecileColumn (
                                    df: DataFrame,
                                    idCol: String,
                                    decile: String
