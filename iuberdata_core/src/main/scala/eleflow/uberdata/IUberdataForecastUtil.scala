@@ -29,6 +29,7 @@ object IUberdataForecastUtil {
   lazy val FEATURES_COL_NAME = "features"
   lazy val ALGORITHM = "algorithm"
   lazy val PARAMS = "parameters"
+  lazy val METRIC_COL_NAME = "metric"
 
   def convertColumnToLong(row: Row, columnIndex: Int): Row = {
     row.get(columnIndex) match {

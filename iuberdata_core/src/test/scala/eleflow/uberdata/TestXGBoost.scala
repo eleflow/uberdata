@@ -110,7 +110,7 @@ class TestXGBoost
 
     val testData = test
 
-    val (prediction, model) = ForecastPredictor().predictBigModelFuture(
+    val (prediction, model, accuracy) = ForecastPredictor().predictBigModelFuture(
       trainData,
       testData,
       SupportedAlgorithm.XGBoostAlgorithm,

@@ -432,7 +432,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 		val testRdd = sc.parallelize(testArimaData)
 		val dataFrame = sqlContext.createDataFrame(rdd, structType)
 		val testDataFrame = sqlContext.createDataFrame(testRdd, testStructType)
-		val (timeSeriesBestModelFinder, model) = ForecastPredictor().predict[Double, Double](
+		val (timeSeriesBestModelFinder, model, accuracy) = ForecastPredictor().predict[Double, Double](
 			dataFrame,
 			testDataFrame,
 			"",
@@ -496,7 +496,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 		val testRdd = sc.parallelize(groupedArimaTest)
 		val testDf = sqlContext.createDataFrame(testRdd, testStructType)
 
-		val (result, _) = ForecastPredictor().predict[Double, Double](
+		val (result, _, accuracy) = ForecastPredictor().predict[Double, Double](
 			trainDf,
 			testDf,
 			"Store",
@@ -534,7 +534,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 				StructField("Open", BooleanType)))
 		val testRdd = sc.parallelize(groupedTest)
 		val testDf = sqlContext.createDataFrame(testRdd, testStructType)
-		val (result, _) = ForecastPredictor().predictSmallModelFeatureBased[Double, Int](
+		val (result, _, accuracy) = ForecastPredictor().predictSmallModelFeatureBased[Double, Int](
 			trainDfDouble,
 			testDf,
 			"Sales",
@@ -609,7 +609,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 			} else seq
 			Row(newSeq: _*)
 		}, trainSchema)
-		val (bestDf, _) = eleflow.uberdata
+		val (bestDf, _, accuracy) = eleflow.uberdata
 			.ForecastPredictor()
 			.predictSmallModelFeatureBased[Int, Double](
 			convertedTrain,
@@ -698,7 +698,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 			}
 			Row(newSeq: _*)
 		}, trainSchema)
-		val (bestDf, _) = eleflow.uberdata
+		val (bestDf, _, accuracy) = eleflow.uberdata
 			.ForecastPredictor()
 			.predictSmallModelFeatureBased[Int, Short](
 			convertedTrain,

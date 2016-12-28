@@ -88,14 +88,15 @@ class XGBoostSmallModel[G](
               index == groupByColumnIndex ||
               index == timeColIndex
         }.map(_._1)
+        val metric = metrics.minBy(_.metricResult).metricResult
         val featuresAsFloat = features.toArray.map(_.toFloat)
         val labeledPoints = Iterator(XGBLabeledPoint.fromDenseVector(0, featuresAsFloat))
         val forecast = bestModel.boosterInstance
           .predict(new DMatrix(labeledPoints, null))
           .flatMap(_.map(_.toDouble))
-        Row(
+          Row(
           rowValues :+ SupportedAlgorithm.XGBoostAlgorithm.toString :+
-            bestModel.params.map(f => f._1 -> f._2.toString) :+ forecast.head: _*)
+            bestModel.params.map(f => f._1 -> f._2.toString) :+ metric :+ forecast.head: _*)
     }
     dataSet.sqlContext.createDataFrame(predictions, predSchema).cache
   }
@@ -114,6 +115,7 @@ class XGBoostSmallModel[G](
               $(timeCol).get,
               IUberdataForecastUtil.ALGORITHM,
               IUberdataForecastUtil.PARAMS).contains(f.name)))
+      .add(StructField(IUberdataForecastUtil.METRIC_COL_NAME, DoubleType))
       .add(StructField(IUberdataForecastUtil.FEATURES_PREDICTION_COL_NAME, DoubleType))
 
   override def copy(extra: ParamMap): XGBoostSmallModel[G] = {
