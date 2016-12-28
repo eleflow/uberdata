@@ -95,6 +95,7 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
       case true =>
         val booster: XGBoostModel = getBooster(labeledPointDataSet,
           $(xGBoostRegLinearParams), $(xGBoostRounds))
+
         new XGBoostBigModelTimeSeries[G](uid, Seq((new ParamMap(), booster)))
         .setIdcol($(idCol))
         .setLabelcol($(labelCol))

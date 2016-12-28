@@ -29,6 +29,7 @@ import org.apache.spark.sql.hive.thriftserver.HiveThriftServer2
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 import ClusterSettings._
 import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.types.DataType
 
 import scala.annotation.tailrec
 import scala.sys.process._
@@ -311,6 +312,13 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
       case Some(ctx) => ctx
     }
   }
+
+  def load(file: String, separator: String, loadSchema: Seq[DataType]): Dataset = {
+    val fileDataSet = Dataset(this, file, separator)
+    fileDataSet.applyColumnTypes(loadSchema)
+    fileDataSet
+  }
+
 
   def load(file: String, separator: String = ","): Dataset =
     Dataset(this, file, separator)
