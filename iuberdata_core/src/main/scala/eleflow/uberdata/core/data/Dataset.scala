@@ -466,7 +466,6 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 			f.nonEmpty &&
 				f.forall(!_.isEmpty)
 		}
-		dataFrame.join()
 		if (df.count == 0) {
 			dataRdd.first().toSeq.map(_.toString).toArray
 		} else {
