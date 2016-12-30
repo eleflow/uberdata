@@ -31,188 +31,204 @@ import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 
 
 /**
-  * Created by caio.martins on 22/09/16.
-  */
+ * Created by caio.martins on 22/09/16.
+ */
 
 object BinaryClassification {
-  def apply(): BinaryClassification = new BinaryClassification
+	def apply(): BinaryClassification = new BinaryClassification
 }
 
 class BinaryClassification {
 
-  def predictUsingWindowsApproach(
-                                   train: DataFrame,
-                                   test: DataFrame,
-                                   algorithm: Algorithm,
-                                   labelCol: String,
-                                   idCol: String,
-                                   featuresCol: Seq[String],
-                                   rounds: Int = 2000,
-                                   params: Map[String, Any] = Map.empty[String, Any],
-                                   trainingWindowSize: Int) : (DataFrame, DataFrame, Double, Double) = {
+	def predictUsingWindowsApproach(
+																	 train: DataFrame,
+																	 test: DataFrame,
+																	 algorithm: Algorithm,
+																	 labelCol: String,
+																	 idCol: String,
+																	 featuresCol: Seq[String],
+																	 rounds: Int = 2000,
+																	 params: Map[String, Any] = Map.empty[String, Any],
+																	 trainingWindowSize: Int): (DataFrame, DataFrame, Double, Double) = {
 
-    val testDataSize = test.count().toInt
-    val trainDataSize = train.count().toInt
-    val numberOfPredictionsByModelUpdate = testDataSize
-    val privateid = "privateid"
-    val decile = "decile"
+		val testDataSize = test.count().toInt
+		val trainDataSize = train.count().toInt
+		val numberOfPredictionsByModelUpdate = testDataSize
+		val privateid = "privateid"
+		val decile = "decile"
 
-    if(trainingWindowSize >= trainDataSize) {
-      throw new IllegalArgumentException( "trainingWindowSize is greater than train dataframe size ")
-    }
+		if (trainingWindowSize >= trainDataSize) {
+			throw new IllegalArgumentException("trainingWindowSize is greater than train dataframe size ")
+		}
 
-    if(trainDataSize < testDataSize) {
-      throw new IllegalArgumentException( "train dataframe size has to be greater than test dataframe size")
-    }
+		if (trainDataSize < testDataSize) {
+			throw new IllegalArgumentException("train dataframe size has to be greater than test dataframe size")
+		}
 
-    val orderedTrainDataFrame = dfZipWithIndex(train.orderBy(idCol), 1, privateid)
+		val orderedTrainDataFrame = dfZipWithIndex(train.orderBy(idCol), 1, privateid)
 
-    var indexes = (1 to (trainDataSize-(testDataSize+trainingWindowSize)+1) by numberOfPredictionsByModelUpdate).toArray
+		var indexes = (1 to (trainDataSize - (testDataSize + trainingWindowSize) + 1) by numberOfPredictionsByModelUpdate).toArray
 
-    if(indexes.size == 0) {
-      indexes = Array(1)
-    }
+		if (indexes.size == 0) {
+			indexes = Array(1)
+		}
 
-    val predictionsForTrainingSet = indexes.map { index =>
-      val clause1 = privateid + " >= " + index
-      val clause2 = privateid + " <= " + (index + trainingWindowSize-1)
-      val clause3 = privateid + " > " + (index + trainingWindowSize-1)
-      val clause4 = privateid + " <= " + (index + trainingWindowSize + numberOfPredictionsByModelUpdate - 1)
-      val trainingPartial = orderedTrainDataFrame.where(clause1).where(clause2).drop(privateid).repartition(1)
-      val testPartial = orderedTrainDataFrame.where(clause3).where(clause4).drop(privateid).repartition(1)
+		val predictionsForTrainingSet = indexes.map { index =>
+			val clause1 = privateid + " >= " + index
+			val clause2 = privateid + " <= " + (index + trainingWindowSize - 1)
+			val clause3 = privateid + " > " + (index + trainingWindowSize - 1)
+			val clause4 = privateid + " <= " + (index + trainingWindowSize + numberOfPredictionsByModelUpdate - 1)
+			val trainingPartial = orderedTrainDataFrame.where(clause1).where(clause2).drop(privateid).repartition(1)
+			val testPartial = orderedTrainDataFrame.where(clause3).where(clause4).drop(privateid).repartition(1)
 
-      val (predictionsPartial, modelPartial) = predict(trainingPartial, testPartial, algorithm, labelCol, idCol, featuresCol, rounds, params )
-      insertDecileColumn(predictionsPartial, idCol, decile)
+			val (predictionsPartial, modelPartial) = predict(trainingPartial, testPartial, algorithm, labelCol, idCol, featuresCol, rounds, params)
+			insertDecileColumn(predictionsPartial, idCol, decile)
 
-    }
+		}
 
-    val allPredictionsForTrainingSetDF = predictionsForTrainingSet.toSeq.reduce( _.unionAll(_)).withColumnRenamed(idCol, "id1")
-    val predictionsForTrainingSetStats = allPredictionsForTrainingSetDF.join(orderedTrainDataFrame, allPredictionsForTrainingSetDF("id1") === orderedTrainDataFrame(idCol)).select(idCol, decile, labelCol)
-    val conversionRateDF0 = predictionsForTrainingSetStats.groupBy(decile).agg("y" -> "sum").withColumnRenamed("sum(y)", "soma_convertidos")
-    val totalConversions= conversionRateDF0.rdd.map(_(1).asInstanceOf[Long]).reduce(_+_)
-    val conversionRateDF = conversionRateDF0.withColumn("conversion_rate", conversionRateDF0("soma_convertidos")/totalConversions).select("decile", "conversion_rate")
+		val allPredictionsForTrainingSetDF = predictionsForTrainingSet.toSeq.reduce(_.unionAll(_)).withColumnRenamed(idCol, "id1")
+		val predictionsForTrainingSetStats = allPredictionsForTrainingSetDF.join(orderedTrainDataFrame, allPredictionsForTrainingSetDF("id1") === orderedTrainDataFrame(idCol)).select(idCol, decile, labelCol)
+		val conversionRateDF0 = predictionsForTrainingSetStats.groupBy(decile).agg("y" -> "sum").withColumnRenamed("sum(y)", "soma_convertidos")
+		val totalConversions = conversionRateDF0.rdd.map(_ (1).asInstanceOf[Long]).reduce(_ + _)
+		val conversionRateDF = conversionRateDF0.withColumn("conversion_rate", conversionRateDF0("soma_convertidos") / totalConversions).select("decile", "conversion_rate")
 
-    val clause1 = privateid + " > " + (trainDataSize - trainingWindowSize)
-    val clause2 = privateid + " <= " + trainDataSize
-    val trainDataForPredictionToBeReturned = orderedTrainDataFrame.where(clause1).where(clause2).drop(privateid).repartition(1)
-    val (predictionsForTestSet, modelForTestSet) = predict(trainDataForPredictionToBeReturned, test.repartition(1), algorithm, labelCol, idCol, featuresCol, rounds, params)
+		val clause1 = privateid + " > " + (trainDataSize - trainingWindowSize)
+		val clause2 = privateid + " <= " + trainDataSize
+		val trainDataForPredictionToBeReturned = orderedTrainDataFrame.where(clause1).where(clause2).drop(privateid).repartition(1)
+		val (predictionsForTestSet, modelForTestSet) = predict(trainDataForPredictionToBeReturned, test.repartition(1), algorithm, labelCol, idCol, featuresCol, rounds, params)
 
-    val predictionsAndLabels = allPredictionsForTrainingSetDF.join(orderedTrainDataFrame, allPredictionsForTrainingSetDF("id1") === orderedTrainDataFrame(idCol)).select("prediction", labelCol)
-    val metricsAUC = new BinaryClassificationMetrics(predictionsAndLabels.rdd.map{case Row(a: Float, b: Long) => (a.toDouble,b.toDouble)})
+		val predictionsAndLabels = allPredictionsForTrainingSetDF.join(orderedTrainDataFrame, allPredictionsForTrainingSetDF("id1") === orderedTrainDataFrame(idCol)).select("prediction", labelCol)
+		val metricsAUC = new BinaryClassificationMetrics(predictionsAndLabels.rdd.map { case Row(a: Float, b: Long) => (a.toDouble, b.toDouble) })
 
-    (conversionRateDF, predictionsForTestSet, metricsAUC.areaUnderPR, metricsAUC.areaUnderROC)
-  }
+		(conversionRateDF, predictionsForTestSet, metricsAUC.areaUnderPR, metricsAUC.areaUnderROC)
+	}
 
-  def predict(
-               train: DataFrame,
-               test: DataFrame,
-               algorithm: Algorithm,
-               labelCol: String,
-               idCol: String,
-               featuresCol: Seq[String],
-               rounds: Int = 2000,
-               params: Map[String, Any] = Map.empty[String, Any]): (DataFrame, PipelineModel) = {
-    val pipeline = algorithm match {
-      case XGBoostAlgorithm =>
-        prepareXGBoostBigModel(labelCol, idCol, featuresCol, train.schema, rounds, params)
-      case _ => throw new UnsupportedOperationException()
-    }
-    val model = pipeline.fit(train.cache)
-    val predictions = model.transform(test).cache
-    (predictions.sort(idCol), model)
-  }
+	def predict(
+							 train: DataFrame,
+							 test: DataFrame,
+							 algorithm: Algorithm,
+							 labelCol: String,
+							 idCol: String,
+							 featuresCol: Seq[String],
+							 rounds: Int = 2000,
+							 params: Map[String, Any] = Map.empty[String, Any]): (DataFrame, PipelineModel) = {
+		val pipeline = algorithm match {
+			case XGBoostAlgorithm =>
+				prepareXGBoostBigModel(labelCol, idCol, featuresCol, train.schema, rounds, params)
+			case _ => throw new UnsupportedOperationException()
+		}
+		val united = train.cache.unionAll(test.cache)
+		val encoded = applyOneHotEncoder(united, featuresCol)
+		val joinIdColName = "joinIdCol"
+		val idTrain = train.select(col(idCol).alias(joinIdColName))
+		val idTest = test.select(col(idCol).alias(joinIdColName))
+		val encodedTrain = idTrain.join(encoded, idTrain(joinIdColName) === encoded(idCol))
+		val encodedTest = idTest.join(encoded, idTest
+		(joinIdColName) === encoded(idCol))
+		val model = pipeline.fit(encodedTrain.cache)
+		val predictions = model.transform(encodedTest.cache).cache
+		(predictions.sort(idCol), model)
+	}
 
-  def prepareXGBoostBigModel[L, G](
-                                    labelCol: String,
-                                    idCol: String,
-                                    featuresCol: Seq[String],
-                                    schema: StructType,
-                                    rounds: Int,
-                                    params: Map[String, Any])(implicit ct: ClassTag[L], gt: ClassTag[G]): Pipeline = {
+	private def applyOneHotEncoder(united: DataFrame, featuresCol: Seq[String])
+	= {
+		val stringColumns = extractStringColumns(united.schema, featuresCol)
+		val stringIndexers = stringColumns.map { column =>
+			new StringIndexer().setInputCol(column).setOutputCol(s"${column}Index")
+		}.toArray
 
-    val xgboost = new XGBoostBestBigModelFinder[L, G]()
-      .setLabelCol(labelCol)
-      .setIdCol(idCol)
+		val encoder = stringColumns.map { column =>
+			new OneHotEncoder().setInputCol(s"${column}Index").setOutputCol(s"${column}Encoder")
+		}.toArray
 
-    new Pipeline().setStages(
-      createXGBoostPipelineStages(labelCol, featuresCol, Some(idCol), schema = schema) :+ xgboost)
-  }
+		val pipeline = new Pipeline().setStages(stringIndexers ++ encoder)
+		pipeline.fit(united).transform(united)
+	}
 
-  def createXGBoostPipelineStages(labelCol: String,
-                                  featuresCol: Seq[String],
-                                  idCol: Option[String] = None,
-                                  schema: StructType): Array[PipelineStage] = {
+	def prepareXGBoostBigModel[L, G](
+																		labelCol: String,
+																		idCol: String,
+																		featuresCol: Seq[String],
+																		schema: StructType,
+																		rounds: Int,
+																		params: Map[String, Any])(implicit ct: ClassTag[L], gt: ClassTag[G]): Pipeline = {
 
-    val allColumns = schema.map(_.name).toArray
+		val xgboost = new XGBoostBestBigModelFinder[L, G]()
+			.setLabelCol(labelCol)
+			.setIdCol(idCol)
 
-    val stringColumns = schema
-      .filter(f => f.dataType.isInstanceOf[StringType] && featuresCol.contains(f.name))
-      .map(_.name)
+		new Pipeline().setStages(
+			createXGBoostPipelineStages(labelCol, featuresCol, Some(idCol), schema = schema) :+ xgboost)
+	}
 
-    val nonStringColumns = allColumns.filter(
-      f =>
-        !stringColumns.contains(f)
-          && featuresCol.contains(f))
+	private def extractStringColumns(schema: StructType, featuresCol: Seq[String]): Seq[String] =
+		schema.filter(f => f.dataType.isInstanceOf[StringType] && featuresCol.contains(f.name))
+			.map(_.name)
 
+	def createXGBoostPipelineStages(labelCol: String,
+																	featuresCol: Seq[String],
+																	idCol: Option[String] = None,
+																	schema: StructType): Array[PipelineStage] = {
 
-    val stringIndexers = stringColumns.map { column =>
-      new StringIndexer().setInputCol(column).setOutputCol(s"${column}Index").setHandleInvalid("skip")
-    }.toArray
+		val allColumns = schema.map(_.name).toArray
 
-    val encoder = stringColumns.map { column =>
-      new OneHotEncoder().setInputCol(s"${column}Index").setOutputCol(s"${column}Encoder")
-    }.toArray
+		val stringColumns = extractStringColumns(schema, featuresCol)
 
-    val nonStringIndex = "nonStringIndex"
-    val columnIndexers = new VectorizeEncoder()
-      .setInputCol(nonStringColumns)
-      .setOutputCol(nonStringIndex)
-      .setLabelCol(labelCol)
-      .setIdCol(idCol.getOrElse(""))
+		val nonStringColumns = allColumns.filter(
+			f =>
+				!stringColumns.contains(f)
+					&& featuresCol.contains(f))
 
-    val assembler = new VectorAssembler()
-      .setInputCols(stringColumns.map(f => s"${f}Index").toArray :+ nonStringIndex)
-      .setOutputCol(IUberdataForecastUtil.FEATURES_COL_NAME)
+		val nonStringIndex = "nonStringIndex"
+		val columnIndexers = new VectorizeEncoder()
+			.setInputCol(nonStringColumns)
+			.setOutputCol(nonStringIndex)
+			.setLabelCol(labelCol)
+			.setIdCol(idCol.getOrElse(""))
 
-    stringIndexers ++ encoder :+ columnIndexers :+ assembler
-  }
+		val assembler = new VectorAssembler()
+			.setInputCols(stringColumns.map(f => s"${f}Index").toArray :+ nonStringIndex)
+			.setOutputCol(IUberdataForecastUtil.FEATURES_COL_NAME)
 
-  private def dfZipWithIndex(
-                      df: DataFrame,
-                      offset: Int = 1,
-                      colName: String = "id",
-                      inFront: Boolean = true
-                    ) : DataFrame = {
-    df.sqlContext.createDataFrame(
-      df.rdd.zipWithIndex.map(ln =>
-        Row.fromSeq(
-          (if (inFront) Seq(ln._2 + offset) else Seq())
-            ++ ln._1.toSeq ++
-            (if (inFront) Seq() else Seq(ln._2 + offset))
-        )
-      ),
-      StructType(
-        (if (inFront) Array(StructField(colName,LongType,false)) else Array[StructField]())
-          ++ df.schema.fields ++
-          (if (inFront) Array[StructField]() else Array(StructField(colName,LongType,false)))
-      )
-    )
-  }
+		Array(columnIndexers, assembler)
+	}
 
-  def insertDecileColumn (
-                                   df: DataFrame,
-                                   idCol: String,
-                                   decile: String
-                                 ): DataFrame = {
-    val window = Window.orderBy("prediction")
-    val predictionsPartialWithInvertedDeciles =  df.withColumn(decile, ntile(10).over(window) ).sort(idCol)
+	private def dfZipWithIndex(
+															df: DataFrame,
+															offset: Int = 1,
+															colName: String = "id",
+															inFront: Boolean = true
+														): DataFrame = {
+		df.sqlContext.createDataFrame(
+			df.rdd.zipWithIndex.map(ln =>
+				Row.fromSeq(
+					(if (inFront) Seq(ln._2 + offset) else Seq())
+						++ ln._1.toSeq ++
+						(if (inFront) Seq() else Seq(ln._2 + offset))
+				)
+			),
+			StructType(
+				(if (inFront) Array(StructField(colName, LongType, false)) else Array[StructField]())
+					++ df.schema.fields ++
+					(if (inFront) Array[StructField]() else Array(StructField(colName, LongType, false)))
+			)
+		)
+	}
 
-    val predictionsPartialRdd = predictionsPartialWithInvertedDeciles.select(idCol, "prediction", decile).rdd.map {
-      case Row(id: Float, prediction: Float, dec: Int) => Row(id, prediction, Math.abs(11 - dec))
-    }
+	def insertDecileColumn(
+													df: DataFrame,
+													idCol: String,
+													decile: String
+												): DataFrame = {
+		val window = Window.orderBy("prediction")
+		val predictionsPartialWithInvertedDeciles = df.withColumn(decile, ntile(10).over(window)).sort(idCol)
 
-    df.sqlContext.createDataFrame(predictionsPartialRdd, StructType(Array(StructField(idCol,FloatType),StructField("prediction", FloatType),StructField(decile,IntegerType))))
+		val predictionsPartialRdd = predictionsPartialWithInvertedDeciles.select(idCol, "prediction", decile).rdd.map {
+			case Row(id: Float, prediction: Float, dec: Int) => Row(id, prediction, Math.abs(11 - dec))
+		}
 
-  }
+		df.sqlContext.createDataFrame(predictionsPartialRdd, StructType(Array(StructField(idCol, FloatType), StructField("prediction", FloatType), StructField(decile, IntegerType))))
+
+	}
 
 }
