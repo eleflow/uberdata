@@ -156,7 +156,7 @@ class BinaryClassification {
 
 
     val stringIndexers = stringColumns.map { column =>
-      new StringIndexer().setInputCol(column).setOutputCol(s"${column}Index")
+      new StringIndexer().setInputCol(column).setOutputCol(s"${column}Index").setHandleInvalid("skip")
     }.toArray
 
     val encoder = stringColumns.map { column =>
