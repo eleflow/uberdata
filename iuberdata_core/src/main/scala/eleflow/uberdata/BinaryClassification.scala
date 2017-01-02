@@ -111,19 +111,18 @@ class BinaryClassification {
 							 idCol: String,
 							 featuresCol: Seq[String],
 							 rounds: Int = 2000,
-							 params: Map[String, Any] = ): (DataFrame, PipelineModel) = {
+							 params: Map[String, Any] = Map.empty[String, Any]): (DataFrame, PipelineModel) = {
 		val pipeline = algorithm match {
 			case XGBoostAlgorithm =>
 				prepareXGBoostBigModel(labelCol, idCol, featuresCol, train.schema, rounds, params)
 			case _ => throw new UnsupportedOperationException()
 		}
-		val united = train.cache.unionAll(test.cache)
+		val united = train.cache.drop(labelCol).unionAll(test.cache)
 		val encoded = applyOneHotEncoder(united, featuresCol)
 		val joinIdColName = "joinIdCol"
-		val idTrain = train.select(col(idCol).alias(joinIdColName))
-		val idTest = test.select(col(idCol).alias(joinIdColName))
-		val encodedTrain = idTrain.join(encoded, idTrain(joinIdColName) === encoded(idCol))
-		val encodedTest = idTest.join(encoded, idTest
+		val encodedTrain = train.select(col(idCol).alias(joinIdColName)).join(encoded, train
+		(joinIdColName) === encoded(idCol))
+		val encodedTest = test.select(col(idCol).alias(joinIdColName)).join(encoded, test
 		(joinIdColName) === encoded(idCol))
 		val model = pipeline.fit(encodedTrain.cache)
 		val predictions = model.transform(encodedTest.cache).cache
