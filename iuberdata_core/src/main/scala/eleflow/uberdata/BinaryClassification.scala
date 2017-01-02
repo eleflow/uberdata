@@ -111,7 +111,7 @@ class BinaryClassification {
 							 idCol: String,
 							 featuresCol: Seq[String],
 							 rounds: Int = 2000,
-							 params: Map[String, Any] = Map.empty[String, Any]): (DataFrame, PipelineModel) = {
+							 params: Map[String, Any] = ): (DataFrame, PipelineModel) = {
 		val pipeline = algorithm match {
 			case XGBoostAlgorithm =>
 				prepareXGBoostBigModel(labelCol, idCol, featuresCol, train.schema, rounds, params)
@@ -154,7 +154,7 @@ class BinaryClassification {
 
 		val xgboost = new XGBoostBestBigModelFinder[L, G]()
 			.setLabelCol(labelCol)
-			.setIdCol(idCol)
+			.setIdCol(idCol).setXGBoostBinaryParams(params)
 
 		new Pipeline().setStages(
 			createXGBoostPipelineStages(labelCol, featuresCol, Some(idCol), schema = schema) :+ xgboost)
