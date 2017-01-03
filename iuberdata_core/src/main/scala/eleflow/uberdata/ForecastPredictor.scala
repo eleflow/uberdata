@@ -354,7 +354,7 @@ class ForecastPredictor extends Serializable with Logging {
                                    validationCol: String,
                                    nFutures: Int,
                                    meanAverageWindowSize: Seq[Int],
-                                   paramRange: Array[Int])(implicit ct: ClassTag[G]) = {
+                                   paramRange: Array[Int])(implicit ct: ClassTag[G]): Pipeline = {
     algorithm match {
       case Arima =>
         prepareARIMAPipeline[G](groupByCol, labelCol, validationCol, timeCol, nFutures, paramRange)
