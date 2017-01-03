@@ -120,9 +120,13 @@ class BinaryClassification {
 		val united = train.cache.drop(labelCol).unionAll(test.cache)
 		val encoded = applyOneHotEncoder(united, featuresCol)
 		val joinIdColName = "joinIdCol"
+<<<<<<< HEAD
 		val encodedTrain = train.select(col(idCol).alias(joinIdColName)).join(encoded, col
+=======
+		val encodedTrain = train.select(col(idCol).alias(joinIdColName), col(labelCol)).join(encoded, col
+>>>>>>> e5883206bcd6232ae0b7fbe675b6e95f33ab3da3
 		(joinIdColName) === encoded(idCol))
-		val encodedTest = test.select(col(idCol).alias(joinIdColName)).join(encoded, test
+		val encodedTest = test.select(col(idCol).alias(joinIdColName)).join(encoded, col
 		(joinIdColName) === encoded(idCol))
 		val model = pipeline.fit(encodedTrain.cache)
 		val predictions = model.transform(encodedTest.cache).cache
