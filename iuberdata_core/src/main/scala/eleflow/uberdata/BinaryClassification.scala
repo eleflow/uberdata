@@ -117,11 +117,11 @@ class BinaryClassification {
 				prepareXGBoostBigModel(labelCol, idCol, featuresCol, train.schema, rounds, params)
 			case _ => throw new UnsupportedOperationException()
 		}
+		val joinIdColName = "joinIdColNam"
 		val united = train.cache.drop(labelCol).unionAll(test.cache)
 		val encoded = applyOneHotEncoder(united, featuresCol)
-		val joinIdColName = "joinIdCol"
-		val encodedTrain = train.select(col(idCol).alias(joinIdColName), col(labelCol)).join(encoded, col
-		(joinIdColName) === encoded(idCol))
+		val encodedTrain = train.select(col(idCol).alias(joinIdColName), col(labelCol)).
+			join(encoded, col(joinIdColName) === encoded(idCol))
 		val encodedTest = test.select(col(idCol).alias(joinIdColName)).join(encoded, col
 		(joinIdColName) === encoded(idCol))
 		val model = pipeline.fit(encodedTrain.cache)
