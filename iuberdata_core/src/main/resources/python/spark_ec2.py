@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+
 from __future__ import division, print_function, with_statement
 
 import codecs
@@ -413,7 +414,10 @@ def launch_cluster(conn, opts, cluster_name):
   print("Setting up security groups...")
   master_group = get_or_make_group(conn, cluster_name + "-master")
   slave_group = get_or_make_group(conn, cluster_name + "-slaves")
-  sparknotebook_group = get_or_make_group(conn, "IUberdataApplication")
+
+  security_group = os.popen("curl -s http://169.254.169.254/latest/meta-data/security-groups").read()
+
+  sparknotebook_group = get_or_make_group(conn, security_group)
   if master_group.rules == []: # Group was just now created
     master_group.authorize(src_group=master_group)
     master_group.authorize(src_group=slave_group)
