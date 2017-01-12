@@ -155,6 +155,7 @@ class BinaryClassification {
 		val xgboost = new XGBoostBestBigModelFinder[L, G]()
 			.setLabelCol(labelCol)
 			.setIdCol(idCol).setXGBoostBinaryParams(params)
+		  .setXGBoostRounds(rounds)
 
 		new Pipeline().setStages(
 			createXGBoostPipelineStages(labelCol, featuresCol, Some(idCol), schema = schema) :+ xgboost)
