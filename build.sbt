@@ -45,7 +45,7 @@ lazy val iuberdata_core = project settings (libraryDependencies ++= Seq(
     "org.easymock" % "easymock" % "3.4" % "test",
     "com.typesafe.play" %% "play-json" % "2.4.6",
     "com.cloudera.sparkts" % "sparkts" % "0.3.0" % "provided",
-    "ml.dmlc" % "xgboost4j" % "0.7" % "provided",
+    "ml.dmlc" % "xgboost4j" % "0.5" % "provided",
     "ml.dmlc" % "xgboost4j-spark" % "0.5" % "provided",
     "com.databricks" % "spark-csv_2.10" % "1.5.0",
     "mysql" % "mysql-connector-java" % mysqlV % "runtime"
