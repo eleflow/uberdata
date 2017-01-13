@@ -81,7 +81,7 @@ class BinaryClassification {
 			val trainingPartial = orderedTrainDataFrame.where(clause1).where(clause2).drop(privateid).repartition(1)
 			val testPartial = orderedTrainDataFrame.where(clause3).where(clause4).drop(privateid).repartition(1)
 
-			val (predictionsPartial, modelPartial) = predict(trainingPartial, testPartial, algorithm, labelCol, idCol, featuresCol, rounds, params)
+			val (predictionsPartial, modelPartial) = predict(trainingPartial, testPartial.drop(labelCol), algorithm, labelCol, idCol, featuresCol, rounds, params)
 			insertDecileColumn(predictionsPartial, idCol, decile)
 
 		}

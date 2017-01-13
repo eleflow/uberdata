@@ -31,6 +31,7 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import ml.dmlc.xgboost4j.{LabeledPoint => XGBLabeledPoint}
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{DoubleType, StringType, TimestampType}
 import org.apache.spark.util.random
 import org.scalatest.{FlatSpec, Matchers, Suite}
@@ -127,14 +128,14 @@ class TestXGBoost
 		val test = Dataset(context, s"$defaultFilePath/data/bank-test.csv")
 
 		val trainIdCol = IUberdataForecastUtil.createIdColColumn(train, context)
-		val testIdCol = IUberdataForecastUtil.createIdColColumn(test, context).drop(test.col("y"))
+		val testIdCol = IUberdataForecastUtil.createIdColColumn(test, context)
 
 		val (prediction, model) = BinaryClassification().predict(
 			trainIdCol,
-			testIdCol,
+			testIdCol.drop(col("y")),
 			SupportedAlgorithm.XGBoostAlgorithm,
 			"y",
-			"idCol",
+			"id",
 			Seq("age", "job", "marital",
 				"education", "housing", "loan", "default",
 				"duration", "campaign", "pdays",
@@ -142,7 +143,7 @@ class TestXGBoost
 				"conspriceidx", "consconfidx", "euribor3m", "nremployed"))
 		assert(prediction.count == 250)
 
-		val metrics = new BinaryClassificationMetrics(joinTestPredictionDfMetrics(prediction, testIdCol, "idCol", "idCol"))
+		val metrics = new BinaryClassificationMetrics(joinTestPredictionDfMetrics(prediction, testIdCol, "id", "id"))
 		print(metrics.areaUnderPR )
 		assert(metrics.areaUnderPR > 0.44 )
 	}
@@ -153,14 +154,14 @@ class TestXGBoost
 		val test = Dataset(context, s"$defaultFilePath/data/bank-test.csv")
 
 		val trainIdCol = IUberdataForecastUtil.createIdColColumn(train, context)
-		val testIdCol = IUberdataForecastUtil.createIdColColumn(test, context).drop(test.col("y"))
+		val testIdCol = IUberdataForecastUtil.createIdColColumn(test, context).drop(col("y"))
 
 		val (conversionRate, prediction, areaUnderPR, areaUnderROC) = BinaryClassification().predictUsingWindowsApproach(
 			trainIdCol,
 			testIdCol,
 			SupportedAlgorithm.XGBoostAlgorithm,
 			"y",
-			"idCol",
+			"id",
 			Seq("age", "marital", "housing", "loan", "duration", "campaign",
 				"pdays", "previous", "empvarrate", "conspriceidx", "consconfidx", "euribor3m", "nremployed"),
 			2000,
