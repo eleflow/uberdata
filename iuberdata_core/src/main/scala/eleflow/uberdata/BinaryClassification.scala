@@ -16,6 +16,7 @@
 
 package eleflow.uberdata
 
+import eleflow.uberdata.core.exception.InvalidDataException
 import eleflow.uberdata.enums.SupportedAlgorithm._
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._
@@ -112,6 +113,14 @@ class BinaryClassification {
 							 featuresCol: Seq[String],
 							 rounds: Int = 2000,
 							 params: Map[String, Any] = Map.empty[String, Any]): (DataFrame, PipelineModel) = {
+		val trainIds = train.select(idCol)
+		val testIds = test.select(idCol)
+		val commonIds = trainIds.join(testIds, trainIds(idCol) === testIds(idCol))
+
+		if(commonIds.count() > 0) {
+			throw new InvalidDataException(s"Train Dataset Ids must be different of Test Dataset Ids")
+		}
+
 		val pipeline = algorithm match {
 			case XGBoostAlgorithm =>
 				prepareXGBoostBigModel(labelCol, idCol, featuresCol, train.schema, rounds, params)
