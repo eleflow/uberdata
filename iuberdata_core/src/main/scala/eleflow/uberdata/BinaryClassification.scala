@@ -130,9 +130,9 @@ class BinaryClassification {
 		val united = train.cache.drop(labelCol).unionAll(test.cache)
 		val encoded = applyOneHotEncoder(united, featuresCol)
 		val encodedTrain = train.select(col(idCol).alias(joinIdColName), col(labelCol)).
-			join(encoded, col(joinIdColName) === encoded(idCol))
+			join(encoded, col(joinIdColName) === encoded(idCol)).repartition(1)
 		val encodedTest = test.select(col(idCol).alias(joinIdColName)).join(encoded, col
-		(joinIdColName) === encoded(idCol))
+		(joinIdColName) === encoded(idCol)).repartition(1)
 		val model = pipeline.fit(encodedTrain.cache)
 		val predictions = model.transform(encodedTest.cache).cache
 		(predictions.sort(idCol), model)
