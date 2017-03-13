@@ -25,8 +25,14 @@ val scalaV = "2.10.6"
 
 //WARNING: changing the zeppelin version requires changing the dependency version in setup_zeppelin_local.sh and iuberdata.sh
 lazy val zeppelin_version = "0.6.1"
-lazy val sparkVersion = "1.6.2"
+lazy val sparkVersion = "2.1.0"
 lazy val mysqlV = "5.1.34"
+
+lazy val commonSettings = Seq(
+  organization := "br.com.eleflow",
+  version := "0.1.0",
+  scalaVersion := "2.10.6"
+)
 
 scalaVersion := scalaV
 
@@ -49,12 +55,12 @@ lazy val iuberdata_core = project settings (libraryDependencies ++= Seq(
     "ml.dmlc" % "xgboost4j-spark" % "0.5" % "provided",
     "com.databricks" % "spark-csv_2.10" % "1.5.0",
     "mysql" % "mysql-connector-java" % mysqlV % "runtime"
-  )) settings (dependencyOverrides ++= Set(
+  )) settings (commonSettings, dependencyOverrides ++= Set(
     "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.4"
   )) enablePlugins JavaAppPackaging
 
 lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;compile->compile") settings
-    (libraryDependencies ++= Seq(
+    (commonSettings, libraryDependencies ++= Seq(
       "org.apache.zeppelin" % "zeppelin-interpreter" % zeppelin_version % "provided",
       "org.apache.zeppelin" %% "zeppelin-spark" % zeppelin_version % "provided" excludeAll
         ExclusionRule(
@@ -69,7 +75,7 @@ lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;co
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.4" % "provided",
       "org.scala-lang" % "scala-compiler" % scalaV,
       "org.apache.spark" %% "spark-streaming" % sparkVersion % "provided",
-      "org.apache.spark" %% "spark-streaming-twitter" % sparkVersion % "provided",
+//      "org.apache.spark" %% "spark-streaming-twitter" % sparkVersion % "provided",
       "org.apache.spark" %% "spark-catalyst" % sparkVersion % "provided",
       "org.apache.maven" % "maven-plugin-api" % "3.0" exclude ("org.codehaus.plexus", "plexus-utils")
         exclude ("org.sonatype.sisu", "sisu-inject-plexus")
@@ -86,7 +92,7 @@ lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;co
 lazy val iuberdata_addon_zeppelin = project settings (libraryDependencies ++= Seq(
     "org.apache.zeppelin" % "zeppelin-zengine" % zeppelin_version % "provided",
     "org.scala-lang" % "scala-reflect" % scalaV
-  )) settings (dependencyOverrides ++= Set(
+  )) settings (commonSettings, dependencyOverrides ++= Set(
     "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.4"
   )) enablePlugins JavaAppPackaging
 
