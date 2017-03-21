@@ -48,7 +48,7 @@ abstract class KeyValueEvaluator[T] extends Params {
   def evaluate(dataset: DataFrame): RDD[(T, (Int, Double))]
 
   def evaluate(
-    dataset: (T, (Int, org.apache.spark.mllib.linalg.Vector))
+    dataset: (T, (Int, org.apache.spark.ml.linalg.Vector))
   ): RDD[(T, (Int, Double))]
 
   /**

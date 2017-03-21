@@ -21,7 +21,7 @@ import Dataset._
 import eleflow.uberdata.core.enums.DataSetType
 import eleflow.uberdata.core.exception.UnexpectedValueException
 
-import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -168,14 +168,14 @@ object DataTransformer {
             ((rowIndexD, row(targetIndex)),
              LabeledPoint(
                rowIndexD,
-               Vectors.sparse(columnsSize, indexes.toArray, values.toArray)
+               org.apache.spark.mllib.linalg.Vectors.fromML(Vectors.sparse(columnsSize, indexes.toArray, values.toArray))
              ))
           case DataSetType.Train =>
             val idIndex = if (idIndices.isEmpty) 0 else idIndices.head
             ((rowIndexD, row(idIndex)),
              LabeledPoint(
                rowIndexD,
-               Vectors.sparse(columnsSize, indexes.toArray, values.toArray)
+               org.apache.spark.mllib.linalg.Vectors.fromML(Vectors.sparse(columnsSize, indexes.toArray, values.toArray))
              ))
         }
     }
@@ -268,6 +268,6 @@ object DataTransformer {
     val (attributes, indexes) = values.unzip
     val vector =
       Vectors.sparse(columnsIndex.size, indexes.toArray, attributes.toArray)
-    LabeledPoint(lp.label, vector)
+    LabeledPoint(lp.label, org.apache.spark.mllib.linalg.Vectors.fromML(vector))
   }
 }

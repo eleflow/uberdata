@@ -26,7 +26,7 @@ import eleflow.uberdata.models.UberXGBOOSTModel
 import ml.dmlc.xgboost4j.scala.spark.XGBoost
 import org.apache.spark.ml.param.{ParamMap, Params}
 import org.apache.spark.ml.param.shared.HasXGBoostParams
-import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import ml.dmlc.xgboost4j.{LabeledPoint => XGBLabeledPoint}
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator

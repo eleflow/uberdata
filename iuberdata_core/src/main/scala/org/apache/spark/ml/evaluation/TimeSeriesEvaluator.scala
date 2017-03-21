@@ -25,7 +25,7 @@ import org.apache.spark.ml.param.shared.{
   HasValidationCol
 }
 import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable, _}
-import org.apache.spark.mllib.linalg.{Vector, VectorUDT}
+import org.apache.spark.ml.linalg.{Vector, VectorUDT}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions._
@@ -107,8 +107,8 @@ final class TimeSeriesEvaluator[L](
       case (p: VectorUDT, f: VectorUDT) =>
         dataSet.rdd.map { f =>
           val label = f.getAs[L](0)
-          val prediction = f.getAs[org.apache.spark.mllib.linalg.Vector](1)
-          val feature = f.getAs[org.apache.spark.mllib.linalg.Vector](2)
+          val prediction = f.getAs[org.apache.spark.ml.linalg.Vector](1)
+          val feature = f.getAs[org.apache.spark.ml.linalg.Vector](2)
           val modelIndex = f.getAs[Int](3)
           (label, modelIndex, feature.toArray.zip(prediction.toArray))
         }

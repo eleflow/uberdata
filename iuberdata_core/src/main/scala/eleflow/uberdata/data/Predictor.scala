@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory
 import org.apache.spark.mllib.classification.ANNClassifierModel
 import org.apache.spark.mllib.classification._
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
-import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.mllib.regression._
 import org.apache.spark.mllib.tree.DecisionTree
 import org.apache.spark.mllib.tree.model.DecisionTreeModel
@@ -199,7 +199,7 @@ trait Predictor extends Serializable {
             lp =>
               LabeledPoint(
                 lp.label,
-                Vectors.dense(getIndices(lp.features.toArray, featureCombination))
+                org.apache.spark.mllib.linalg.Vectors.fromML(Vectors.dense(getIndices(lp.features.toArray, featureCombination)))
             )
           )
           .persist(StorageLevel.MEMORY_AND_DISK_SER)
@@ -208,7 +208,7 @@ trait Predictor extends Serializable {
             lp =>
               LabeledPoint(
                 lp.label,
-                Vectors.dense(getIndices(lp.features.toArray, featureCombination))
+                org.apache.spark.mllib.linalg.Vectors.fromML(Vectors.dense(getIndices(lp.features.toArray, featureCombination)))
             )
           )
           .persist(StorageLevel.MEMORY_AND_DISK_SER)
@@ -1203,7 +1203,7 @@ trait Predictor extends Serializable {
   private def convDoubleDoubleToLabeledPoint(
     dataSet: RDD[(Double, Double)]
   ): RDD[(Double, LabeledPoint)] = dataSet.map { f =>
-    (f._1, LabeledPoint(f._1, Vectors.dense(f._2)))
+    (f._1, LabeledPoint(f._1, org.apache.spark.mllib.linalg.Vectors.fromML(Vectors.dense(f._2))))
   }
 
   private def evolutivePredictObjectSplit(train: Dataset,

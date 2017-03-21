@@ -17,7 +17,7 @@
 package eleflow.uberdata
 
 import org.apache.spark.ml.{ArimaModel, HoltWintersModel}
-import org.apache.spark.mllib.linalg.{VectorUDT, Vectors}
+import org.apache.spark.ml.linalg.{VectorUDT, Vectors}
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._

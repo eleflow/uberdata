@@ -17,7 +17,7 @@
 package eleflow.uberdata.data
 
 import org.apache.spark.ml.{MovingAverage, TimeSeriesGenerator}
-import org.apache.spark.mllib.linalg.{DenseVector, Vectors}
+import org.apache.spark.ml.linalg.{DenseVector, Vectors}
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
 import org.scalatest.mock.EasyMockSugar
 import org.scalatest.{FlatSpec, Matchers}
@@ -115,7 +115,7 @@ class TestPipelineTransformer
     val transformedData = ma.transform(testData)
     val labelArray = transformedData.rdd.map(f => f.getAs[Double]("id")).collect
     val timeSeriesArray = transformedData.rdd
-      .map(f => f.getAs[org.apache.spark.mllib.linalg.Vector]("timeseries"))
+      .map(f => f.getAs[org.apache.spark.ml.linalg.Vector]("timeseries"))
       .collect
       .map {
         _.toArray.mkString("[", ",", "]")

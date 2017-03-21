@@ -89,7 +89,7 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
         .getAs[org.apache.spark.ml.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
         .toArray
       val label = DataTransformer.toFloat(row.getAs[L]($(labelCol)))
-      LabeledPoint(label, Vectors.dense(values))
+      LabeledPoint(label, org.apache.spark.mllib.linalg.Vectors.fromML(Vectors.dense(values)))
     }.cache
 
     $(timeCol).isDefined match {
