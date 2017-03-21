@@ -33,7 +33,7 @@ class TestDataset extends FlatSpec with Matchers with BeforeAndAfterWithContext 
   }
 
   it should "Correct handle date dayofaweek and period values" in {
-    context.sparkContext.clearJars()
+    //context.sparkContext.clearJars()
     DateUtil.applyDateFormat("YYMMddHH")
     val fileDataset = Dataset(context, s"${defaultFilePath}DayOfAWeekDataTransformer.csv")
     fileDataset.applyColumnTypes(Seq(LongType, LongType, StringType, DecimalType(

@@ -26,7 +26,7 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.HasGroupByCol
-import org.apache.spark.mllib.linalg.VectorUDT
+import org.apache.spark.ml.linalg.VectorUDT
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{ArrayType, FloatType, StructField, StructType}
 
@@ -50,7 +50,7 @@ trait BaseXGBoostBestModelFinder[G, M <: org.apache.spark.ml.ForecastBaseModel[M
                                   id: G,
                                   parameters: ParamMap): ModelParamEvaluation[G] = {
     val featuresArray = row
-      .getAs[Array[org.apache.spark.mllib.linalg.Vector]](IUberdataForecastUtil.FEATURES_COL_NAME)
+      .getAs[Array[org.apache.spark.ml.linalg.Vector]](IUberdataForecastUtil.FEATURES_COL_NAME)
       .map { vec =>
         val values = vec.toArray.map(DataTransformer.toFloat)
         LabeledPoint.fromDenseVector(values.head, values.tail)

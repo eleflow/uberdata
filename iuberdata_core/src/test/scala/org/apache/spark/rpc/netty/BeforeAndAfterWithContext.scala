@@ -63,8 +63,9 @@ trait BeforeAndAfterWithContext extends BeforeAndAfterEach { this: Suite =>
         Some(get.rpcEnv)
       } else None
     context.clearContext()
-    rpcEnv.foreach(
-      _.fileServer.asInstanceOf[org.apache.spark.rpc.netty.HttpBasedFileServer].shutdown())
+    //rpcEnv.foreach(
+    //  _.fileServer.asInstanceOf[org.apache.spark.rpc.netty.HttpBasedFileServer].shutdown())
+
 
     System.clearProperty("spark.master.port")
   }

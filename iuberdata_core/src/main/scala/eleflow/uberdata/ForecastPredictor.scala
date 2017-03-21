@@ -22,7 +22,12 @@ import java.text.DecimalFormat
 import eleflow.uberdata.core.exception.UnexpectedValueException
 import eleflow.uberdata.enums.SupportedAlgorithm._
 import ml.dmlc.xgboost4j.scala.spark.XGBoostModel
-import org.apache.spark.Logging
+import org.apache.spark
+import org.apache.spark._
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.SparkSession
+
+//import org.apache.spark.Logging
 import org.apache.spark.ml._
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
@@ -31,6 +36,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.functions._
+
 
 import scala.reflect.ClassTag
 
@@ -41,7 +47,8 @@ object ForecastPredictor {
   def apply(): ForecastPredictor = new ForecastPredictor
 }
 
-class ForecastPredictor extends Serializable with Logging {
+//class ForecastPredictor extends Serializable with Logging {
+class ForecastPredictor extends Serializable {
 
   lazy val defaultRange = (0 to 2).toArray
 
@@ -464,7 +471,7 @@ class ForecastPredictor extends Serializable with Logging {
         row =>
           (row.getAs[G](labelColBc.value),
             (row
-              .getAs[org.apache.spark.mllib.linalg.Vector](
+              .getAs[org.apache.spark.ml.linalg.Vector](
               validationColBc.value
             )
               .toArray,
@@ -571,8 +578,15 @@ class ForecastPredictor extends Serializable with Logging {
   }
 
   private def calculateAccuracySmallModelFuture(df: DataFrame): Double = {
+    val spark = SparkSession.builder.
+      master("local")
+      .appName("tester")
+      .getOrCreate()
+    import spark.implicits._
+
     if(df.columns.contains("featuresValidation")) {
-      val errorsArray = df.select("features", "featuresValidation").map { case Row(v1: org.apache.spark.mllib.linalg.Vector, v2: org.apache.spark.mllib.linalg.Vector) =>
+      val errorsArray = df.select("features", "featuresValidation").as[(org.apache.spark.ml.linalg.Vector, org.apache.spark.ml.linalg.Vector)]
+          .map { case Row(v1: org.apache.spark.ml.linalg.Vector, v2: org.apache.spark.ml.linalg.Vector) =>
         val zipArray = v1.toArray.zip(v2.toArray).map {
           f => if (f._1 == 0) {
             0

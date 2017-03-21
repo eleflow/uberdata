@@ -24,10 +24,11 @@ import eleflow.uberdata.enums.SupportedAlgorithm
 import ml.dmlc.xgboost4j.scala.spark.XGBoostModel
 import ml.dmlc.xgboost4j.LabeledPoint
 import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.mllib.linalg.{VectorUDT, Vector => SparkVector}
+import org.apache.spark.ml.linalg.{VectorUDT, Vector => SparkVector}
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.{HasIdCol, HasLabelCol}
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.types.{StructField, _}
 
 /**
@@ -44,15 +45,15 @@ class XGBoostBigModel[I](val uid: String, val models: Seq[(ParamMap, XGBoostMode
 
   override def copy(extra: ParamMap): XGBoostBigModel[I] = new XGBoostBigModel[I](uid, models)
 
-  override def transform(dataSet: DataFrame): DataFrame = {
+  override def transform(dataSet: Dataset[_]): DataFrame = {
     val prediction = predict(dataSet)
-    val rows = dataSet
-      .map(
-        row =>
-            (DataTransformer.toFloat(row.getAs($(idCol))),
-              (row.getAs[SparkVector](IUberdataForecastUtil.FEATURES_COL_NAME))
+    val rows = dataSet.rdd
+      .map {
+        case (row: Row) =>
+          (DataTransformer.toFloat(row.getAs($(idCol))),
+            (row.getAs[SparkVector](IUberdataForecastUtil.FEATURES_COL_NAME))
             )
-      )
+      }
       .join(prediction)
       .map {
         case (id, (features, predictValue)) =>
@@ -61,8 +62,8 @@ class XGBoostBigModel[I](val uid: String, val models: Seq[(ParamMap, XGBoostMode
     dataSet.sqlContext.createDataFrame(rows, transformSchema(dataSet.schema))
   }
 
-  protected def predict(dataSet: DataFrame) = {
-    val features = dataSet.map { row =>
+  protected def predict(dataSet: Dataset[_]) = {
+    val features = dataSet.rdd.map { case (row: Row) =>
       val features = row.getAs[SparkVector](IUberdataForecastUtil.FEATURES_COL_NAME)
       val id = row.getAs[I]($(idCol))
       LabeledPoint.fromDenseVector(DataTransformer.toFloat(id), features.toArray.map(_.toFloat))

@@ -20,8 +20,9 @@ import eleflow.uberdata.IUberdataForecastUtil
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.HasGroupByCol
 import org.apache.spark.ml.util.{DefaultParamsReadable, Identifiable}
-import org.apache.spark.mllib.linalg.Vectors
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.ml.linalg.Vectors
+import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.types.{StructField, StructType}
 
 import scala.reflect.ClassTag
@@ -52,7 +53,7 @@ class TimeSeriesGenerator[L](
   /** @group setParam */
   def setOutputCol(value: String): this.type = set(outputCol, value)
 
-  override def transform(dataSet: DataFrame): DataFrame = {
+  override def transform(dataSet: Dataset[_]): DataFrame = {
     val rdd = dataSet.rdd
 
     val sparkContext = dataSet.sqlContext.sparkContext
@@ -61,7 +62,7 @@ class TimeSeriesGenerator[L](
       sparkContext.broadcast(dataSet.schema.fieldIndex($(groupByCol).get))
     val featuresColIndex =
       sparkContext.broadcast(dataSet.schema.fieldIndex($(featuresCol)))
-    val grouped = rdd.map { row =>
+    val grouped = rdd.map { case (row: Row) =>
       val timeColRow =
         IUberdataForecastUtil.convertColumnToLong(row, index.value)
       convertColumnToDouble(timeColRow, featuresColIndex)
@@ -91,7 +92,7 @@ class TimeSeriesGenerator[L](
     StructType(
       Seq(
         schema.fields(labelIndex),
-        StructField($(outputCol), new org.apache.spark.mllib.linalg.VectorUDT)
+        StructField($(outputCol), new org.apache.spark.ml.linalg.VectorUDT)
       )
     )
   }

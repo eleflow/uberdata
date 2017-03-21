@@ -41,17 +41,37 @@ case class ExecutorMetricsUpdated(executorId: String,
                                   writeMethod: Option[String],
                                   bytesWritten: Option[Long] = None,
                                   recordsWritten: Option[Long] = None,
-                                  remoteBlocksFetched: Option[Int] = None,
-                                  localBlocksFetched: Option[Int] = None,
+                                  remoteBlocksFetched: Option[Long] = None,
+                                  localBlocksFetched: Option[Long] = None,
                                   fetchWaitTime: Option[Long] = None,
                                   remoteBytesRead: Option[Long] = None,
                                   localBytesRead: Option[Long] = None,
                                   totalBytesRead: Option[Long] = None,
-                                  totalBlocksFetched: Option[Int] = None,
+                                  totalBlocksFetched: Option[Long] = None,
                                   shuffleRecordsRead: Option[Long] = None,
                                   shuffleBytesWritten: Option[Long] = None,
                                   shuffleWriteTime: Option[Long] = None,
                                   shuffleRecordsWritten: Option[Long] = None)
+
+
+//(taskId, stageId, stageAttemptId, accumUpdates)
+//accumUpdates: Seq[(Long, Int, Int, Seq[AccumulableInfo])])
+
+
+//case class SparkListenerExecutorMetricsUpdate(
+//    execId: String,
+//    accumUpdates: Seq[(Long, Int, Int, Seq[String])])
+
+case class AccumulatorInfoUpdateEvent(executorId: String,
+                                      accumUpdates: Seq[(Long, Int, Int, Seq[String])]
+                                  /*taskId: Long,
+                                  stageId: Int,
+                                  stageAttemptId: Int,
+                                  idAccumulableInfo: Long,
+                                  nameAccumulableInfo: Option[String],
+                                  updateAccumulableInfo: Option[Any],
+                                  valueAccumulableInfo: Option[Any]*/
+                                )
 
 case class Workers(id: String,
                    host: String,

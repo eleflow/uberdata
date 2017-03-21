@@ -26,7 +26,10 @@ import eleflow.uberdata.enums.ValidationMethod
 import eleflow.uberdata.enums.SupportedAlgorithm._
 import eleflow.uberdata.model.{Step, TypeMixin}
 import eleflow.uberdata.model.TypeMixin._
-import org.apache.spark.Logging
+//import org.apache.spark.Logging
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
 import org.apache.spark.mllib.classification.ANNClassifierModel
 import org.apache.spark.mllib.classification._
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
@@ -55,7 +58,8 @@ import scala.util.Random
   */
 object Predictor extends Predictor
 
-trait Predictor extends Serializable with Logging {
+//trait Predictor extends Serializable with Logging {
+trait Predictor extends Serializable {
 
   import DataTransformer._
 
@@ -83,6 +87,8 @@ trait Predictor extends Serializable with Logging {
                           algorithm: Algorithm,
                           validationPercentage: Double = 0.3d,
                           columnsToUse: Int = 10) = {
+    val slf4jLogger: Logger  = LoggerFactory.getLogger(Dataset.getClass);
+
     val (
     trainDataSetCached,
     filteredTrainDataSetCached,
@@ -106,7 +112,8 @@ trait Predictor extends Serializable with Logging {
     val columns = svmModel.weights.toArray.zipWithIndex
       .sortBy(_._1)(Ordering[Double].reverse)
       .take(columnsToUse)
-    log.info(s"Using columns weight of ${columns.map(_._1)} and columns ids ${columns.map(_._2)}")
+    //log.info(s"Using columns weight of ${columns.map(_._1)} and columns ids ${columns.map(_._2)}")
+    slf4jLogger.info(s"Using columns weight of ${columns.map(_._1)} and columns ids ${columns.map(_._2)}")
     val (trainlp, validationlp, testlp) = extractColumnsFromLP(
       columns,
       trainDataSetCached.values,
@@ -943,7 +950,7 @@ trait Predictor extends Serializable with Logging {
   def determineAlgorithm(dataSet: DataFrame, targetIndex: Int, algorithm: Algorithm) = {
     algorithm match {
       case ToBeDetermined =>
-        val targetDataSet = dataSet.map(f => f(targetIndex)).distinct()
+        val targetDataSet = dataSet.rdd.map(f => f(targetIndex)).distinct()
         targetDataSet.collect().size match {
           case 0 | 1 =>
             throw new InvalidDataException(

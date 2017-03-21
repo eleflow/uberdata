@@ -27,6 +27,7 @@ val scalaV = "2.10.6"
 lazy val zeppelin_version = "0.6.1"
 lazy val sparkVersion = "2.1.0"
 lazy val mysqlV = "5.1.34"
+lazy val slf4jVersion = "1.7.24"
 
 lazy val commonSettings = Seq(
   organization := "br.com.eleflow",
@@ -45,7 +46,7 @@ lazy val iuberdata_core = project settings (libraryDependencies ++= Seq(
     "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
     "org.apache.spark" % "spark-mllib_2.10" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-hive-thriftserver" % sparkVersion % "provided",
-    "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.4" % "provided",
+    "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5" % "provided",
     "com.typesafe" % "config" % "1.3.0",
     "org.scalatest" %% "scalatest" % "2.2.4",
     "org.easymock" % "easymock" % "3.4" % "test",
@@ -54,9 +55,11 @@ lazy val iuberdata_core = project settings (libraryDependencies ++= Seq(
     "ml.dmlc" % "xgboost4j" % "0.5" % "provided",
     "ml.dmlc" % "xgboost4j-spark" % "0.5" % "provided",
     "com.databricks" % "spark-csv_2.10" % "1.5.0",
-    "mysql" % "mysql-connector-java" % mysqlV % "runtime"
+    "mysql" % "mysql-connector-java" % mysqlV % "runtime",
+    "org.slf4j" % "slf4j-api" % slf4jVersion,
+    "org.slf4j" % "slf4j-log4j12" % slf4jVersion
   )) settings (commonSettings, dependencyOverrides ++= Set(
-    "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.4"
+    "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5"
   )) enablePlugins JavaAppPackaging
 
 lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;compile->compile") settings
@@ -72,7 +75,7 @@ lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;co
       "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
       "com.google.code.gson" % "gson" % "2.2",
       "commons-collections" % "commons-collections" % "3.2.1",
-      "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.4" % "provided",
+      "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5" % "provided",
       "org.scala-lang" % "scala-compiler" % scalaV,
       "org.apache.spark" %% "spark-streaming" % sparkVersion % "provided",
 //      "org.apache.spark" %% "spark-streaming-twitter" % sparkVersion % "provided",
@@ -86,14 +89,14 @@ lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;co
       "org.rosuda.REngine" % "Rserve" % "1.8.2-SNAPSHOT",
       "junit" % "junit" % "4.11" % "test"
     )) settings (dependencyOverrides ++= Set(
-    "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.4"
+    "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5"
   ))
 
 lazy val iuberdata_addon_zeppelin = project settings (libraryDependencies ++= Seq(
     "org.apache.zeppelin" % "zeppelin-zengine" % zeppelin_version % "provided",
     "org.scala-lang" % "scala-reflect" % scalaV
   )) settings (commonSettings, dependencyOverrides ++= Set(
-    "com.fasterxml.jackson.core" % "jackson-databind" % "2.4.4"
+    "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5"
   )) enablePlugins JavaAppPackaging
 
 test in assembly := {}

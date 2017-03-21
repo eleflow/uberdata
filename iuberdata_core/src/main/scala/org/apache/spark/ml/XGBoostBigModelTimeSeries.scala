@@ -23,10 +23,11 @@ import eleflow.uberdata.core.data.DataTransformer
 import eleflow.uberdata.enums.SupportedAlgorithm
 import ml.dmlc.xgboost4j.scala.spark.XGBoostModel
 import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.mllib.linalg.{VectorUDT, Vector => SparkVector}
+import org.apache.spark.ml.linalg.{VectorUDT, Vector => SparkVector}
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.HasTimeCol
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.types.{StructField, _}
 
 /**
@@ -38,15 +39,15 @@ class XGBoostBigModelTimeSeries[I](override val uid: String,
 
   def setTimecol(time: String): this.type = set(timeCol, Some(time))
 
-  override def transform(dataSet: DataFrame): DataFrame = {
+  override def transform(dataSet: Dataset[_]): DataFrame = {
     val prediction = predict(dataSet)
-    val rows = dataSet
-      .map(
-        row =>
+    val rows = dataSet.rdd
+      .map {
+        case (row: Row) =>
           (DataTransformer.toFloat(row.getAs($(idCol))),
             (row.getAs[SparkVector](IUberdataForecastUtil.FEATURES_COL_NAME),
               row.getAs[java.sql.Timestamp]($(timeCol).get)))
-      )
+      }
       .join(prediction)
       .map {
         case (id, ((features, time), predictValue)) =>

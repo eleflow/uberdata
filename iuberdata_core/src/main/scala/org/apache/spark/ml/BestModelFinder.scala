@@ -22,8 +22,9 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared._
-import org.apache.spark.mllib.linalg.{VectorUDT, Vectors}
+import org.apache.spark.ml.linalg.{VectorUDT, Vectors}
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.types.{StructField, StructType}
 
 import scala.reflect.ClassTag
@@ -45,24 +46,24 @@ abstract class BestModelFinder[L, M <: ForecastBaseModel[M]](implicit kt: ClassT
 
   def setValidationCol(colName: String) = set(validationCol, colName)
 
-  protected def train(dataSet: DataFrame): M
+  protected def train(dataSet: Dataset[_]): M
 
-  override def fit(dataSet: DataFrame): M = {
+  override def fit(dataSet: Dataset[_]): M = {
     copyValues(train(dataSet).setParent(this))
   }
 
-  protected def split(dataSet: DataFrame, nFutures: Int) = {
-    dataSet.foreach { row =>
-      val features = row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
+  protected def split(dataSet: Dataset[_], nFutures: Int) = {
+    dataSet.rdd.map { case (row: Row )=>
+      val features = row.getAs[org.apache.spark.ml.linalg.Vector]($(featuresCol))
       if (features.size - nFutures <= 0) {
         throw new IllegalArgumentException(
           s"Row ${row.toSeq.mkString(",")} " +
             s"has less timeseries attributes than nFutures")
       }
     }
-    val data = dataSet.map { row =>
+    val data = dataSet.rdd.map { case (row: Row )=>
       val featuresIndex = row.fieldIndex($(featuresCol))
-      val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresIndex)
+      val features = row.getAs[org.apache.spark.ml.linalg.Vector](featuresIndex)
       val trainSize = features.size - nFutures
       val (validationFeatures, toBeValidated) = features.toArray.splitAt(trainSize)
       val validationRow = row.toSeq.updated(featuresIndex, Vectors.dense(validationFeatures)) :+
@@ -100,7 +101,7 @@ abstract class BestModelFinder[L, M <: ForecastBaseModel[M]](implicit kt: ClassT
     broadcastEvaluator: Broadcast[TimeSeriesEvaluator[L]],
     id: L,
     parameters: ParamMap): (UberArimaModel, ModelParamEvaluation[L]) = {
-    val features = row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
+    val features = row.getAs[org.apache.spark.ml.linalg.Vector]($(featuresCol))
     log.warn(
       s"Evaluating forecast for id $id, with parameters p ${model.p}, d ${model.d} " +
         s"and q ${model.q}")

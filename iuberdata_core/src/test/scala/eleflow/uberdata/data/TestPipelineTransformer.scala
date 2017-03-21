@@ -48,10 +48,10 @@ class TestPipelineTransformer
 
     val transformedData = ma.transform(testData)
     val namesArray = transformedData.columns
-    val idsArray = transformedData.map(f => f.get(0)).collect
+    val idsArray = transformedData.rdd.map(f => f.get(0)).collect
     val timeSeriesArray =
-      transformedData.map(f => f.get(1)).collect.map(_.asInstanceOf[DenseVector].toArray)
-    val maArray = transformedData.map(f => f.get(2)).collect
+      transformedData.rdd.map(f => f.get(1)).collect.map(_.asInstanceOf[DenseVector].toArray)
+    val maArray = transformedData.rdd.map(f => f.get(2)).collect
 
     assert(namesArray.length == 3)
     assert(namesArray(0) == "id")
@@ -79,10 +79,10 @@ class TestPipelineTransformer
     ma.setWindowSize(2)
     val transformedData = ma.transform(testData)
     val namesArray = transformedData.columns
-    val idsArray = transformedData.map(f => f.get(0)).collect
+    val idsArray = transformedData.rdd.map(f => f.get(0)).collect
     val timeSeriesArray =
-      transformedData.map(f => f.get(1)).collect.map(_.asInstanceOf[DenseVector].toArray)
-    val maArray = transformedData.map(f => f.get(3)).collect
+      transformedData.rdd.map(f => f.get(1)).collect.map(_.asInstanceOf[DenseVector].toArray)
+    val maArray = transformedData.rdd.map(f => f.get(3)).collect
 
     assert(ma.getWindowSize == 2)
     assert(namesArray.length == 4)
@@ -113,8 +113,8 @@ class TestPipelineTransformer
     ma.setWindowSize(2)
 
     val transformedData = ma.transform(testData)
-    val labelArray = transformedData.map(f => f.getAs[Double]("id")).collect
-    val timeSeriesArray = transformedData
+    val labelArray = transformedData.rdd.map(f => f.getAs[Double]("id")).collect
+    val timeSeriesArray = transformedData.rdd
       .map(f => f.getAs[org.apache.spark.mllib.linalg.Vector]("timeseries"))
       .collect
       .map {
@@ -152,8 +152,8 @@ class TestPipelineTransformer
       .setTimeCol("date")
     val transformedData = tsg.transform(testData)
     val namesArray = transformedData.columns
-    val labelArray = transformedData.map(f => f.get(0)).collect
-    val timeSeriesArray = transformedData.map(f => f.get(1)).collect.map {
+    val labelArray = transformedData.rdd.map(f => f.get(0)).collect
+    val timeSeriesArray = transformedData.rdd.map(f => f.get(1)).collect.map {
       _.toString
     }
     val correctTimeSeriesArray = Array("[2.0,4.0,6.0,8.0,10.0]", "[1.0,3.0,5.0,7.0,9.0]")
@@ -189,8 +189,8 @@ class TestPipelineTransformer
     tsg.setTimeCol("date")
     val transformedData = tsg.transform(testData)
     val namesArray = transformedData.columns
-    val labelArray = transformedData.map(f => f.get(0)).collect
-    val timeSeriesArray = transformedData.map(f => f.get(1)).collect.map {
+    val labelArray = transformedData.rdd.map(f => f.get(0)).collect
+    val timeSeriesArray = transformedData.rdd.map(f => f.get(1)).collect.map {
       _.toString
     }
     val correctTimeSeriesArray = Array("[2.0,4.0,6.0,8.0,10.0]", "[1.0,3.0,5.0,7.0,9.0]")
@@ -228,8 +228,8 @@ class TestPipelineTransformer
 
     val transformedData = tsg.transform(testData)
     val namesArray = transformedData.columns
-    val labelArray = transformedData.map(f => f.get(0)).collect
-    val timeSeriesArray = transformedData.map(f => f.get(1)).collect.map {
+    val labelArray = transformedData.rdd.map(f => f.get(0)).collect
+    val timeSeriesArray = transformedData.rdd.map(f => f.get(1)).collect.map {
       _.toString
     }
     val correctTimeSeriesArray = Array("[2.0,4.0,6.0,10.0,8.0]", "[1.0,5.0,3.0,7.0,9.0]")

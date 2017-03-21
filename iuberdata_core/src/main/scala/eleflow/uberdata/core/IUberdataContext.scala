@@ -26,7 +26,8 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
 import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.sql.hive.thriftserver.HiveThriftServer2
-import org.apache.spark.{Logging, SparkConf, SparkContext}
+//import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.apache.spark.{SparkConf, SparkContext}
 import ClusterSettings._
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.DataType
@@ -34,6 +35,9 @@ import org.apache.spark.sql.types.DataType
 import scala.annotation.tailrec
 import scala.sys.process._
 import scala.util.matching.Regex
+
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 object IUberdataContext {
 
@@ -54,7 +58,8 @@ object IUberdataContext {
   * User: paulomagalhaes
   * Date: 8/15/14 12:24 PM
   */
-class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable with Logging {
+class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
+//class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable with Logging {
   protected def this(sparkConf: SparkConf, data: String) = this(sparkConf)
 //  @transient protected lazy val s3Client: AmazonS3 = new AmazonS3Client()
   val version = UberdataCoreVersion.version
@@ -62,6 +67,8 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
   @transient var _sqlContext: Option[HiveContext] = None
   @transient protected var sc: Option[SparkContext] = None
   private var _masterHost: Option[String] = None
+
+  val slf4jLogger: Logger  = LoggerFactory.getLogger(IUberdataContext.getClass);
 
   def initialized: Boolean = sc.isDefined
 
@@ -95,9 +102,11 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
 
     val logger = ProcessLogger((o: String) => {
       out.append(o)
-      logInfo(o)
+      slf4jLogger.info(o)
+      //logInfo(o)
     }, (e: String) => {
-      logInfo(e)
+      slf4jLogger.info(e)
+      //logInfo(e)
     })
     command ! logger
     out.toString()
@@ -173,13 +182,15 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
           || iuberdata.findFirstIn(url.getFile).isDefined
     )
     jarUrls.foreach { url =>
-      logInfo(s"adding ${url.getPath} to spark context jars")
+      //logInfo(s"adding ${url.getPath} to spark context jars")
+      slf4jLogger.info(s"adding ${url.getPath} to spark context jars")
       context.addJar(url.getPath)
     }
   }
 
   def createSparkContextForNewCluster(conf: SparkConf): SparkContext = {
-    log.info(s"connecting to $masterHost")
+    //log.info(s"connecting to $masterHost")
+    slf4jLogger.info(s"connecting to $masterHost")
     conf.setMaster(s"spark://$masterHost:7077")
     confSetup(conf)
   }
@@ -227,7 +238,8 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
 
     val output = shellRun(command ++ Seq("launch", clusterName))
 
-    log.info(s"Output:: $output")
+    //log.info(s"Output:: $output")
+    slf4jLogger.info(s"Output:: $output")
     val pattern = new Regex(
       "Spark standalone cluster started at http://([^:]+):8080"
     )
@@ -284,7 +296,8 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
   }
 
   def createSparkContextForProvisionedCluster(conf: SparkConf): SparkContext = {
-    log.info("connecting to localhost")
+    //log.info("connecting to localhost")
+    slf4jLogger.info("connecting to localhost")
     conf.setMaster(ClusterSettings.master.get)
     confSetup(conf)
   }
@@ -352,7 +365,8 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable wit
     ).toString
     val path = copyFromClasspath2Tmp("python/spark_ec2.py")
     path.setExecutable(true)
-    log.info(s"spark_ec2.py in $path")
+    //log.info(s"spark_ec2.py in $path")
+    slf4jLogger.info(s"spark_ec2.py in $path")
     path.toString
   }
 }

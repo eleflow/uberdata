@@ -126,14 +126,12 @@ case class UberRDDInfo(id: Int,
 case class UberBlockStatus(storageLevel: StorageLvl,
                            memSize: Long,
                            diskSize: Long,
-                           externalBlockStoreSize: Long,
                            isCached: Boolean) {
   def this(blockStatus: BlockStatus) =
     this(
       new StorageLvl(blockStatus.storageLevel),
       blockStatus.memSize,
       blockStatus.diskSize,
-      blockStatus.externalBlockStoreSize,
       blockStatus.isCached
     )
 

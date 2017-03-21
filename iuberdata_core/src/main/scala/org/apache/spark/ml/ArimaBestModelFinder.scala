@@ -16,11 +16,12 @@
 
 package org.apache.spark.ml
 
-import org.apache.spark.Logging
+//import org.apache.spark.Logging
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.regression._
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Dataset
 import com.cloudera.sparkts.models.UberArimaModel
 import eleflow.uberdata.enums.SupportedAlgorithm.Algorithm
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
@@ -41,8 +42,8 @@ class ArimaBestModelFinder[G](
     with ArimaParams
     with DefaultParamsWritable
     with HasNFutures
-    with TimeSeriesBestModelFinder
-    with Logging {
+    with TimeSeriesBestModelFinder {
+//    with Logging {
   def this()(implicit kt: ClassTag[G]) = this(Identifiable.randomUID("arima"))
 
   def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[G]): this.type =
@@ -87,7 +88,7 @@ class ArimaBestModelFinder[G](
     }
   }
 
-  override protected def train(dataSet: DataFrame): ArimaModel[G] = {
+  override protected def train(dataSet: Dataset[_]): ArimaModel[G] = {
     val splitDs = split(dataSet, $(nFutures))
     val labelModel = splitDs.rdd.map(train)
     new ArimaModel[G](uid, modelEvaluation(labelModel))

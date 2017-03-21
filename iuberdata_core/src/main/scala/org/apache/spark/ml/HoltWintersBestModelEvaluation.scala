@@ -21,7 +21,7 @@ import eleflow.uberdata.enums.SupportedAlgorithm
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.{ParamMap, ParamPair}
-import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.sql.Row
 
 import scala.reflect.ClassTag
@@ -42,13 +42,13 @@ abstract class HoltWintersBestModelEvaluation[L, M <: ForecastBaseModel[M]](
     id: L
   ): (UberHoltWintersModel, ModelParamEvaluation[L]) = {
     val features =
-      row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
+      row.getAs[org.apache.spark.ml.linalg.Vector]($(featuresCol))
     log.warn(
       s"Evaluating forecast for id $id, with parameters " +
         s"alpha ${model.alpha}, beta ${model.beta} and gamma ${model.gamma}"
     )
     val expectedResult =
-      row.getAs[org.apache.spark.mllib.linalg.Vector](partialValidationCol)
+      row.getAs[org.apache.spark.ml.linalg.Vector](partialValidationCol)
     val forecastToBeValidated = Vectors.dense(new Array[Double]($(nFutures)))
     model.forecast(features, forecastToBeValidated).toArray
     val toBeValidated =

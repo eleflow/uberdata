@@ -105,7 +105,7 @@ final class TimeSeriesEvaluator[L](
 
     val predictionAndLabels = (validationColType, labelType) match {
       case (p: VectorUDT, f: VectorUDT) =>
-        dataSet.map { f =>
+        dataSet.rdd.map { f =>
           val label = f.getAs[L](0)
           val prediction = f.getAs[org.apache.spark.mllib.linalg.Vector](1)
           val feature = f.getAs[org.apache.spark.mllib.linalg.Vector](2)
@@ -118,7 +118,7 @@ final class TimeSeriesEvaluator[L](
             col(validationColName).cast(DoubleType),
             col(labelColName).cast(DoubleType)
           )
-          .map { row =>
+          .rdd.map { row =>
             val label = row.getAs[L](0)
             val prediction = row.getAs[Double](1)
             val feature = row.getAs[Double](2)

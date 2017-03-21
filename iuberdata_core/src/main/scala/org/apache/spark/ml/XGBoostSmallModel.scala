@@ -29,7 +29,8 @@ import org.apache.spark.ml.util.{DefaultParamsReader, _}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row}
-import org.apache.spark.Logging
+import org.apache.spark.sql.Dataset
+//import org.apache.spark.Logging
 
 import scala.reflect.ClassTag
 
@@ -67,16 +68,16 @@ class XGBoostSmallModel[G](
 
   override def write: MLWriter = new XGBoostRegressionModelWriter(this)
 
-  override def transform(dataSet: DataFrame): DataFrame = {
+  override def transform(dataSet: Dataset[_]): DataFrame = {
     val schema = dataSet.schema
     val predSchema = transformSchema(schema)
 
-    val joined = models.join(dataSet.map(r => (r.getAs[G]($(groupByCol).get), r)))
+    val joined = models.join(dataSet.rdd.map{case (r: Row) => (r.getAs[G]($(groupByCol).get), r)})
 
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
         val features =
-          row.getAs[org.apache.spark.mllib.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
+          row.getAs[org.apache.spark.ml.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
         val featuresIndex = row.fieldIndex(IUberdataForecastUtil.FEATURES_COL_NAME)
         val idColIndex = row.fieldIndex($(idCol))
         val timeColIndex = row.fieldIndex($(timeCol).get)
@@ -136,7 +137,8 @@ object XGBoostSmallModel extends MLReadable[XGBoostSmallModel[_]] {
 
   private[XGBoostSmallModel] class XGBoostRegressionModelWriter(instance: XGBoostSmallModel[_])
       extends MLWriter
-      with Logging {
+//      with Logging {
+  {
 
     override protected def saveImpl(path: String): Unit = {
       // Save metadata and Params

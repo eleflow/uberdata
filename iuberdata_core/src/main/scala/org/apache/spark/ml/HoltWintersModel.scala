@@ -19,13 +19,14 @@ package org.apache.spark.ml
 import com.cloudera.sparkts.models.UberHoltWintersModel
 import eleflow.uberdata.enums.SupportedAlgorithm
 import org.apache.hadoop.fs.Path
-import org.apache.spark.Logging
+//import org.apache.spark.Logging
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.{HasGroupByCol, HasNFutures, HasValidationCol}
 import org.apache.spark.ml.util.{DefaultParamsReader, _}
-import org.apache.spark.mllib.linalg.{Vector, Vectors}
+import org.apache.spark.ml.linalg.{Vector, Vectors}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Dataset
 
 import scala.reflect.ClassTag
 
@@ -47,20 +48,20 @@ class HoltWintersModel[T](
   override def write: MLWriter =
     new HoltWintersModel.HOLTWintersRegressionModelWriter(this)
 
-  override def transform(dataSet: DataFrame) = {
+  override def transform(dataSet: Dataset[_]) = {
     val schema = dataSet.schema
     val predSchema = transformSchema(schema)
 
     val scContext = dataSet.sqlContext.sparkContext
     //TODO fazer com que os modelos invalidos voltem numeros absurdos
 
-    val joined = models.join(dataSet.map(r => (r.getAs[T]($(groupByCol).get), r)))
+    val joined = models.join(dataSet.rdd.map{case (r: Row) => (r.getAs[T]($(groupByCol).get), r)})
 
     val featuresColName = scContext.broadcast($(featuresCol))
     val nFut = scContext.broadcast($(nFutures))
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
-        val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
+        val features = row.getAs[org.apache.spark.ml.linalg.Vector](featuresColName.value)
 
         val forecast = Vectors.dense(new Array[Double](nFut.value))
         bestModel.forecast(features, forecast)
@@ -100,7 +101,8 @@ object HoltWintersModel extends MLReadable[HoltWintersModel[_]] {
   private[HoltWintersModel] class HOLTWintersRegressionModelWriter(
     instance: HoltWintersModel[_]
   ) extends MLWriter
-      with Logging {
+//      with Logging {
+    {
 
     //TODO validar este metodo
     override protected def saveImpl(path: String): Unit = {

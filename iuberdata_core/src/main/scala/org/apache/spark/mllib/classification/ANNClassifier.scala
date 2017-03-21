@@ -39,7 +39,7 @@ trait ANNClassifierHelper {
   }
 
   protected def outputToLabel(output: Vector): Double = {
-    val index = Bargmax(output.toBreeze.toDenseVector)
+    val index = Bargmax(output.toDense.asBreeze.toDenseVector)
     indexToLabel(index)
   }
 }

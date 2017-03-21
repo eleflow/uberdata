@@ -56,7 +56,6 @@ class TaskEnd(val appId: String,
               val host: String,
               val taskLocality: String,
               val speculative: Boolean,
-              val hostname: String,
               val executorDeserializeTime: Long,
               val executorRunTime: Long,
               val resultSize: Long,
@@ -64,24 +63,22 @@ class TaskEnd(val appId: String,
               val resultSerializationTime: Long,
               val memoryBytesSpilled: Long,
               val diskBytesSpilled: Long,
-              val readMethod: Option[String] = None,
               val bytesRead: Option[Long] = None,
               val recordsRead: Option[Long] = None,
-              val writeMethod: Option[String],
               val bytesWritten: Option[Long] = None,
               val recordsWritten: Option[Long] = None,
-              val remoteBlocksFetched: Option[Int] = None,
-              val localBlocksFetched: Option[Int] = None,
+              val remoteBlocksFetched: Option[Long] = None,
+              val localBlocksFetched: Option[Long] = None,
               val fetchWaitTime: Option[Long] = None,
               val remoteBytesRead: Option[Long] = None,
               val localBytesRead: Option[Long] = None,
               val totalBytesRead: Option[Long] = None,
-              val totalBlocksFetched: Option[Int] = None,
+              val totalBlocksFetched: Option[Long] = None,
               val shuffleRecordsRead: Option[Long] = None,
               val shuffleBytesWritten: Option[Long] = None,
               val shuffleWriteTime: Option[Long] = None,
-              val shuffleRecordsWritten: Option[Long] = None,
-              val updatedBlocks: Seq[UberBlockId])
+              val shuffleRecordsWritten: Option[Long] = None/*,
+              val updatedBlocks: Seq[UberBlockId]*/)
     extends Mappable
     with Product
     with Serializable {
@@ -103,32 +100,29 @@ class TaskEnd(val appId: String,
     case 10 => host
     case 11 => taskLocality
     case 12 => speculative
-    case 13 => hostname
-    case 14 => executorDeserializeTime
-    case 15 => executorRunTime
-    case 16 => resultSize
-    case 17 => jvmGCTime
-    case 18 => resultSerializationTime
-    case 19 => memoryBytesSpilled
-    case 20 => diskBytesSpilled
-    case 21 => readMethod
-    case 22 => bytesRead
-    case 23 => recordsRead
-    case 24 => writeMethod
-    case 25 => bytesWritten
-    case 26 => recordsWritten
-    case 27 => remoteBlocksFetched
-    case 28 => localBlocksFetched
-    case 29 => fetchWaitTime
-    case 30 => remoteBytesRead
-    case 31 => localBytesRead
-    case 32 => totalBytesRead
-    case 33 => totalBlocksFetched
-    case 34 => shuffleRecordsRead
-    case 35 => shuffleBytesWritten
-    case 36 => shuffleWriteTime
-    case 37 => shuffleRecordsWritten
-    case 38 => updatedBlocks
+    case 13 => executorDeserializeTime
+    case 14 => executorRunTime
+    case 15 => resultSize
+    case 16 => jvmGCTime
+    case 17 => resultSerializationTime
+    case 18 => memoryBytesSpilled
+    case 19 => diskBytesSpilled
+    case 20 => bytesRead
+    case 21 => recordsRead
+    case 22 => bytesWritten
+    case 23 => recordsWritten
+    case 24 => remoteBlocksFetched
+    case 25 => localBlocksFetched
+    case 26 => fetchWaitTime
+    case 27 => remoteBytesRead
+    case 28 => localBytesRead
+    case 29 => totalBytesRead
+    case 30 => totalBlocksFetched
+    case 31 => shuffleRecordsRead
+    case 32 => shuffleBytesWritten
+    case 33 => shuffleWriteTime
+    case 34 => shuffleRecordsWritten
+//    case 35 => updatedBlocks
   }
 
   def apply(appId: String,
@@ -144,7 +138,6 @@ class TaskEnd(val appId: String,
             host: String,
             taskLocality: String,
             speculative: Boolean,
-            hostname: String,
             executorDeserializeTime: Long,
             executorRunTime: Long,
             resultSize: Long,
@@ -152,24 +145,22 @@ class TaskEnd(val appId: String,
             resultSerializationTime: Long,
             memoryBytesSpilled: Long,
             diskBytesSpilled: Long,
-            readMethod: Option[String] = None,
             bytesRead: Option[Long] = None,
             recordsRead: Option[Long] = None,
-            writeMethod: Option[String],
             bytesWritten: Option[Long] = None,
             recordsWritten: Option[Long] = None,
-            remoteBlocksFetched: Option[Int] = None,
-            localBlocksFetched: Option[Int] = None,
+            remoteBlocksFetched: Option[Long] = None,
+            localBlocksFetched: Option[Long] = None,
             fetchWaitTime: Option[Long] = None,
             remoteBytesRead: Option[Long] = None,
             localBytesRead: Option[Long] = None,
             totalBytesRead: Option[Long] = None,
-            totalBlocksFetched: Option[Int] = None,
+            totalBlocksFetched: Option[Long] = None,
             shuffleRecordsRead: Option[Long] = None,
             shuffleBytesWritten: Option[Long] = None,
             shuffleWriteTime: Option[Long] = None,
-            shuffleRecordsWritten: Option[Long] = None,
-            updatedBlocks: Seq[UberBlockId]) =
+            shuffleRecordsWritten: Option[Long] = None) /*,
+            updatedBlocks: Seq[UberBlockId])*/ =
     new TaskEnd(
       appId,
       stageId,
@@ -184,7 +175,6 @@ class TaskEnd(val appId: String,
       host,
       taskLocality,
       speculative,
-      hostname,
       executorDeserializeTime,
       executorRunTime,
       resultSize,
@@ -192,10 +182,8 @@ class TaskEnd(val appId: String,
       resultSerializationTime,
       memoryBytesSpilled,
       diskBytesSpilled,
-      readMethod,
       bytesRead,
       recordsRead,
-      writeMethod,
       bytesWritten,
       recordsWritten,
       remoteBlocksFetched,
@@ -208,8 +196,8 @@ class TaskEnd(val appId: String,
       shuffleRecordsRead,
       shuffleBytesWritten,
       shuffleWriteTime,
-      shuffleRecordsWritten,
-      updatedBlocks
+      shuffleRecordsWritten/*,
+      updatedBlocks*/
     )
 
 }
@@ -222,13 +210,13 @@ case class TaskEndComp(memoryBytesSpilled: Long,
                        writeMethod: Option[String],
                        bytesWritten: Option[Long] = None,
                        recordsWritten: Option[Long] = None,
-                       remoteBlocksFetched: Option[Int] = None,
-                       localBlocksFetched: Option[Int] = None,
+                       remoteBlocksFetched: Option[Long] = None,
+                       localBlocksFetched: Option[Long] = None,
                        fetchWaitTime: Option[Long] = None,
                        remoteBytesRead: Option[Long] = None,
                        localBytesRead: Option[Long] = None,
                        totalBytesRead: Option[Long] = None,
-                       totalBlocksFetched: Option[Int] = None,
+                       totalBlocksFetched: Option[Long] = None,
                        shuffleRecordsRead: Option[Long] = None,
                        shuffleBytesWritten: Option[Long] = None,
                        shuffleWriteTime: Option[Long] = None,

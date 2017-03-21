@@ -22,15 +22,16 @@ import eleflow.uberdata.core.data.DataTransformer
 import eleflow.uberdata.core.util.ClusterSettings
 import eleflow.uberdata.models.UberXGBOOSTModel
 import ml.dmlc.xgboost4j.scala.spark.XGBoostModel
-import org.apache.spark.Logging
+//import org.apache.spark.Logging
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.{HasIdCol, HasTimeCol, HasXGBoostParams}
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
-import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Dataset
 
 import scala.reflect.ClassTag
 
@@ -44,8 +45,8 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
     with HasXGBoostParams
     with HasIdCol
 		with HasTimeCol
-    with TimeSeriesBestModelFinder
-    with Logging {
+    with TimeSeriesBestModelFinder {
+//    with Logging {
   def this()(implicit gt: ClassTag[G], lt: ClassTag[L]) =
     this(Identifiable.randomUID("xgboostbig"))
 
@@ -82,10 +83,10 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
     }
   }
 
-  override protected def train(dataSet: DataFrame): XGBoostBigModel[G] = {
-    val labeledPointDataSet = dataSet.map { row =>
+  override protected def train(dataSet: Dataset[_]): XGBoostBigModel[G] = {
+    val labeledPointDataSet = dataSet.rdd.map { case (row: Row) =>
       val values = row
-        .getAs[org.apache.spark.mllib.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
+        .getAs[org.apache.spark.ml.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
         .toArray
       val label = DataTransformer.toFloat(row.getAs[L]($(labelCol)))
       LabeledPoint(label, Vectors.dense(values))

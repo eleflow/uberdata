@@ -58,14 +58,14 @@ class TestXGBoost
 			.cache
 		val test = Dataset(context, s"$defaultFilePath/data/RossmannTest.csv")
 
-		val testData = test.formatDateValues("Date", DayMonthYear).map{
+		val testData = test.formatDateValues("Date", DayMonthYear).rdd.map{
 		row =>
 			XGBLabeledPoint.fromDenseVector(row.getAs[Long]("Id"), Array(row.getAs[Long]("Store").toFloat,
 				row.getAs[Long]("DayOfWeek").toFloat, row.getAs[Int]("Date1").toFloat,
 				row.getAs[Int]("Date2").toFloat,row.getAs[Int]("Date3").toFloat))
 		}
 
-		val trainLabel = trainData.map{
+		val trainLabel = trainData.rdd.map{
 			row =>
 				LabeledPoint(row.getAs[Long]("Sales").toDouble,
 					Vectors.dense(Array(row.getAs[Long]("Store").toDouble,

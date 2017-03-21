@@ -21,10 +21,11 @@ import eleflow.uberdata.enums.SupportedAlgorithm
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.{HasFeaturesCol, HasLabelCol}
-import org.apache.spark.mllib.linalg.{Vector, VectorUDT, Vectors}
+import org.apache.spark.ml.linalg.{Vector, VectorUDT, Vectors}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Dataset
 
 import scala.reflect.ClassTag
 
@@ -106,21 +107,21 @@ class ForecastBestModel[L](
     }
   }
 
-  override def transform(dataSet: DataFrame): DataFrame = {
+  override def transform(dataSet: Dataset[_]): DataFrame = {
     val schema = dataSet.schema
     val predSchema = transformSchema(schema)
 
     val scContext = dataSet.sqlContext.sparkContext
     //TODO fazer com que os modelos invalidos voltem numeros absurdos
 
-    val joined = models.join(dataSet.map(r => (r.getAs[L]($(labelCol)), r)))
+    val joined = models.join(dataSet.rdd.map{case (r: Row) => (r.getAs[L]($(labelCol)), r)})
 
     val featuresColName =
       dataSet.sqlContext.sparkContext.broadcast($(featuresCol))
     val nFut = scContext.broadcast($(nFutures))
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
-        val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
+        val features = row.getAs[org.apache.spark.ml.linalg.Vector](featuresColName.value)
         val prediction = {
           evaluateParams(metrics, features, nFut)
         }

@@ -25,8 +25,7 @@ case class BlockUpdated(blockManagerExecutorId_ : String,
                         blockIdName: String,
                         storageLevel: StorageLvl,
                         memSize: Long,
-                        diskSize: Long,
-                        externalBlockStoreSize: Long)
+                        diskSize: Long)
 
 case class BlockManagerAdded(time: Long,
                              blockManagerExecutorId: String,

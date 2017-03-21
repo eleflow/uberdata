@@ -26,9 +26,10 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared._
 import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable}
-import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.types.{ArrayType, DoubleType, StructField, StructType}
 
 import scala.reflect.ClassTag
@@ -53,15 +54,15 @@ class XGBoost[I](override val uid: String,
   )(implicit kt: ClassTag[I], ord: Ordering[I] = null) =
     this(Identifiable.randomUID("xgboost"), models)
 
-  override def transform(dataSet: DataFrame): DataFrame = {
+  override def transform(dataSet: Dataset[_]): DataFrame = {
     val schema = dataSet.schema
     val predSchema = transformSchema(schema)
 
-    val joined = models.join(dataSet.map(r => (r.getAs[I]($(groupByCol).get), r)))
+    val joined = models.join(dataSet.rdd.map{case (r: Row) => (r.getAs[I]($(groupByCol).get), r)})
 
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
-        val features = row.getAs[Array[org.apache.spark.mllib.linalg.Vector]](
+        val features = row.getAs[Array[org.apache.spark.ml.linalg.Vector]](
           IUberdataForecastUtil.FEATURES_COL_NAME
         )
         val label = DataTransformer.toFloat(row.getAs($(featuresCol)))

@@ -102,14 +102,15 @@ object UberJsonProtocol {
   def executorMetricsUpdateToJson(
     metricsUpdate: SparkListenerExecutorMetricsUpdate
   ) = JsonProtocol.executorMetricsUpdateToJson(metricsUpdate)
+
   def executorRemovedFromJson(json: JsonAST.JValue) =
     JsonProtocol.executorRemovedFromJson(json)
   def executorRemovedToJson(executorRemoved: SparkListenerExecutorRemoved) =
     JsonProtocol.executorRemovedToJson(executorRemoved)
-  def inputMetricsFromJson(json: JsonAST.JValue) =
-    JsonProtocol.inputMetricsFromJson(json)
-  def inputMetricsToJson(inputMetrics: InputMetrics) =
-    JsonProtocol.inputMetricsToJson(inputMetrics)
+  //def inputMetricsFromJson(json: JsonAST.JValue) =
+  //  JsonProtocol.inputMetricsFromJson(json)
+  //def inputMetricsToJson(inputMetrics: InputMetrics) =
+  //  JsonProtocol.inputMetricsToJson(inputMetrics)
   def jobEndFromJson(json: JsonAST.JValue) = JsonProtocol.jobEndFromJson(json)
   def jobEndToJson(jobEnd: SparkListenerJobEnd) =
     JsonProtocol.jobEndToJson(jobEnd)
@@ -127,10 +128,10 @@ object UberJsonProtocol {
     JsonProtocol.logStartToJson(logStart)
   def mapFromJson(json: JsonAST.JValue) = JsonProtocol.mapFromJson(json)
   def mapToJson(map: Map[String, String]) = JsonProtocol.mapToJson(map)
-  def outputMetricsFromJson(json: JsonAST.JValue) =
-    JsonProtocol.outputMetricsFromJson(json)
-  def outputMetricsToJson(outputMetrics: OutputMetrics) =
-    JsonProtocol.outputMetricsToJson(outputMetrics)
+  //def outputMetricsFromJson(json: JsonAST.JValue) =
+  //  JsonProtocol.outputMetricsFromJson(json)
+  //def outputMetricsToJson(outputMetrics: OutputMetrics) =
+  //  JsonProtocol.outputMetricsToJson(outputMetrics)
   def propertiesFromJson(json: JsonAST.JValue) =
     JsonProtocol.propertiesFromJson(json)
   def propertiesToJson(properties: Properties) =
@@ -138,12 +139,12 @@ object UberJsonProtocol {
   def rddInfoFromJson(json: JsonAST.JValue) =
     JsonProtocol.rddInfoFromJson(json)
   def rddInfoToJson(rddInfo: RDDInfo) = JsonProtocol.rddInfoToJson(rddInfo)
-  def shuffleReadMetricsFromJson(json: JsonAST.JValue) =
-    JsonProtocol.shuffleReadMetricsFromJson(json)
-  def shuffleReadMetricsToJson(shuffleReadMetrics: ShuffleReadMetrics) =
-    JsonProtocol.shuffleReadMetricsToJson(shuffleReadMetrics)
-  def shuffleWriteMetricsFromJson(json: JsonAST.JValue) =
-    JsonProtocol.shuffleWriteMetricsFromJson(json)
+  //def shuffleReadMetricsFromJson(json: JsonAST.JValue) =
+  //  JsonProtocol.shuffleReadMetricsFromJson(json)
+  //def shuffleReadMetricsToJson(shuffleReadMetrics: ShuffleReadMetrics) =
+  //  JsonProtocol.shuffleReadMetricsToJson(shuffleReadMetrics)
+  //def shuffleWriteMetricsFromJson(json: JsonAST.JValue) =
+  //  JsonProtocol.shuffleWriteMetricsFromJson(json)
   def sparkEventFromJson(json: JsonAST.JValue) =
     JsonProtocol.sparkEventFromJson(json)
   def sparkEventToJson(event: SparkListenerEvent) =

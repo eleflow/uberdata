@@ -96,8 +96,9 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 
 	def buildAccumulables(stageInfo: StageInfo) = stageInfo.accumulables.map {
 		case (key, accumulableInfo) => eleflow.uberdata.core.data.json.AccumulableInfo(sparkConf.getAppId,
-			stageInfo.stageId, accumulableInfo.id, accumulableInfo.name,
-			accumulableInfo.update, accumulableInfo.value, accumulableInfo.internal)
+			stageInfo.stageId, accumulableInfo.id, accumulableInfo.name.getOrElse(""),
+			accumulableInfo.update.asInstanceOf[Option[String]], accumulableInfo.value.getOrElse("").asInstanceOf[String],  false/*accumulableInfo.internal*/)
+			//TODO: internal hardcoded pq não é acessivel daqui
 	}
 
 	import eleflow.uberdata.core.json.SparkJsonMapper._
@@ -155,10 +156,10 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 	private def extractTaskMetrics(taskMetrics: Option[TaskMetrics]): (Option[OutputMetrics],
 	Option[ShuffleWriteMetrics], Option[ShuffleReadMetrics], Option[InputMetrics]) = {
 		if (taskMetrics != null) {
-			val outputMetrics = taskMetrics.flatMap(_.outputMetrics)
-			val shuffleWriteMetrics = taskMetrics.flatMap(_.shuffleWriteMetrics)
-			val shuffleReadMetrics = taskMetrics.flatMap(_.shuffleReadMetrics)
-			val inputMetrics = taskMetrics.flatMap(_.inputMetrics)
+			val outputMetrics = taskMetrics.map(_.outputMetrics)
+			val shuffleWriteMetrics = taskMetrics.map(_.shuffleWriteMetrics)
+			val shuffleReadMetrics = taskMetrics.map(_.shuffleReadMetrics)
+			val inputMetrics = taskMetrics.map(_.inputMetrics)
 			(outputMetrics, shuffleWriteMetrics, shuffleReadMetrics, inputMetrics)
 		} else (None, None, None, None)
 	}
@@ -184,10 +185,10 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 		val totalBlocksFetched = shuffleReadMetrics.map(_.totalBlocksFetched)
 
 		val shuffleRecordsRead = shuffleReadMetrics.map(_.recordsRead)
-		val shuffleBytesWritten = shuffleWriteMetrics.map(_.shuffleBytesWritten)
+		val shuffleBytesWritten = shuffleWriteMetrics.map(_.bytesWritten)
 
-		val shuffleWriteTime = shuffleWriteMetrics.map(_.shuffleWriteTime)
-		val shuffleRecordsWritten = shuffleWriteMetrics.map(_.shuffleRecordsWritten)
+		val shuffleWriteTime = shuffleWriteMetrics.map(_.writeTime)
+		val shuffleRecordsWritten = shuffleWriteMetrics.map(_.recordsWritten)
 		val reason = taskEnd.reason match {
 			case Success => "Success"
 			case Resubmitted => "Resubmitted"
@@ -198,25 +199,25 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 		}
 		val task = new TaskEnd(sparkConf.getAppId, taskEnd.stageId, taskEnd.stageAttemptId, taskEnd.taskType,
 			taskInfo.taskId, reason, taskInfo.index, taskInfo.attemptNumber, taskInfo.launchTime, taskInfo.executorId,
-			taskInfo.host, taskInfo.taskLocality.toString, taskInfo.speculative, taskMetrics.map(_.hostname).getOrElse(""),
+			taskInfo.host, taskInfo.taskLocality.toString, taskInfo.speculative,
 			taskMetrics.map(_.executorDeserializeTime).getOrElse(0l), taskMetrics.map(_.executorRunTime).getOrElse(0l),
 			taskMetrics.map(_.resultSize).getOrElse(0l), taskMetrics.map(_.jvmGCTime).getOrElse(0l),
 			taskMetrics.map(_.resultSerializationTime).getOrElse(0l),
 			taskMetrics.map(_.memoryBytesSpilled).getOrElse(0l), taskMetrics.map(_.diskBytesSpilled).getOrElse(0l),
-			inputMetrics.map(_.readMethod.toString), bytesRead, recordsRead, outputMetrics.map(_.writeMethod.toString),
+			 bytesRead, recordsRead,
 			outputMetrics.map(_.bytesWritten), recordsWritten, remoteBlocksFetched,
 			localBlocksFetched, fetchWaitTime, remoteBytesRead,
 			localBytesRead, totalBytesRead, totalBlocksFetched,
 			shuffleRecordsRead, shuffleBytesWritten, shuffleWriteTime,
-			shuffleRecordsWritten, taskMetrics.flatMap(_.updatedBlocks.map(f => f.map {
+			shuffleRecordsWritten/*, Some(taskMetrics.flatMap(_.updatedBlockStatuses.map {
 				case (blockId, blockStatus) => UberBlockId(blockId.name, new UberBlockStatus(blockStatus))
 			})).getOrElse(
 				Seq.empty[UberBlockId]))
-		eventsAccum(task.toMap, Some("TaskEnd"))
+		eventsAccum(task.toMap, Some("TaskEnd")*/)
 
-		taskMetrics.flatMap(_.updatedBlocks.map(f => f.map {
+		/*taskMetrics.flatMap(_.updatedBlockStatuses.map {
 			case (blockId, blockStatus) => BlockMetrics(blockId.name, task.executorRunTime)
-		})).getOrElse(Seq.empty[BlockMetrics]).foreach(eventsAccum(_))
+		}).getOrElse(Seq.empty[BlockMetrics]).foreach(eventsAccum(_))*/
 
 		super.onTaskEnd(taskEnd)
 	}
@@ -290,8 +291,14 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 	}
 
 	override def onExecutorMetricsUpdate(executorMetricsUpdate: SparkListenerExecutorMetricsUpdate): Unit = {
-		executorMetricsUpdate.taskMetrics.foreach { f =>
-			val (outputMetrics, shuffleWriteMetrics, shuffleReadMetrics, inputMetrics) = extractTaskMetrics(Some(f._4))
+
+		// a.accumUpdates.flatMap{ case (l,i,i2,s) => s.map((l,i,i2,_))}
+		// Seq[(Long, Int, Int, String)] = List((1,1,1,a), (1,1,1,b), (2,2,2,c), (2,2,2,d))
+
+//		executorMetricsUpdate.accumUpdates.flatMap { case(taskId, stageId, stageAttemptId, accumInfos) =>
+//			accumInfos.map((taskId, stageId, stageAttemptId,_))
+
+			/*val (outputMetrics, shuffleWriteMetrics, shuffleReadMetrics, inputMetrics) = extractTaskMetrics(Some(f._4))
 			val bytesRead = inputMetrics.map(_.bytesRead)
 			val recordsRead = inputMetrics.map(_.recordsRead)
 
@@ -308,18 +315,34 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 			val totalBlocksFetched = shuffleReadMetrics.map(_.totalBlocksFetched)
 
 			val shuffleRecordsRead = shuffleReadMetrics.map(_.recordsRead)
-			val shuffleBytesWritten = shuffleWriteMetrics.map(_.shuffleBytesWritten)
+			val shuffleBytesWritten = shuffleWriteMetrics.map(_.bytesWritten)
 
-			val shuffleWriteTime = shuffleWriteMetrics.map(_.shuffleWriteTime)
-			val shuffleRecordsWritten = shuffleWriteMetrics.map(_.shuffleRecordsWritten)
+			val shuffleWriteTime = shuffleWriteMetrics.map(_.writeTime)
+			val shuffleRecordsWritten = shuffleWriteMetrics.map(_.recordsWritten)
 
 			val executorMetrics = ExecutorMetricsUpdated(executorMetricsUpdate.execId, f._1, f._2, f._3,
 				bytesRead, recordsRead, outputMetrics.map(_.writeMethod.toString), outputMetrics.map(_.bytesWritten),
 				recordsWritten, remoteBlocksFetched, localBlocksFetched, fetchWaitTime,
 				remoteBytesRead, localBytesRead, totalBytesRead, totalBlocksFetched, shuffleRecordsRead, shuffleBytesWritten,
 				shuffleWriteTime, shuffleRecordsWritten)
-			eventsAccum(executorMetrics)
+			eventsAccum(executorMetrics)*/
+/*		}.map{f =>
+			val taskId = f._1
+			val stageId = f._2
+			val stageAttemptId = f._3
+			val accumInfos: org.apache.spark.scheduler.AccumulableInfo = f._4
+			val idAccumulableInfo = accumInfos.id
+			val nameAccumulableInfo = accumInfos.name
+			val updateAccumulableInfo = accumInfos.update
+			val valueAccumulableInfo = accumInfos.value
+
+			val accumulatorInfoUpdate = AccumulatorInfoUpdateEvent(taskId, stageId, stageAttemptId,
+				idAccumulableInfo, nameAccumulableInfo, updateAccumulableInfo, valueAccumulableInfo)
+
+			eventsAccum(accumulatorInfoUpdate)
+
 		}
+*/
 		super.onExecutorMetricsUpdate(executorMetricsUpdate)
 	}
 
@@ -362,7 +385,7 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 			blockUpdatedInfo.blockId.name, StorageLvl(blockUpdatedInfo.storageLevel.useDisk,
 				blockUpdatedInfo.storageLevel.useMemory, blockUpdatedInfo.storageLevel.useOffHeap,
 				blockUpdatedInfo.storageLevel.deserialized, blockUpdatedInfo.storageLevel.replication),
-			blockUpdatedInfo.memSize, blockUpdatedInfo.diskSize, blockUpdatedInfo.externalBlockStoreSize)
+			blockUpdatedInfo.memSize, blockUpdatedInfo.diskSize)
 		eventsAccum(block)
 		super.onBlockUpdated(blockUpdated)
 	}
