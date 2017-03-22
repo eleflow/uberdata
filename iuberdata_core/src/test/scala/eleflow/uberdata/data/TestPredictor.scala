@@ -400,7 +400,7 @@ class TestPredictor extends FlatSpec with Matchers with BeforeAndAfterWithContex
     val model = EasyMock.createMock(classOf[GeneralizedLinearModel])
     val ret: Double = 0.5
     EasyMock
-      .expect(model.predict(EasyMock.anyObject[org.apache.spark.ml.linalg.Vector]()))
+      .expect(model.predict(EasyMock.anyObject[org.apache.spark.mllib.linalg.Vector]()))
       .andReturn(ret)
       .anyTimes()
 
