@@ -21,7 +21,7 @@ resolvers += Resolver.mavenLocal
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/releases"
 
 //TODO when moving spark to 1.5, we can update to scala version 2.11.7 according to this issue https://issues.apache.org/jira/browse/SPARK-8013
-val scalaV = "2.10.6"
+val scalaV = "2.11.8"
 
 //WARNING: changing the zeppelin version requires changing the dependency version in setup_zeppelin_local.sh and iuberdata.sh
 lazy val zeppelin_version = "0.6.1"
@@ -32,7 +32,7 @@ lazy val slf4jVersion = "1.7.24"
 lazy val commonSettings = Seq(
   organization := "br.com.eleflow",
   version := "0.1.0",
-  scalaVersion := "2.10.6"
+  scalaVersion := "2.11.8"
 )
 
 scalaVersion := scalaV
@@ -44,17 +44,17 @@ lazy val iuberdata_core = project settings (libraryDependencies ++= Seq(
     "org.apache.spark" %% "spark-repl" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
-    "org.apache.spark" % "spark-mllib_2.10" % sparkVersion % "provided",
+    "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-hive-thriftserver" % sparkVersion % "provided",
     "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5" % "provided",
     "com.typesafe" % "config" % "1.3.0",
     "org.scalatest" %% "scalatest" % "2.2.4",
     "org.easymock" % "easymock" % "3.4" % "test",
     "com.typesafe.play" %% "play-json" % "2.4.6",
-    "com.cloudera.sparkts" % "sparkts" % "0.3.0" % "provided",
-    "ml.dmlc" % "xgboost4j" % "0.5" % "provided",
-    "ml.dmlc" % "xgboost4j-spark" % "0.5" % "provided",
-    "com.databricks" % "spark-csv_2.10" % "1.5.0",
+    "com.cloudera.sparkts" % "sparkts" % "0.4.0-SNAPSHOT" % "provided",
+    "ml.dmlc" % "xgboost4j" % "0.7" % "provided",
+    "ml.dmlc" % "xgboost4j-spark" % "0.7" % "provided",
+    "com.databricks" %% "spark-csv" % "1.5.0",
     "mysql" % "mysql-connector-java" % mysqlV % "runtime",
     "org.slf4j" % "slf4j-api" % slf4jVersion,
     "org.slf4j" % "slf4j-log4j12" % slf4jVersion
