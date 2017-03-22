@@ -56,7 +56,7 @@ class ArimaModel[G](
   override def write: MLWriter =
     new ArimaModel.ARIMARegressionModelWriter(this)
 
-  override def transform(dataSet: Dataset[_]) = {
+  override def transform(dataSet: Dataset[_]): DataFrame = {
     val schema = dataSet.schema
     val predSchema = transformSchema(schema)
     val scContext = dataSet.sqlContext.sparkContext
@@ -69,7 +69,7 @@ class ArimaModel[G](
     val nFut = scContext.broadcast($(nFutures))
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
-        val features = row.getAs[org.apache.spark.ml.linalg.Vector](featuresColName.value)
+        val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
         val (ownFeaturesPrediction, forecast) =
           bestModel.forecast(features, nFut.value).toArray.splitAt(features.size)
         Row(

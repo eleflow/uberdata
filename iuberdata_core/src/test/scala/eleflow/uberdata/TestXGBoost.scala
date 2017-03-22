@@ -22,18 +22,15 @@ import eleflow.uberdata.core.data.Dataset._
 import eleflow.uberdata.core.enums.DateSplitType._
 import eleflow.uberdata.core.util.ClusterSettings
 import eleflow.uberdata.enums.SupportedAlgorithm
-import eleflow.uberdata.models.UberXGBOOSTModel
-import ml.dmlc.xgboost4j.scala.spark.XGBoost
+
 import org.apache.spark.ml.param.{ParamMap, Params}
 import org.apache.spark.ml.param.shared.HasXGBoostParams
 import org.apache.spark.ml.linalg.Vectors
-import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.ml.feature.LabeledPoint
 import ml.dmlc.xgboost4j.{LabeledPoint => XGBLabeledPoint}
-import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.types.{DoubleType, StringType, TimestampType}
-import org.apache.spark.util.random
+import org.apache.spark.sql.types.DoubleType
 import org.scalatest.{FlatSpec, Matchers, Suite}
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
 import org.apache.spark.rdd.RDD

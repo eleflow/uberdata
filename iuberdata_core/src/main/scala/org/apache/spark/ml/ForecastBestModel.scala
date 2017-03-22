@@ -21,7 +21,7 @@ import eleflow.uberdata.enums.SupportedAlgorithm
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.{HasFeaturesCol, HasLabelCol}
-import org.apache.spark.ml.linalg.{Vector, VectorUDT, Vectors}
+import org.apache.spark.mllib.linalg.{Vector, VectorUDT, Vectors}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row}
@@ -121,7 +121,7 @@ class ForecastBestModel[L](
     val nFut = scContext.broadcast($(nFutures))
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
-        val features = row.getAs[org.apache.spark.ml.linalg.Vector](featuresColName.value)
+        val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
         val prediction = {
           evaluateParams(metrics, features, nFut)
         }

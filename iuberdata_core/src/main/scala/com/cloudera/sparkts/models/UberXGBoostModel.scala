@@ -21,7 +21,7 @@ import ml.dmlc.xgboost4j.scala.DMatrix
 import ml.dmlc.xgboost4j.{LabeledPoint => XGBLabeledPoint}
 import ml.dmlc.xgboost4j.scala.spark.{XGBoost, XGBoostModel}
 import org.apache.spark.TaskContext
-import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.ml.feature.LabeledPoint
 import org.apache.spark.rdd.RDD
 import scala.collection.JavaConverters._
 

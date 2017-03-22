@@ -3,4 +3,9 @@
  */
 class TestCode {
 
+	import scala.xml.Elem._
+
+	val str = <div class="content"><p>Hello</p><p>world</p></div>
+	str \ "aaa"
+
 }

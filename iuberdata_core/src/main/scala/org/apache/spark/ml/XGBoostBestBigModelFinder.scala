@@ -20,17 +20,15 @@ import com.cloudera.sparkts.models.UberXGBoostModel
 import eleflow.uberdata.IUberdataForecastUtil
 import eleflow.uberdata.core.data.DataTransformer
 import eleflow.uberdata.core.util.ClusterSettings
-import eleflow.uberdata.models.UberXGBOOSTModel
 import ml.dmlc.xgboost4j.scala.spark.XGBoostModel
-//import org.apache.spark.Logging
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.{HasIdCol, HasTimeCol, HasXGBoostParams}
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.ml.linalg.Vectors
-import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.ml.feature.LabeledPoint
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.Dataset
 
 import scala.reflect.ClassTag
@@ -89,7 +87,7 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
         .getAs[org.apache.spark.ml.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
         .toArray
       val label = DataTransformer.toFloat(row.getAs[L]($(labelCol)))
-      LabeledPoint(label, org.apache.spark.mllib.linalg.Vectors.fromML(Vectors.dense(values)))
+      LabeledPoint(label, Vectors.dense(values))
     }.cache
 
     $(timeCol).isDefined match {

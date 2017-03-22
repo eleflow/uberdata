@@ -23,7 +23,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.{HasGroupByCol, HasNFutures, HasValidationCol}
 import org.apache.spark.ml.util.{DefaultParamsReader, _}
-import org.apache.spark.ml.linalg.{Vector, Vectors}
+import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.Dataset
@@ -61,7 +61,7 @@ class HoltWintersModel[T](
     val nFut = scContext.broadcast($(nFutures))
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
-        val features = row.getAs[org.apache.spark.ml.linalg.Vector](featuresColName.value)
+        val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
 
         val forecast = Vectors.dense(new Array[Double](nFut.value))
         bestModel.forecast(features, forecast)

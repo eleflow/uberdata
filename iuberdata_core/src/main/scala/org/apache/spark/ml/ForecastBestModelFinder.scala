@@ -18,15 +18,14 @@ package org.apache.spark.ml
 
 import com.cloudera.sparkts.models._
 import eleflow.uberdata.enums.SupportedAlgorithm
-//import org.apache.spark.Logging
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.{ParamMap, ParamPair}
 import org.apache.spark.ml.param.shared.{HasTimeSeriesEvaluator, HasWindowParams}
 import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable}
-import org.apache.spark.ml.linalg.Vectors
+import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.Dataset
 
 import scala.reflect.ClassTag
@@ -72,12 +71,12 @@ class ForecastBestModelFinder[I, M <: ForecastBaseModel[M]](
     id: I
   ) = {
     val features =
-      row.getAs[org.apache.spark.ml.linalg.Vector]($(featuresCol))
+      row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
     log.warn(
       s"Evaluating forecast for id $id, with parameters alpha ${model.alpha}, beta ${model.beta} and gamma ${model.gamma}"
     )
     val expectedResult =
-      row.getAs[org.apache.spark.ml.linalg.Vector](partialValidationCol)
+      row.getAs[org.apache.spark.mllib.linalg.Vector](partialValidationCol)
     val forecastToBeValidated = Vectors.dense(new Array[Double]($(nFutures)))
     model.forecast(features, forecastToBeValidated).toArray
     $(windowParams).map { windowSize =>

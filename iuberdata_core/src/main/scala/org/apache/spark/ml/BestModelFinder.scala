@@ -53,7 +53,7 @@ abstract class BestModelFinder[L, M <: ForecastBaseModel[M]](implicit kt: ClassT
   }
 
   protected def split(dataSet: Dataset[_], nFutures: Int) = {
-    dataSet.rdd.map { case (row: Row )=>
+    dataSet.rdd.map { case (row: Row ) =>
       val features = row.getAs[org.apache.spark.ml.linalg.Vector]($(featuresCol))
       if (features.size - nFutures <= 0) {
         throw new IllegalArgumentException(
@@ -61,7 +61,7 @@ abstract class BestModelFinder[L, M <: ForecastBaseModel[M]](implicit kt: ClassT
             s"has less timeseries attributes than nFutures")
       }
     }
-    val data = dataSet.rdd.map { case (row: Row )=>
+    val data = dataSet.rdd.map { case (row: Row ) =>
       val featuresIndex = row.fieldIndex($(featuresCol))
       val features = row.getAs[org.apache.spark.ml.linalg.Vector](featuresIndex)
       val trainSize = features.size - nFutures
@@ -101,7 +101,7 @@ abstract class BestModelFinder[L, M <: ForecastBaseModel[M]](implicit kt: ClassT
     broadcastEvaluator: Broadcast[TimeSeriesEvaluator[L]],
     id: L,
     parameters: ParamMap): (UberArimaModel, ModelParamEvaluation[L]) = {
-    val features = row.getAs[org.apache.spark.ml.linalg.Vector]($(featuresCol))
+    val features = row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
     log.warn(
       s"Evaluating forecast for id $id, with parameters p ${model.p}, d ${model.d} " +
         s"and q ${model.q}")

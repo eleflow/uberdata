@@ -16,7 +16,7 @@
 
 package com.cloudera.sparkts.models
 
-import org.apache.spark.ml.linalg.Vector
+import org.apache.spark.mllib.linalg.Vector
 
 /**
   * Created by dirceu on 08/06/16.
