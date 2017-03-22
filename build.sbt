@@ -51,7 +51,7 @@ lazy val iuberdata_core = project settings (libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "2.2.4",
     "org.easymock" % "easymock" % "3.4" % "test",
     "com.typesafe.play" %% "play-json" % "2.4.6",
-    "com.cloudera.sparkts" % "sparkts" % "0.4.0-SNAPSHOT" % "provided",
+    "com.cloudera.sparkts" % "sparkts" % "0.4.1" % "provided",
     "ml.dmlc" % "xgboost4j" % "0.7" % "provided",
     "ml.dmlc" % "xgboost4j-spark" % "0.7" % "provided",
     "com.databricks" %% "spark-csv" % "1.5.0",
