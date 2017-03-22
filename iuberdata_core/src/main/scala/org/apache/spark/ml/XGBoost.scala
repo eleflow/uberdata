@@ -38,7 +38,8 @@ import scala.reflect.ClassTag
   * Created by dirceu on 29/06/16.
   */
 class XGBoost[I](override val uid: String,
-                 val models: RDD[(I, (UberXGBOOSTModel, Seq[(ModelParamEvaluation[I])]))])(
+                 val models: RDD[(I, (UberXGBOOSTModel,
+                   Seq[(ModelParamEvaluation[I])]))])(
   implicit kt: ClassTag[I],
   ord: Ordering[I] = null)
     extends ForecastBaseModel[XGBoostSmallModel[I]]
@@ -51,7 +52,7 @@ class XGBoost[I](override val uid: String,
 
   def this(
     models: RDD[(I, (UberXGBOOSTModel, Seq[(ModelParamEvaluation[I])]))]
-  )(implicit kt: ClassTag[I], ord: Ordering[I] = null) =
+  )(implicit kt: ClassTag[I], ord: Ordering[I] ) =
     this(Identifiable.randomUID("xgboost"), models)
 
   override def transform(dataSet: Dataset[_]): DataFrame = {
