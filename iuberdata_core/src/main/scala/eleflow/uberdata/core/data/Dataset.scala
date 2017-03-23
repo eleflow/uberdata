@@ -30,11 +30,6 @@ import org.apache.spark.sql._
 import org.joda.time.{DateTime, DateTimeZone, Days}
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{StringType, StructField, StructType, DataType => SqlDataType}
-import org.apache.spark
-import org.apache.spark._
-import org.apache.spark.SparkContext
-import org.apache.spark.SparkContext._
-import org.apache.spark.sql.SparkSession
 
 import scala.collection.immutable.TreeSet
 import dataset._
@@ -96,9 +91,6 @@ class Dataset private[data](dataFrame: DataFrame,
 	lazy val summarizedColumnsIndex = summarizeColumnsIndex
 	lazy val labels =
 		if (label.isEmpty) Seq(this.schema.fieldNames.head) else label
-
-	val spark = SparkSession.builder.getOrCreate()
-	import spark.implicits._
 
 	def columnTypes(): Seq[SqlDataType] = {
 		dataFrame.schema.fields.map(_.dataType)
@@ -441,9 +433,10 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 	}
 
 	protected def initCSVDataFrame: DataFrame = {
-		uc.sqlContext.read.format("com.databricks.spark.csv")
+		val df = uc.sqlContext.read.format("com.databricks.spark.csv")
 			.option("header", "true")
 			.load(localFileName)
+		df.na.fill("")
 	}
 
 	protected def initDataFrame(columnNames: Array[String],
@@ -479,9 +472,12 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 		slf4jLogger.info(s"extractFirstCompleteLine ${dataRdd.first()}")
 		//logInfo(s"extractFirstCompleteLine ${dataRdd.first()}")
 		val df = dataRdd.filter { value =>
-			val f = value.toSeq.map(_.toString)
-			f.nonEmpty &&
-				f.forall(!_.isEmpty)
+			val data = value.toSeq
+			!data.contains(null) && {
+				val f = value.toSeq.map(_.toString)
+				f.nonEmpty &&
+					f.forall(!_.isEmpty)
+			}
 		}
 		if (df.count == 0) {
 			dataRdd.first().toSeq.map(_.toString).toArray
