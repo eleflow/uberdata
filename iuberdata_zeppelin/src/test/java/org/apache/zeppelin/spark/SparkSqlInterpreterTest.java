@@ -59,19 +59,26 @@ public class SparkSqlInterpreterTest {
 
 		  sql.open();
 		}
-		context = new InterpreterContext("noteid", "paragraphid", "paragraphtitle", "text",
+
+		context = new InterpreterContext("noteid", "paragraphid",
+				"paragraphtitle", "Titulo", "Text",
 				new AuthenticationInfo(),
 				new HashMap<String, Object>(), new GUI(),
 				new AngularObjectRegistry(intpGroup.getId(), null),
 				new LocalResourcePool("resourcePoolId"),
 		new LinkedList<InterpreterContextRunner>(), new InterpreterOutput(new InterpreterOutputListener() {
 			@Override
-			public void onAppend(InterpreterOutput interpreterOutput, byte[] bytes) {
+			public void onUpdateAll(InterpreterOutput interpreterOutput) {
 
 			}
 
 			@Override
-			public void onUpdate(InterpreterOutput interpreterOutput, byte[] bytes) {
+			public void onAppend(int i, InterpreterResultMessageOutput interpreterResultMessageOutput, byte[] bytes) {
+
+			}
+
+			@Override
+			public void onUpdate(int i, InterpreterResultMessageOutput interpreterResultMessageOutput) {
 
 			}
 		}));
@@ -89,7 +96,7 @@ public class SparkSqlInterpreterTest {
 
 		InterpreterResult ret = sql.interpret("select name, age from test where age < 40", context);
 		assertEquals(InterpreterResult.Code.SUCCESS, ret.code());
-		assertEquals(Type.TABLE, ret.type());
+		assertEquals(Type.TABLE, ret.message().get(0).getType());
 		assertEquals("name\tage\nmoon\t33\npark\t34\n", ret.message());
 
 	  assertEquals(InterpreterResult.Code.ERROR, sql.interpret("select wrong syntax", context).code());
@@ -119,7 +126,7 @@ public class SparkSqlInterpreterTest {
 		InterpreterResult ret = sql.interpret("select name, age from people where name = 'gates'", context);
 		System.err.println("RET=" + ret.message());
 		assertEquals(InterpreterResult.Code.SUCCESS, ret.code());
-		assertEquals(Type.TABLE, ret.type());
+		assertEquals(Type.TABLE, ret.message().get(0).getType());
 		assertEquals("name\tage\ngates\tnull\n", ret.message());
 	}
 }

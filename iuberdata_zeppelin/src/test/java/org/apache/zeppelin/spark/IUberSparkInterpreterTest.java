@@ -59,21 +59,28 @@ public class IUberSparkInterpreterTest {
 	  }
 
 	  InterpreterGroup intpGroup = new InterpreterGroup();
-    context = new InterpreterContext("id", "title", "text", "columnId", new AuthenticationInfo(),
+    context = new InterpreterContext("id", "title", "text", "columnId", "sampleText", new
+              AuthenticationInfo(),
             new HashMap<String, Object>(), new GUI(),
         new AngularObjectRegistry(intpGroup.getId(), null),
             new LocalResourcePool("id"),
         new LinkedList<InterpreterContextRunner>(),
             new InterpreterOutput(new InterpreterOutputListener() {
                 @Override
-                public void onAppend(InterpreterOutput interpreterOutput, byte[] bytes) {
+                public void onUpdateAll(InterpreterOutput interpreterOutput) {
 
                 }
 
                 @Override
-                public void onUpdate(InterpreterOutput interpreterOutput, byte[] bytes) {
+                public void onAppend(int i, InterpreterResultMessageOutput interpreterResultMessageOutput, byte[] bytes) {
 
                 }
+
+                @Override
+                public void onUpdate(int i, InterpreterResultMessageOutput interpreterResultMessageOutput) {
+
+                }
+
             }));
 	}
 
@@ -102,7 +109,7 @@ public class IUberSparkInterpreterTest {
 		// when interpret incomplete expression
 		InterpreterResult incomplete = repl.interpret("val a = \"\"\"", context);
 		assertEquals(Code.INCOMPLETE, incomplete.code());
-		assertTrue(incomplete.message().length()>0); // expecting some error message
+		assertTrue(incomplete.message().size() > 0); // expecting some error message
 		/*
 		assertEquals(1, repl.getValue("a"));
 		assertEquals(2, repl.getValue("b"));

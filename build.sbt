@@ -24,7 +24,7 @@ resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repos
 val scalaV = "2.11.8"
 
 //WARNING: changing the zeppelin version requires changing the dependency version in setup_zeppelin_local.sh and iuberdata.sh
-lazy val zeppelin_version = "0.6.1"
+lazy val zeppelin_version = "0.7.0"
 lazy val sparkVersion = "2.1.0"
 lazy val mysqlV = "5.1.34"
 lazy val slf4jVersion = "1.7.24"
