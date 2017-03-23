@@ -17,412 +17,222 @@
 
 package org.apache.zeppelin.spark;
 
-import eleflow.uberdata.core.IUberdataContext;
-import org.apache.commons.compress.utils.IOUtils;
-import org.apache.commons.exec.*;
-import org.apache.commons.exec.environment.EnvironmentUtils;
-import org.apache.spark.SparkConf;
+import static org.apache.zeppelin.spark.ZeppelinRDisplay.render;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.spark.SparkContext;
+import org.apache.spark.SparkRBackend;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.r.ZeppelinRBackend;
-import org.apache.spark.sql.SQLContext;
 import org.apache.zeppelin.interpreter.*;
-import org.apache.zeppelin.interpreter.InterpreterResult.Code;
+import org.apache.zeppelin.interpreter.thrift.InterpreterCompletion;
+import org.apache.zeppelin.scheduler.Scheduler;
+import org.apache.zeppelin.scheduler.SchedulerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.net.ServerSocket;
-import java.util.LinkedList;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
 
 /**
- *
+ * R and SparkR interpreter with visualization support.
  */
-public class SparkRInterpreter extends Interpreter implements ExecuteResultHandler {
-    Logger logger = LoggerFactory.getLogger(SparkRInterpreter.class);
-    private DefaultExecutor executor;
-    private ByteArrayOutputStream outputStream;
-    private BufferedWriter ins;
-    private PipedInputStream in;
-    private ByteArrayOutputStream input;
-    private String scriptPath;
-    boolean rScriptRunning = false;
+public class SparkRInterpreter extends Interpreter {
+    private static final Logger logger = LoggerFactory.getLogger(SparkRInterpreter.class);
 
-    static {
-        Interpreter.register(
-                "r",
-                "iuberdata",
-                SparkRInterpreter.class.getName(),
-                new InterpreterPropertyBuilder()
-                        .add("spark.home",
-                                SystemDefaultUtil.getSystemDefault("SPARK_HOME", "spark.home", "/opt/spark"),
-                                "Spark home path. Should be provided for sparkR")
-                        .add("zeppelin.sparkr.r",
-                                SystemDefaultUtil.getSystemDefault("SPARKR_DRIVER_R", "zeppelin.sparkr.r", "Rscript"),
-                                "R command to run sparkR with").build());
-    }
-
-    volatile private int sparkRBackendPort = 0;
+    private static String renderOptions;
+    private IUberSparkInterpreter sparkInterpreter;
+    private ZeppelinR zeppelinR;
+    private SparkContext sc;
+    private JavaSparkContext jsc;
 
     public SparkRInterpreter(Properties property) {
         super(property);
-
-        scriptPath = System.getProperty("java.io.tmpdir") + "/zeppelin_r.R";
-    }
-
-    private String getSparkHome() {
-        String sparkHome = getProperty("spark.home");
-        if (sparkHome == null) {
-            throw new InterpreterException("spark.home is undefined");
-        } else {
-            return sparkHome;
-        }
-    }
-
-
-    private void createRScript() {
-        ClassLoader classLoader = getClass().getClassLoader();
-        File out = new File(scriptPath);
-
-        if (out.exists() && out.isDirectory()) {
-            throw new InterpreterException("Can't create R script " + out.getAbsolutePath());
-        }
-
-        try {
-            FileOutputStream outStream = new FileOutputStream(out);
-            IOUtils.copy(
-                    classLoader.getResourceAsStream("R/zeppelin_r.R"),
-                    outStream);
-            outStream.close();
-        } catch (IOException e) {
-            throw new InterpreterException(e);
-        }
-
-        logger.info("File {} created", scriptPath);
     }
 
     @Override
     public void open() {
-        // create R script
-        createRScript();
+        String rCmdPath = getProperty("zeppelin.R.cmd");
+        String sparkRLibPath;
 
-        int backendTimeout = Integer.parseInt(System.getenv().getOrDefault("SPARKR_BACKEND_TIMEOUT", "120"));
-
-        // Launch a SparkR backend server for the R process to connect to; this will let it see our
-        // Java system properties etc.
-        ZeppelinRBackend sparkRBackend = new ZeppelinRBackend();
-
-        Semaphore initialized = new Semaphore(0);
-        Thread sparkRBackendThread = new Thread("SparkR backend") {
-            @Override
-            public void run() {
-                sparkRBackendPort = sparkRBackend.init();
-                initialized.release();
-                sparkRBackend.run();
+        if (System.getenv("SPARK_HOME") != null) {
+            sparkRLibPath = System.getenv("SPARK_HOME") + "/R/lib";
+        } else {
+            sparkRLibPath = System.getenv("ZEPPELIN_HOME") + "/interpreter/spark/R/lib";
+            // workaround to make sparkr work without SPARK_HOME
+            System.setProperty("spark.test.home", System.getenv("ZEPPELIN_HOME") + "/interpreter/spark");
+        }
+        synchronized (SparkRBackend.backend()) {
+            if (!SparkRBackend.isStarted()) {
+                SparkRBackend.init();
+                SparkRBackend.start();
             }
-        };
-
-        sparkRBackendThread.start();
-
-        // Wait for RBackend initialization to finish
-        try {
-            if (initialized.tryAcquire(backendTimeout, TimeUnit.SECONDS)) {
-                // Launch R
-                CommandLine cmd = CommandLine.parse(getProperty("zeppelin.sparkr.r"));
-                cmd.addArgument(scriptPath, false);
-                cmd.addArgument("--no-save", false);
-                //      cmd.addArgument(getJavaSparkContext().version(), false);
-                executor = new DefaultExecutor();
-                outputStream = new ByteArrayOutputStream();
-                PipedOutputStream ps = new PipedOutputStream();
-                in = null;
-                try {
-                    in = new PipedInputStream(ps);
-                } catch (IOException e1) {
-                    throw new InterpreterException(e1);
-                }
-                ins = new BufferedWriter(new OutputStreamWriter(ps));
-
-                input = new ByteArrayOutputStream();
-
-                PumpStreamHandler streamHandler = new PumpStreamHandler(outputStream, outputStream, in);
-                executor.setStreamHandler(streamHandler);
-                executor.setWatchdog(new ExecuteWatchdog(ExecuteWatchdog.INFINITE_TIMEOUT));
-
-
-                Map env = EnvironmentUtils.getProcEnvironment();
-
-                String sparkRInterpreterObjId = sparkRBackend.put(this);
-                String uberdataContextObjId = sparkRBackend.put(getUberdataContext());
-                env.put("R_PROFILE_USER", scriptPath);
-                env.put("SPARK_HOME", getSparkHome());
-                env.put("EXISTING_SPARKR_BACKEND_PORT", String.valueOf(sparkRBackendPort));
-                env.put("SPARKR_INTERPRETER_ID", sparkRInterpreterObjId);
-                env.put("UBERDATA_CONTEXT_ID", uberdataContextObjId);
-                logger.info("executing {} {}", env, cmd.toString());
-                executor.execute(cmd, env, this);
-                logger.info("executed");
-                rScriptRunning = true;
-
-
-            } else {
-                System.err.println("SparkR backend did not initialize in " + backendTimeout + " seconds");
-                System.exit(-1);
-            }
-        } catch (InterruptedException e) {
-            new InterpreterException((e));
-        } catch (IOException e) {
-            new InterpreterException((e));
         }
 
-    }
+        int port = SparkRBackend.port();
 
-    private int findRandomOpenPortOnAllLocalInterfaces() {
-        int port;
-        try (ServerSocket socket = new ServerSocket(0);) {
-            port = socket.getLocalPort();
-            socket.close();
+        this.sparkInterpreter = getSparkInterpreter();
+        this.sc = sparkInterpreter.getSparkContext();
+        this.jsc = sparkInterpreter.getJavaSparkContext();
+        SparkVersion sparkVersion = new SparkVersion(sc.version());
+        ZeppelinRContext.setSparkContext(sc);
+//        ZeppelinRContext.setJavaSparkContext(jsc);
+        if (Utils.isSpark2()) {
+            ZeppelinRContext.setSparkSession(sparkInterpreter.getSparkSession());
+        }
+        ZeppelinRContext.setSqlContext(sparkInterpreter.getSQLContext());
+        ZeppelinRContext.setZeppelinContext(sparkInterpreter.getZeppelinContext());
+
+        zeppelinR = new ZeppelinR(rCmdPath, sparkRLibPath, port, sparkVersion);
+        try {
+            zeppelinR.open();
         } catch (IOException e) {
+            logger.error("Exception while opening SparkRInterpreter", e);
             throw new InterpreterException(e);
         }
-        return port;
+
+        if (useKnitr()) {
+            zeppelinR.eval("library('knitr')");
+        }
+        renderOptions = getProperty("zeppelin.R.render.options");
+    }
+
+    String getJobGroup(InterpreterContext context){
+        return "zeppelin-" + context.getParagraphId();
+    }
+
+    @Override
+    public InterpreterResult interpret(String lines, InterpreterContext interpreterContext) {
+
+        getSparkInterpreter().populateSparkWebUrl(interpreterContext);
+        String imageWidth = getProperty("zeppelin.R.image.width");
+
+        String[] sl = lines.split("\n");
+        if (sl[0].contains("{") && sl[0].contains("}")) {
+            String jsonConfig = sl[0].substring(sl[0].indexOf("{"), sl[0].indexOf("}") + 1);
+            ObjectMapper m = new ObjectMapper();
+            try {
+                JsonNode rootNode = m.readTree(jsonConfig);
+                JsonNode imageWidthNode = rootNode.path("imageWidth");
+                if (!imageWidthNode.isMissingNode()) imageWidth = imageWidthNode.textValue();
+            }
+            catch (Exception e) {
+                logger.warn("Can not parse json config: " + jsonConfig, e);
+            }
+            finally {
+                lines = lines.replace(jsonConfig, "");
+            }
+        }
+
+        String jobGroup = getJobGroup(interpreterContext);
+        String setJobGroup = "";
+        // assign setJobGroup to dummy__, otherwise it would print NULL for this statement
+        if (Utils.isSpark2()) {
+            setJobGroup = "dummy__ <- setJobGroup(\"" + jobGroup +
+                    "\", \"zeppelin sparkR job group description\", TRUE)";
+        } else if (getSparkInterpreter().getSparkVersion().newerThanEquals(SparkVersion.SPARK_1_5_0)) {
+            setJobGroup = "dummy__ <- setJobGroup(sc, \"" + jobGroup +
+                    "\", \"zeppelin sparkR job group description\", TRUE)";
+        }
+        logger.debug("set JobGroup:" + setJobGroup);
+        lines = setJobGroup + "\n" + lines;
+
+        try {
+            // render output with knitr
+            if (useKnitr()) {
+                zeppelinR.setInterpreterOutput(null);
+                zeppelinR.set(".zcmd", "\n```{r " + renderOptions + "}\n" + lines + "\n```");
+                zeppelinR.eval(".zres <- knit2html(text=.zcmd)");
+                String html = zeppelinR.getS0(".zres");
+
+                RDisplay rDisplay = render(html, imageWidth);
+
+                return new InterpreterResult(
+                        rDisplay.code(),
+                        rDisplay.type(),
+                        rDisplay.content()
+                );
+            } else {
+                // alternatively, stream the output (without knitr)
+                zeppelinR.setInterpreterOutput(interpreterContext.out);
+                zeppelinR.eval(lines);
+                return new InterpreterResult(InterpreterResult.Code.SUCCESS, "");
+            }
+        } catch (Exception e) {
+            logger.error("Exception while connecting to R", e);
+            return new InterpreterResult(InterpreterResult.Code.ERROR, e.getMessage());
+        } finally {
+            try {
+            } catch (Exception e) {
+                // Do nothing...
+            }
+        }
     }
 
     @Override
     public void close() {
-        executor.getWatchdog().destroyProcess();
-    }
-
-    RInterpretRequest rInterpretRequest = null;
-
-    /**
-     *
-     */
-    public class RInterpretRequest {
-        public String statements;
-        public String jobGroup;
-
-        public RInterpretRequest(String statements, String jobGroup) {
-            this.statements = statements;
-            this.jobGroup = jobGroup;
-        }
-
-        public String statements() {
-            return statements;
-        }
-
-        public String jobGroup() {
-            return jobGroup;
-        }
-    }
-
-    Integer statementSetNotifier = new Integer(0);
-
-    public RInterpretRequest getStatements() {
-        synchronized (statementSetNotifier) {
-            while (rInterpretRequest == null) {
-                try {
-                    statementSetNotifier.wait(1000);
-                } catch (InterruptedException e) {
-                }
-            }
-            RInterpretRequest req = rInterpretRequest;
-            rInterpretRequest = null;
-            return req;
-        }
-    }
-
-    String statementOutput = null;
-    boolean statementError = false;
-    Integer statementFinishedNotifier = new Integer(0);
-
-    public void setStatementsFinished(String out, boolean error) {
-        synchronized (statementFinishedNotifier) {
-            statementOutput = out;
-            statementError = error;
-            statementFinishedNotifier.notify();
-        }
-
-    }
-
-    boolean rScriptInitialized = false;
-    Integer rScriptInitializeNotifier = new Integer(0);
-
-    public void onRScriptInitialized() {
-        synchronized (rScriptInitializeNotifier) {
-            rScriptInitialized = true;
-            rScriptInitializeNotifier.notifyAll();
-        }
-    }
-
-    @Override
-    public InterpreterResult interpret(String st, InterpreterContext context) {
-        if (!rScriptRunning) {
-            return new InterpreterResult(Code.ERROR, "R process not running"
-                    + outputStream.toString());
-        }
-        logger.info("R output {}", outputStream.toString());
-        outputStream.reset();
-
-        synchronized (rScriptInitializeNotifier) {
-            long startTime = System.currentTimeMillis();
-            while (rScriptInitialized == false
-                    && rScriptRunning
-                    && System.currentTimeMillis() - startTime < 10 * 1000) {
-                try {
-                    rScriptInitializeNotifier.wait(1000);
-                } catch (InterruptedException e) {
-                }
-            }
-        }
-
-        if (rScriptRunning == false) {
-            // R script failed to initialize and terminated
-            return new InterpreterResult(Code.ERROR, "failed to start sparkR"
-                    + outputStream.toString());
-        }
-        if (rScriptInitialized == false) {
-            // timeout. didn't get initialized message
-            return new InterpreterResult(Code.ERROR, "sparkR is not responding "
-                    + outputStream.toString());
-        }
-
-        IUberSparkInterpreter sparkInterpreter = getSparkInterpreter();
-//    if (!sparkInterpreter.getSparkContext().version().startsWith("1.2") &&
-//        !sparkInterpreter.getSparkContext().version().startsWith("1.3")) {
-//      return new InterpreterResult(Code.ERROR, "sparkR "
-//          + sparkInterpreter.getSparkContext().version() + " is not supported");
-//    }
-        String jobGroup = sparkInterpreter.getJobGroup(context);
-//    ZeppelinContext z = sparkInterpreter.getZeppelinContext();
-//    z.setInterpreterContext(context);
-//    z.setGui(context.getGui());
-        rInterpretRequest = new RInterpretRequest(st, jobGroup);
-        statementOutput = null;
-
-        synchronized (statementSetNotifier) {
-            statementSetNotifier.notify();
-        }
-
-        synchronized (statementFinishedNotifier) {
-            while (statementOutput == null) {
-                try {
-                    statementFinishedNotifier.wait(1000);
-                } catch (InterruptedException e) {
-                }
-            }
-        }
-        logger.info("R output {}", outputStream.toString());
-
-        if (statementError) {
-            return new InterpreterResult(Code.ERROR, statementOutput);
-        } else {
-            return new InterpreterResult(Code.SUCCESS, statementOutput);
-        }
+        zeppelinR.close();
     }
 
     @Override
     public void cancel(InterpreterContext context) {
-        IUberSparkInterpreter sparkInterpreter = getSparkInterpreter();
-        sparkInterpreter.cancel(context);
+        if (this.sc != null) {
+            sc.cancelJobGroup(getJobGroup(context));
+        }
     }
 
     @Override
     public FormType getFormType() {
-        return FormType.NATIVE;
+        return FormType.NONE;
     }
 
     @Override
     public int getProgress(InterpreterContext context) {
-        IUberSparkInterpreter sparkInterpreter = getSparkInterpreter();
-        return sparkInterpreter.getProgress(context);
+        if (sparkInterpreter != null) {
+            return sparkInterpreter.getProgress(context);
+        } else {
+            return 0;
+        }
     }
 
-    /*@Override
-    public List<String> completion(String buf, int cursor) {
-        // not supported
-        return new LinkedList<String>();
-    }*/
+    @Override
+    public Scheduler getScheduler() {
+        return SchedulerFactory.singleton().createOrGetFIFOScheduler(
+                SparkRInterpreter.class.getName() + this.hashCode());
+    }
+
+    @Override
+    public List<InterpreterCompletion> completion(String buf, int cursor) {
+        return new ArrayList<>();
+    }
 
     private IUberSparkInterpreter getSparkInterpreter() {
-        InterpreterGroup intpGroup = getInterpreterGroup();
+        LazyOpenInterpreter lazy = null;
+        IUberSparkInterpreter spark = null;
+        Interpreter p = getInterpreterInTheSameSessionByClassName(IUberSparkInterpreter.class
+                .getName());
 
-        Interpreter intp = getInterpreterInTheSameSessionByClassName(IUberSparkInterpreter.class.getName());
-        if (intp == null) return null;
-
-        Interpreter p = intp;
         while (p instanceof WrappedInterpreter) {
             if (p instanceof LazyOpenInterpreter) {
-                ((LazyOpenInterpreter) p).open();
+                lazy = (LazyOpenInterpreter) p;
             }
             p = ((WrappedInterpreter) p).getInnerInterpreter();
         }
-        return (IUberSparkInterpreter) p;
+        spark = (IUberSparkInterpreter) p;
 
-    }
-
-
-    public ZeppelinContext getZeppelinContext() {
-        IUberSparkInterpreter sparkIntp = getSparkInterpreter();
-        if (sparkIntp != null) {
-            return getSparkInterpreter().getZeppelinContext();
-        } else {
-            return null;
+        if (lazy != null) {
+            lazy.open();
         }
+        return spark;
     }
 
-    public IUberdataContext getUberdataContext() {
-        IUberSparkInterpreter intp = getSparkInterpreter();
-        if (intp == null) {
-            return null;
-        } else {
-            return intp.getUberdataContext();
+    private boolean useKnitr() {
+        try {
+            return Boolean.parseBoolean(getProperty("zeppelin.R.knitr"));
+        } catch (Exception e) {
+            return false;
         }
-    }
-
-
-    public JavaSparkContext getJavaSparkContext() {
-        IUberSparkInterpreter intp = getSparkInterpreter();
-        if (intp == null) {
-            return null;
-        } else {
-            return new JavaSparkContext(intp.getSparkContext());
-        }
-    }
-
-    public SparkConf getSparkConf() {
-        JavaSparkContext sc = getJavaSparkContext();
-        if (sc == null) {
-            return null;
-        } else {
-            return getJavaSparkContext().getConf();
-        }
-    }
-
-    public SQLContext getSQLContext() {
-        IUberSparkInterpreter intp = getSparkInterpreter();
-        if (intp == null) {
-            return null;
-        } else {
-            return intp.getSQLContext();
-        }
-    }
-
-
-    @Override
-    public void onProcessComplete(int exitValue) {
-        rScriptRunning = false;
-        logger.info("R process terminated. exit code " + exitValue);
-    }
-
-    @Override
-    public void onProcessFailed(ExecuteException e) {
-        rScriptRunning = false;
-        logger.error("R process failed", e);
-//        intp
     }
 }
