@@ -372,8 +372,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 			Seq(
 				StructField("Store", DoubleType),
 				StructField("data", DoubleType),
-				StructField("Sales", IntegerType),
-				StructField("Open", BooleanType)))
+				StructField("Sales", IntegerType)))
 
 		val rdd = sc.parallelize(arimaData)
 		val dataFrame = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
