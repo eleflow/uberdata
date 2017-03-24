@@ -54,7 +54,7 @@ abstract class BestModelFinder[L, M <: ForecastBaseModel[M]](implicit kt: ClassT
 
   protected def split(dataSet: Dataset[_], nFutures: Int) = {
     dataSet.rdd.map { case (row: Row ) =>
-      val features = row.getAs[org.apache.spark.ml.linalg.Vector]($(featuresCol))
+      val features = row.getAs[org.apache.spark.ml.linalg.DenseVector]($(featuresCol))
       if (features.size - nFutures <= 0) {
         throw new IllegalArgumentException(
           s"Row ${row.toSeq.mkString(",")} " +
@@ -63,7 +63,7 @@ abstract class BestModelFinder[L, M <: ForecastBaseModel[M]](implicit kt: ClassT
     }
     val data = dataSet.rdd.map { case (row: Row ) =>
       val featuresIndex = row.fieldIndex($(featuresCol))
-      val features = row.getAs[org.apache.spark.ml.linalg.Vector](featuresIndex)
+      val features = row.getAs[org.apache.spark.ml.linalg.DenseVector](featuresIndex)
       val trainSize = features.size - nFutures
       val (validationFeatures, toBeValidated) = features.toArray.splitAt(trainSize)
       val validationRow = row.toSeq.updated(featuresIndex, Vectors.dense(validationFeatures)) :+
@@ -101,13 +101,15 @@ abstract class BestModelFinder[L, M <: ForecastBaseModel[M]](implicit kt: ClassT
     broadcastEvaluator: Broadcast[TimeSeriesEvaluator[L]],
     id: L,
     parameters: ParamMap): (UberArimaModel, ModelParamEvaluation[L]) = {
-    val features = row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
+    val features = row.getAs[org.apache.spark.ml.linalg.Vector]($(featuresCol))
     log.warn(
       s"Evaluating forecast for id $id, with parameters p ${model.p}, d ${model.d} " +
         s"and q ${model.q}")
 
+    val featuresConverted: org.apache.spark.mllib.linalg.Vector  =  org.apache.spark.mllib.linalg.Vectors.fromML(features);
+
     val (forecastToBeValidated, _) =
-      model.forecast(features, $(nFutures)).toArray.splitAt(features.size)
+      model.forecast(featuresConverted, $(nFutures)).toArray.splitAt(features.size)
     val toBeValidated = features.toArray.zip(forecastToBeValidated)
     val metric = broadcastEvaluator.value.evaluate(toBeValidated)
     val metricName = broadcastEvaluator.value.getMetricName

@@ -69,9 +69,9 @@ class ArimaModel[G](
     val nFut = scContext.broadcast($(nFutures))
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
-        val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
+        val features = row.getAs[org.apache.spark.ml.linalg.Vector](featuresColName.value)
         val (ownFeaturesPrediction, forecast) =
-          bestModel.forecast(features, nFut.value).toArray.splitAt(features.size)
+          bestModel.forecast(org.apache.spark.mllib.linalg.Vectors.fromML(features), nFut.value).toArray.splitAt(features.size)
         Row(
           row.toSeq :+ Vectors
             .dense(forecast) :+ SupportedAlgorithm.Arima.toString :+ bestModel.params :+ Vectors

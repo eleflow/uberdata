@@ -103,8 +103,10 @@ class ArimaBestModelFinder[G](
       val p = params.getOrElse(arimaP, 0)
       val d = params.getOrElse(arimaD, 0)
       try {
+        val tsToBeConverted: org.apache.spark.ml.linalg.DenseVector =  row.getAs($(featuresCol))
+        val tsConverted: org.apache.spark.mllib.linalg.Vector  = org.apache.spark.mllib.linalg.Vectors.dense(tsToBeConverted.toArray);
         Some(
-          (params, UberArimaModel.fitModel(p, d, q, row.getAs($(featuresCol))))
+          (params, UberArimaModel.fitModel(p, d, q, tsConverted))
         )
       } catch {
         case e: Exception =>

@@ -121,9 +121,9 @@ class ForecastBestModel[L](
     val nFut = scContext.broadcast($(nFutures))
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
-        val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
+        val features = row.getAs[org.apache.spark.ml.linalg.Vector](featuresColName.value)
         val prediction = {
-          evaluateParams(metrics, features, nFut)
+          evaluateParams(metrics, org.apache.spark.mllib.linalg.Vectors.fromML(features), nFut)
         }
         Row(row.toSeq ++ prediction: _*)
     }
