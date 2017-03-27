@@ -42,15 +42,15 @@ abstract class HoltWintersBestModelEvaluation[L, M <: ForecastBaseModel[M]](
     id: L
   ): (UberHoltWintersModel, ModelParamEvaluation[L]) = {
     val features =
-      row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
+      row.getAs[org.apache.spark.ml.linalg.Vector]($(featuresCol))
     log.warn(
       s"Evaluating forecast for id $id, with parameters " +
         s"alpha ${model.alpha}, beta ${model.beta} and gamma ${model.gamma}"
     )
     val expectedResult =
-      row.getAs[org.apache.spark.mllib.linalg.Vector](partialValidationCol)
+      row.getAs[org.apache.spark.ml.linalg.Vector](partialValidationCol)
     val forecastToBeValidated = Vectors.dense(new Array[Double]($(nFutures)))
-    model.forecast(features, forecastToBeValidated).toArray
+    model.forecast(org.apache.spark.mllib.linalg.Vectors.fromML(features), forecastToBeValidated).toArray
     val toBeValidated =
       expectedResult.toArray.zip(forecastToBeValidated.toArray)
     val metric = broadcastEvaluator.value.evaluate(toBeValidated)

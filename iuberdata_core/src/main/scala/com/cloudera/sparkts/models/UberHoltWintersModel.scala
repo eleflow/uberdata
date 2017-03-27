@@ -24,7 +24,7 @@ import org.apache.spark.mllib.linalg.Vector
 class UberHoltWintersModel(override val period: Int,
                            override val alpha: Double,
                            override val beta: Double,
-                           override val gamma: Double, override val modelType: String = "aditive")
+                           override val gamma: Double, override val modelType: String = "additive")
     extends HoltWintersModel(modelType,period, alpha, beta, gamma) {
   lazy val params = Map(
     "HoltWintersAlpha" -> alpha.toString,
@@ -35,7 +35,7 @@ class UberHoltWintersModel(override val period: Int,
 
 object UberHoltWintersModel {
   def fitModelWithBOBYQA(ts: Vector,
-                         m: Int, modelType: String = "aditive"): UberHoltWintersModel = {
+                         m: Int, modelType: String = "additive"): UberHoltWintersModel = {
     val model = HoltWinters.fitModelWithBOBYQA(ts, m, modelType)
     new UberHoltWintersModel(
       m,
