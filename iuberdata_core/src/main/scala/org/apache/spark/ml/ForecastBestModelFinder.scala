@@ -76,7 +76,7 @@ class ForecastBestModelFinder[I, M <: ForecastBaseModel[M]](
       s"Evaluating forecast for id $id, with parameters alpha ${model.alpha}, beta ${model.beta} and gamma ${model.gamma}"
     )
     val expectedResult =
-      row.getAs[org.apache.spark.mllib.linalg.Vector](partialValidationCol)
+      row.getAs[org.apache.spark.ml.linalg.Vector](partialValidationCol)
     val forecastToBeValidated = Vectors.dense(new Array[Double]($(nFutures)))
     model.forecast(org.apache.spark.mllib.linalg.Vectors.fromML(features), forecastToBeValidated).toArray
     $(windowParams).map { windowSize =>

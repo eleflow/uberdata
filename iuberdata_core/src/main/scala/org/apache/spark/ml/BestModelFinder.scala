@@ -54,7 +54,7 @@ abstract class BestModelFinder[L, M <: ForecastBaseModel[M]](implicit kt: ClassT
 
   protected def split(dataSet: Dataset[_], nFutures: Int) = {
     dataSet.rdd.map { case (row: Row ) =>
-      val features = row.getAs[org.apache.spark.ml.linalg.DenseVector]($(featuresCol))
+      val features = row.getAs[org.apache.spark.ml.linalg.Vector]($(featuresCol))
       if (features.size - nFutures <= 0) {
         throw new IllegalArgumentException(
           s"Row ${row.toSeq.mkString(",")} " +
@@ -63,7 +63,7 @@ abstract class BestModelFinder[L, M <: ForecastBaseModel[M]](implicit kt: ClassT
     }
     val data = dataSet.rdd.map { case (row: Row ) =>
       val featuresIndex = row.fieldIndex($(featuresCol))
-      val features = row.getAs[org.apache.spark.ml.linalg.DenseVector](featuresIndex)
+      val features = row.getAs[org.apache.spark.ml.linalg.Vector](featuresIndex)
       val trainSize = features.size - nFutures
       val (validationFeatures, toBeValidated) = features.toArray.splitAt(trainSize)
       val validationRow = row.toSeq.updated(featuresIndex, Vectors.dense(validationFeatures)) :+
