@@ -27,6 +27,7 @@ import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.Dataset
+import org.apache.spark.mllib.util.MLUtils
 
 import scala.reflect.ClassTag
 
@@ -61,12 +62,12 @@ class HoltWintersModel[T](
     val nFut = scContext.broadcast($(nFutures))
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
-        val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
+        val features = row.getAs[org.apache.spark.ml.linalg.Vector](featuresColName.value)
 
         val forecast = Vectors.dense(new Array[Double](nFut.value))
-        bestModel.forecast(features, forecast)
+        bestModel.forecast(org.apache.spark.mllib.linalg.Vectors.fromML(features), forecast)
         Row(
-          row.toSeq :+ forecast :+ SupportedAlgorithm.HoltWinters.toString :+ bestModel.params: _*
+          row.toSeq :+ forecast.asML :+ SupportedAlgorithm.HoltWinters.toString :+ bestModel.params: _*
         )
     }
 
@@ -81,7 +82,7 @@ class HoltWintersModel[T](
       val (featuresPrediction, forecastPrediction) =
         forecast.splitAt(features.size)
       Row(
-        row.toSeq :+ Vectors.dense(forecastPrediction) :+ Vectors.dense(featuresPrediction): _*
+        row.toSeq :+ org.apache.spark.ml.linalg.Vectors.dense(forecastPrediction) :+ org.apache.spark.ml.linalg.Vectors.dense(featuresPrediction): _*
       )
   }
 
