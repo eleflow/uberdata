@@ -111,7 +111,7 @@ object DataTransformer {
                                 test: Dataset,
                                 target: Seq[String],
                                 id: Seq[String]) = {
-    train.sliceByName(excludes = target).unionAll(test).sliceByName(excludes = id)
+    train.sliceByName(excludes = target).union(test).sliceByName(excludes = id)
   }
 
   def createLabeledPointFromRDD(
