@@ -35,6 +35,7 @@ import play.api.libs.json.Json
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
 import scala.collection.JavaConversions._
+import scala.util.Try
 
 
 /**
@@ -96,9 +97,17 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 
 	def buildAccumulables(stageInfo: StageInfo) = stageInfo.accumulables.map {
 		case (key, accumulableInfo) => eleflow.uberdata.core.data.json.AccumulableInfo(sparkConf.getAppId,
-			stageInfo.stageId, accumulableInfo.id, accumulableInfo.name.getOrElse(""),
-			accumulableInfo.update.asInstanceOf[Option[String]], accumulableInfo.value.getOrElse("").asInstanceOf[String],  false/*accumulableInfo.internal*/)
+			stageInfo.stageId, accumulableInfo.id, accumulableInfo.name.getOrElse("name"),
+			accumulableInfo.update.asInstanceOf[Option[String]], getAccumulableInfoValue (accumulableInfo.value),  false/*accumulableInfo.internal*/)
 			//TODO: internal hardcoded pq não é acessivel daqui
+	}
+
+	private def getAccumulableInfoValue(value : Option[Any]): String = {
+		val ret = value match {
+			case Some(x: Any) => x.toString()
+			case _ => "0"
+		}
+		ret
 	}
 
 	import eleflow.uberdata.core.json.SparkJsonMapper._
@@ -209,17 +218,27 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 			localBlocksFetched, fetchWaitTime, remoteBytesRead,
 			localBytesRead, totalBytesRead, totalBlocksFetched,
 			shuffleRecordsRead, shuffleBytesWritten, shuffleWriteTime,
-			shuffleRecordsWritten/*, Some(taskMetrics.flatMap(_.updatedBlockStatuses.map {
+			shuffleRecordsWritten, getUpdateBlocks(taskMetrics) /*taskMetrics.flatMap(_.updatedBlockStatuses.toList.map {
 				case (blockId, blockStatus) => UberBlockId(blockId.name, new UberBlockStatus(blockStatus))
-			})).getOrElse(
-				Seq.empty[UberBlockId]))
-		eventsAccum(task.toMap, Some("TaskEnd")*/)
+			})*/)
+
+		eventsAccum(task.toMap, Some("TaskEnd"))
+
+		getUpdateBlocks(taskMetrics).foreach(eventsAccum(_))
 
 		/*taskMetrics.flatMap(_.updatedBlockStatuses.map {
 			case (blockId, blockStatus) => BlockMetrics(blockId.name, task.executorRunTime)
 		}).getOrElse(Seq.empty[BlockMetrics]).foreach(eventsAccum(_))*/
 
 		super.onTaskEnd(taskEnd)
+	}
+
+	private def getUpdateBlocks (taskMetrics: Option[TaskMetrics]):  Seq[UberBlockId]  = {
+		val ret = taskMetrics match {
+			case Some(x: TaskMetrics) => taskMetrics.get.updatedBlockStatuses.map{case (blockId, blockStatus) => UberBlockId(blockId.name, new UberBlockStatus(blockStatus))}.toSeq
+			case _ => Seq.empty[UberBlockId]
+		}
+		ret
 	}
 
 	override def onJobStart(jobStart: SparkListenerJobStart): Unit = {
@@ -294,11 +313,10 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 
 		// a.accumUpdates.flatMap{ case (l,i,i2,s) => s.map((l,i,i2,_))}
 		// Seq[(Long, Int, Int, String)] = List((1,1,1,a), (1,1,1,b), (2,2,2,c), (2,2,2,d))
+		/*executorMetricsUpdate.accumUpdates.foreach { case(taskId, stageId, stageAttemptId, accumInfos) =>
+			accumInfos.map((taskId, stageId, stageAttemptId,_))
 
-//		executorMetricsUpdate.accumUpdates.flatMap { case(taskId, stageId, stageAttemptId, accumInfos) =>
-//			accumInfos.map((taskId, stageId, stageAttemptId,_))
-
-			/*val (outputMetrics, shuffleWriteMetrics, shuffleReadMetrics, inputMetrics) = extractTaskMetrics(Some(f._4))
+			val (outputMetrics, shuffleWriteMetrics, shuffleReadMetrics, inputMetrics) = extractTaskMetrics(Some(f._4))
 			val bytesRead = inputMetrics.map(_.bytesRead)
 			val recordsRead = inputMetrics.map(_.recordsRead)
 
@@ -325,8 +343,8 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 				recordsWritten, remoteBlocksFetched, localBlocksFetched, fetchWaitTime,
 				remoteBytesRead, localBytesRead, totalBytesRead, totalBlocksFetched, shuffleRecordsRead, shuffleBytesWritten,
 				shuffleWriteTime, shuffleRecordsWritten)
-			eventsAccum(executorMetrics)*/
-/*		}.map{f =>
+			eventsAccum(executorMetrics)
+		}.map{f =>
 			val taskId = f._1
 			val stageId = f._2
 			val stageAttemptId = f._3
@@ -341,8 +359,8 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 
 			eventsAccum(accumulatorInfoUpdate)
 
-		}
-*/
+		}*/
+
 		super.onExecutorMetricsUpdate(executorMetricsUpdate)
 	}
 

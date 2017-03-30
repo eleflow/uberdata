@@ -77,8 +77,8 @@ class TaskEnd(val appId: String,
               val shuffleRecordsRead: Option[Long] = None,
               val shuffleBytesWritten: Option[Long] = None,
               val shuffleWriteTime: Option[Long] = None,
-              val shuffleRecordsWritten: Option[Long] = None/*,
-              val updatedBlocks: Seq[UberBlockId]*/)
+              val shuffleRecordsWritten: Option[Long] = None,
+              val updatedBlocks: Seq[UberBlockId])
     extends Mappable
     with Product
     with Serializable {
@@ -122,7 +122,7 @@ class TaskEnd(val appId: String,
     case 32 => shuffleBytesWritten
     case 33 => shuffleWriteTime
     case 34 => shuffleRecordsWritten
-//    case 35 => updatedBlocks
+    case 35 => updatedBlocks
   }
 
   def apply(appId: String,
@@ -159,8 +159,8 @@ class TaskEnd(val appId: String,
             shuffleRecordsRead: Option[Long] = None,
             shuffleBytesWritten: Option[Long] = None,
             shuffleWriteTime: Option[Long] = None,
-            shuffleRecordsWritten: Option[Long] = None) /*,
-            updatedBlocks: Seq[UberBlockId])*/ =
+            shuffleRecordsWritten: Option[Long] = None ,
+            updatedBlocks: Seq[UberBlockId]) =
     new TaskEnd(
       appId,
       stageId,
@@ -196,8 +196,8 @@ class TaskEnd(val appId: String,
       shuffleRecordsRead,
       shuffleBytesWritten,
       shuffleWriteTime,
-      shuffleRecordsWritten/*,
-      updatedBlocks*/
+      shuffleRecordsWritten,
+      updatedBlocks
     )
 
 }
