@@ -16,9 +16,11 @@
 
 import sbt.Keys._
 
-val nm = "eleflow.uberdata.IUberdata-Zeppelin"
+val nm = "uberdata-zeppelin"
 
 val ver = "0.1.0"
+
+organization := "eleflow.uberdata"
 
 name := nm
 

@@ -77,13 +77,12 @@ public class SparkRInterpreter extends Interpreter {
         this.sc = sparkInterpreter.getSparkContext();
         this.jsc = sparkInterpreter.getJavaSparkContext();
         SparkVersion sparkVersion = new SparkVersion(sc.version());
-        ZeppelinRContext.setSparkContext(sc);
+//TODO reanalisar
+        //        UberZeppelinContext.setSparkContext(this.sc);
 //        ZeppelinRContext.setJavaSparkContext(jsc);
-        if (Utils.isSpark2()) {
-            ZeppelinRContext.setSparkSession(sparkInterpreter.getSparkSession());
-        }
-        ZeppelinRContext.setSqlContext(sparkInterpreter.getSQLContext());
-        ZeppelinRContext.setZeppelinContext(sparkInterpreter.getZeppelinContext());
+        ZeppelinRContext.setSparkSession(sparkInterpreter.getSparkSession());
+        UberZeppelinRContext.setSqlContext(sparkInterpreter.getSQLContext());
+        UberZeppelinRContext.setZeppelinContext(sparkInterpreter.getZeppelinContext());
 
         zeppelinR = new ZeppelinR(rCmdPath, sparkRLibPath, port, sparkVersion);
         try {
@@ -99,7 +98,7 @@ public class SparkRInterpreter extends Interpreter {
         renderOptions = getProperty("zeppelin.R.render.options");
     }
 
-    String getJobGroup(InterpreterContext context){
+    String getJobGroup(InterpreterContext context) {
         return "zeppelin-" + context.getParagraphId();
     }
 
@@ -117,11 +116,9 @@ public class SparkRInterpreter extends Interpreter {
                 JsonNode rootNode = m.readTree(jsonConfig);
                 JsonNode imageWidthNode = rootNode.path("imageWidth");
                 if (!imageWidthNode.isMissingNode()) imageWidth = imageWidthNode.textValue();
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 logger.warn("Can not parse json config: " + jsonConfig, e);
-            }
-            finally {
+            } finally {
                 lines = lines.replace(jsonConfig, "");
             }
         }
@@ -129,13 +126,8 @@ public class SparkRInterpreter extends Interpreter {
         String jobGroup = getJobGroup(interpreterContext);
         String setJobGroup = "";
         // assign setJobGroup to dummy__, otherwise it would print NULL for this statement
-        if (Utils.isSpark2()) {
-            setJobGroup = "dummy__ <- setJobGroup(\"" + jobGroup +
-                    "\", \"zeppelin sparkR job group description\", TRUE)";
-        } else if (getSparkInterpreter().getSparkVersion().newerThanEquals(SparkVersion.SPARK_1_5_0)) {
-            setJobGroup = "dummy__ <- setJobGroup(sc, \"" + jobGroup +
-                    "\", \"zeppelin sparkR job group description\", TRUE)";
-        }
+        setJobGroup = "dummy__ <- setJobGroup(\"" + jobGroup +
+                "\", \"zeppelin sparkR job group description\", TRUE)";
         logger.debug("set JobGroup:" + setJobGroup);
         lines = setJobGroup + "\n" + lines;
 

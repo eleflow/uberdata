@@ -15,15 +15,14 @@
  */
 
 package eleflow.uberdata.core
-
-import org.apache.spark.repl.SparkILoop
+import scala.tools.nsc.interpreter.IMain
 
 /**
   * Created by dirceu on 22/05/15.
   */
 class InterpreterSetup {
 
-  def setup(intp: SparkILoop) = {
+  def setup(intp: IMain) = {
     intp.interpret("import eleflow.uberdata.core.util.ClusterSettings")
     intp.interpret("import org.apache.spark.SparkContext._")
     intp.interpret("import uc._ ")

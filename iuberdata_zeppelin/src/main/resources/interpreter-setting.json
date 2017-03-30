@@ -1,0 +1,37 @@
+[
+  {
+    "group": "uberdata",
+    "name": "uberdata-interpreter",
+    "className": "org.apache.zeppelin.spark.IUberSparkInterpreter",
+    "properties": {
+      "zeppelin.spark.useHiveContext": {
+        "envName": null,
+        "propertyName": "zeppelin.spark.useHiveContext",
+        "defaultValue": "true",
+        "description": "Use HiveContext instead of SQLContext if it is true."
+      },
+      "zeppelin.spark.maxResult": {
+        "envName": null,
+        "propertyName": "zeppelin.spark.maxResult",
+        "defaultValue": 1000,
+        "description": "Max allowed results to be displayed into interpreter"
+      },
+      "iuberdata.setup.classes": {
+        "envName": null,
+        "propertyName": "iuberdata.setup.classes",
+        "defaultValue": "eleflow.uberdata.core.InterpreterSetup",
+        "description": "Classes used to setup the interpreter"
+      },
+      "master": {
+        "envName": null,
+        "propertyName": "master",
+        "defaultValue": "eleflow.uberdata.core.InterpreterSetup",
+        "description": "Classes used to setup the interpreter"
+      }
+    },
+    "editor": {
+      "language": "scala",
+      "editOnDblClick": false
+    }
+  }
+  ]
