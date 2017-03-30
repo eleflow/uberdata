@@ -578,15 +578,14 @@ class ForecastPredictor extends Serializable {
   }
 
   private def calculateAccuracySmallModelFuture(df: DataFrame): Double = {
-    val spark = SparkSession.builder.
+    /*val spark = SparkSession.builder.
       master("local")
       .appName("tester")
       .getOrCreate()
-    import spark.implicits._
+    import spark.implicits._*/
 
     if(df.columns.contains("featuresValidation")) {
-      val errorsArray = df.select("features", "featuresValidation").as[(org.apache.spark.ml.linalg.Vector, org.apache.spark.ml.linalg.Vector)]
-          .map { case Row(v1: org.apache.spark.ml.linalg.Vector, v2: org.apache.spark.ml.linalg.Vector) =>
+      val errorsArray = df.select("features", "featuresValidation").rdd.map { case Row(v1: org.apache.spark.ml.linalg.Vector, v2: org.apache.spark.ml.linalg.Vector) =>
         val zipArray = v1.toArray.zip(v2.toArray).map {
           f => if (f._1 == 0) {
             0

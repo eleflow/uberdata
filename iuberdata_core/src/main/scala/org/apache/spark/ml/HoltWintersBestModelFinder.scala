@@ -83,8 +83,10 @@ class HoltWintersBestModelFinder[G](
     val id = row.getAs[G]($(groupByCol).get)
 
     val result = try {
+      val dense = row.getAs[org.apache.spark.ml.linalg.DenseVector]($(featuresCol))
+      val ts:org.apache.spark.mllib.linalg.Vector  = org.apache.spark.mllib.linalg.Vectors.dense(dense.toArray);
       Some(
-        UberHoltWintersModel.fitModelWithBOBYQA(row.getAs($(featuresCol)), $(nFutures))
+        UberHoltWintersModel.fitModelWithBOBYQA(ts, $(nFutures))
       )
     } catch {
       case e: Exception =>

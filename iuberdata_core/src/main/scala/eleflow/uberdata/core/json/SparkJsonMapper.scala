@@ -114,8 +114,8 @@ object SparkJsonMapper {
       "shuffleRecordsRead" -> task.shuffleRecordsRead.map(_.toString),
       "shuffleBytesWritten" -> task.shuffleBytesWritten.map(_.toString),
       "shuffleWriteTime" -> task.shuffleWriteTime.map(_.toString),
-      "shuffleRecordsWritten" -> task.shuffleRecordsWritten.map(_.toString)/*,
-      "updatedBlocks" -> task.updatedBlocks*/
+      "shuffleRecordsWritten" -> task.shuffleRecordsWritten.map(_.toString),
+      "updatedBlocks" -> task.updatedBlocks
     )
   }
 

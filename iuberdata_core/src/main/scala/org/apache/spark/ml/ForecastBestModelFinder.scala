@@ -71,14 +71,14 @@ class ForecastBestModelFinder[I, M <: ForecastBaseModel[M]](
     id: I
   ) = {
     val features =
-      row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
+      row.getAs[org.apache.spark.ml.linalg.Vector]($(featuresCol))
     log.warn(
       s"Evaluating forecast for id $id, with parameters alpha ${model.alpha}, beta ${model.beta} and gamma ${model.gamma}"
     )
     val expectedResult =
-      row.getAs[org.apache.spark.mllib.linalg.Vector](partialValidationCol)
+      row.getAs[org.apache.spark.ml.linalg.Vector](partialValidationCol)
     val forecastToBeValidated = Vectors.dense(new Array[Double]($(nFutures)))
-    model.forecast(features, forecastToBeValidated).toArray
+    model.forecast(org.apache.spark.mllib.linalg.Vectors.fromML(features), forecastToBeValidated).toArray
     $(windowParams).map { windowSize =>
       val movingAverageToBeValidate =
         MovingAverageCalc.simpleMovingAverageArray(forecastToBeValidated.toArray, windowSize)
@@ -138,7 +138,7 @@ class ForecastBestModelFinder[I, M <: ForecastBaseModel[M]](
 
     val holtWintersResults = try {
       val holtWinters =
-        UberHoltWintersModel.fitModelWithBOBYQA(row.getAs($(featuresCol)), $(nFutures))
+        UberHoltWintersModel.fitModelWithBOBYQA(org.apache.spark.mllib.linalg.Vectors.fromML(row.getAs($(featuresCol))), $(nFutures))
       val params = ParamMap()
         .put(ParamPair(alpha, holtWinters.alpha))
         .put(ParamPair(beta, holtWinters.beta))
@@ -158,7 +158,7 @@ class ForecastBestModelFinder[I, M <: ForecastBaseModel[M]](
         val d = params.getOrElse(arimaD, 0)
         try {
           val result =
-            UberArimaModel.fitModel(p, d, q, row.getAs($(featuresCol)))
+            UberArimaModel.fitModel(p, d, q, org.apache.spark.mllib.linalg.Vectors.fromML(row.getAs($(featuresCol))))
           val params = ParamMap(
             ParamPair(arimaP, result.p),
             ParamPair(arimaQ, result.q),

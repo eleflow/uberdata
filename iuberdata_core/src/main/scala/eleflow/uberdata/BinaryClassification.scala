@@ -87,7 +87,7 @@ class BinaryClassification {
 
 		}
 
-		val allPredictionsForTrainingSetDF = predictionsForTrainingSet.toSeq.reduce(_.unionAll(_)).withColumnRenamed(idCol, "id1")
+		val allPredictionsForTrainingSetDF = predictionsForTrainingSet.toSeq.reduce(_.union(_)).withColumnRenamed(idCol, "id1")
 		val predictionsForTrainingSetStats = allPredictionsForTrainingSetDF.join(orderedTrainDataFrame, allPredictionsForTrainingSetDF("id1") === orderedTrainDataFrame(idCol)).select(idCol, decile, labelCol)
 		val conversionRateDF0 = predictionsForTrainingSetStats.groupBy(decile).agg("y" -> "sum").withColumnRenamed("sum(y)", "soma_convertidos")
 		val totalConversions = conversionRateDF0.rdd.map(_ (1).asInstanceOf[Long]).reduce(_ + _)
