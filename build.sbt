@@ -32,7 +32,7 @@ lazy val slf4jVersion = "1.7.24"
 
 lazy val commonSettings = Seq(
   organization := "br.com.eleflow",
-  version := "0.1.0",
+  version := "0.2.0",
   scalaVersion := "2.11.8"
 )
 
@@ -56,6 +56,7 @@ lazy val iuberdata_core = project settings (libraryDependencies ++= Seq(
     "ml.dmlc" % "xgboost4j" % "0.7" % "provided",
     "ml.dmlc" % "xgboost4j-spark" % "0.7" % "provided",
     "com.databricks" %% "spark-csv" % "1.5.0",
+  "com.databricks" %% "spark-xml" % "0.4.1",
     "mysql" % "mysql-connector-java" % mysqlV % "runtime",
     "org.slf4j" % "slf4j-api" % slf4jVersion,
     "org.slf4j" % "slf4j-log4j12" % slf4jVersion
