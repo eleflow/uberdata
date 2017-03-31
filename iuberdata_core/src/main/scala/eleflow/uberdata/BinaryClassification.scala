@@ -127,7 +127,7 @@ class BinaryClassification {
 			case _ => throw new UnsupportedOperationException()
 		}
 		val joinIdColName = "joinIdColNam"
-		val united = train.cache.drop(labelCol).unionAll(test.cache)
+		val united = train.cache.drop(labelCol).union(test.cache)
 		val encoded = applyOneHotEncoder(united, featuresCol)
 		val encodedTrain = train.select(col(idCol).alias(joinIdColName), col(labelCol)).
 			join(encoded, col(joinIdColName) === encoded(idCol)).repartition(1)

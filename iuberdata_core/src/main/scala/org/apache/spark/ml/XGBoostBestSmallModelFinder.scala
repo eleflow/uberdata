@@ -22,7 +22,6 @@ import eleflow.uberdata.enums.SupportedAlgorithm
 import eleflow.uberdata.models.UberXGBOOSTModel
 import ml.dmlc.xgboost4j.LabeledPoint
 import ml.dmlc.xgboost4j.scala.{Booster, DMatrix}
-//import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.{SparkContext}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
@@ -49,7 +48,6 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
     with TimeSeriesBestModelFinder
     with HasIdCol
     with HasTimeCol {
-//    with Logging {
   def this()(implicit gt: ClassTag[G]) =
     this(Identifiable.randomUID("xgboostsmall"))
 

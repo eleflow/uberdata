@@ -112,7 +112,6 @@ trait Predictor extends Serializable {
     val columns = svmModel.weights.toArray.zipWithIndex
       .sortBy(_._1)(Ordering[Double].reverse)
       .take(columnsToUse)
-    //log.info(s"Using columns weight of ${columns.map(_._1)} and columns ids ${columns.map(_._2)}")
     slf4jLogger.info(s"Using columns weight of ${columns.map(_._1)} and columns ids ${columns.map(_._2)}")
     val (trainlp, validationlp, testlp) = extractColumnsFromLP(
       columns,

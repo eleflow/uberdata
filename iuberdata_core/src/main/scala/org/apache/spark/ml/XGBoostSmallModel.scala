@@ -30,7 +30,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.Dataset
-//import org.apache.spark.Logging
 
 import scala.reflect.ClassTag
 
@@ -137,7 +136,6 @@ object XGBoostSmallModel extends MLReadable[XGBoostSmallModel[_]] {
 
   private[XGBoostSmallModel] class XGBoostRegressionModelWriter(instance: XGBoostSmallModel[_])
       extends MLWriter
-//      with Logging {
   {
 
     override protected def saveImpl(path: String): Unit = {
