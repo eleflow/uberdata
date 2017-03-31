@@ -85,7 +85,7 @@ lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;co
       "org.rosuda.REngine" % "REngine" % "2.1.1-SNAPSHOT",
       "org.rosuda.REngine" % "Rserve" % "1.8.2-SNAPSHOT",
       "junit" % "junit" % "4.11" % "test"
-    )) settings (dependencyOverrides ++= Set(
+    )) settings (commonSettings, dependencyOverrides ++= Set(
     "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5"
   ))
 
