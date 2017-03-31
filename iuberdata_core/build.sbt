@@ -23,12 +23,6 @@ import com.typesafe.sbt.SbtGit._
 
 versionWithGit
 
-organization := "eleflow"
-
-name := "IUberdataCore"
-
-version := "0.1.0"
-
 resolvers += Resolver.sonatypeRepo("public")
 
 resolvers += Resolver.typesafeIvyRepo("releases")
@@ -50,8 +44,11 @@ def iUberdataCoreVersion(version: Option[String] = Some("Not a Git Repository"),
   IO.write(
     file,
     s"""package eleflow.uberdata.core\n  object UberdataCoreVersion{\n          val version = "${version.get}"\n
-       |}\n""".stripMargin)
+			 |}\n""".stripMargin)
   Seq(file)
 }
 
-sourceGenerators in Compile <+= (git.gitHeadCommit, sourceManaged in Compile) map iUberdataCoreVersion
+
+
+sourceGenerators in Compile <+= (git.gitHeadCommit, sourceManaged in Compile) map
+  iUberdataCoreVersion

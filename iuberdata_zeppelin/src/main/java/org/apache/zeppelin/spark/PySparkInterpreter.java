@@ -179,7 +179,7 @@ public class PySparkInterpreter extends Interpreter implements ExecuteResultHand
 
     // get additional class paths when using SPARK_SUBMIT and not using YARN-CLIENT
     // also, add all packages to PYTHONPATH since there might be transitive dependencies
-    if (SparkInterpreter.useSparkSubmit() &&
+    if (IUberSparkInterpreter.useSparkSubmit() &&
             !getSparkInterpreter().isYarnMode()) {
 
       String sparkSubmitJars = getSparkConf().get("spark.jars").replace(",", ":");
@@ -381,7 +381,7 @@ public class PySparkInterpreter extends Interpreter implements ExecuteResultHand
       return new InterpreterResult(Code.ERROR, errorMessage);
     }
     String jobGroup = sparkInterpreter.getJobGroup(context);
-    ZeppelinContext z = sparkInterpreter.getZeppelinContext();
+    UberZeppelinContext z = sparkInterpreter.getZeppelinContext();
     z.setInterpreterContext(context);
     z.setGui(context.getGui());
     pythonInterpretRequest = new PythonInterpretRequest(st, jobGroup);
@@ -567,7 +567,7 @@ public class PySparkInterpreter extends Interpreter implements ExecuteResultHand
     return spark;
   }
 
-  public ZeppelinContext getZeppelinContext() {
+  public UberZeppelinContext getZeppelinContext() {
     IUberSparkInterpreter sparkIntp = getSparkInterpreter();
     if (sparkIntp != null) {
       return getSparkInterpreter().getZeppelinContext();

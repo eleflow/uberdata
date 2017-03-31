@@ -140,7 +140,7 @@ public class IUberdataSparkSqlInterpreter extends Interpreter {
       throw new InterpreterException(e);
     }
 
-    String msg = ZeppelinContext.showDF(sc, context, rdd, maxResult);
+    String msg = UberZeppelinContext.showDF(sc, context, rdd, maxResult);
     sc.clearJobGroup();
     return new InterpreterResult(Code.SUCCESS, msg);
   }

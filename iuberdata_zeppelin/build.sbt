@@ -16,17 +16,14 @@
 
 import sbt.Keys._
 
-val nm = "eleflow.uberdata.IUberdata-Zeppelin"
-
-val ver = "0.1.0"
+val nm = "uberdata-zeppelin"
 
 name := nm
 
-version := ver
 
 test in assembly := {}
 
-assemblyJarName in assembly := s"$nm-$ver.jar"
+assemblyJarName in assembly := s"${name.value}-${version.value}.jar"
 
 net.virtualvoid.sbt.graph.Plugin.graphSettings
 

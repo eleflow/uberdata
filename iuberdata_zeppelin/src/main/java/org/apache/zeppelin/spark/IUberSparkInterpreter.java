@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.base.Joiner;
 
 import eleflow.uberdata.core.IUberdataContext;
+import eleflow.uberdata.core.IUberdataContext$;
 import eleflow.uberdata.core.util.ClusterSettings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -94,7 +95,11 @@ import scala.tools.nsc.settings.MutableSettings.PathSetting;
 public class IUberSparkInterpreter extends Interpreter {
     public static Logger logger = LoggerFactory.getLogger(IUberSparkInterpreter.class);
 
-    private ZeppelinContext z;
+//    static {
+//        Interpreter.register("MyInterpreterName", IUberSparkInterpreter.class.getName());
+//    }
+
+    private UberZeppelinContext z;
     private SparkILoop interpreter;
     /**
      * intp - org.apache.spark.repl.SparkIMain (scala 2.10)
@@ -148,7 +153,9 @@ public class IUberSparkInterpreter extends Interpreter {
             if (uc.initialized()) {
                 createSparkContext();
                 env = SparkEnv.get();
-                sparkListener = setupListeners(uc.sparkContext());
+                SparkContext sc = uc.sparkContext();
+                sparkListener = setupListeners(sc);
+                sparkVersion = SparkVersion.fromVersionString(sc.version());
             }
             return uc.sparkContext();
         }
@@ -234,6 +241,7 @@ public class IUberSparkInterpreter extends Interpreter {
     public Object getSparkSession() {
         synchronized (sharedInterpreterLock) {
             if (sparkSession == null) {
+                setupConfForSession();
                 createSparkSession();
             }
             return sparkSession;
@@ -242,11 +250,7 @@ public class IUberSparkInterpreter extends Interpreter {
 
     public SQLContext getSQLContext() {
         synchronized (sharedInterpreterLock) {
-            if (Utils.isSpark2()) {
-                return getSQLContext_2();
-            } else {
-                return getSQLContext_1();
-            }
+            return getSQLContext_2();
         }
     }
 
@@ -292,7 +296,7 @@ public class IUberSparkInterpreter extends Interpreter {
             dep = new SparkDependencyResolver(
                     (Global) Utils.invokeMethod(intp, "global"),
                     (ClassLoader) Utils.invokeMethod(Utils.invokeMethod(intp, "classLoader"), "getParent"),
-                    uc.sparkContext(),
+                    uc,
                     getProperty("zeppelin.dep.localrepo"),
                     getProperty("zeppelin.dep.additionalRemoteRepository"));
         }
@@ -312,17 +316,19 @@ public class IUberSparkInterpreter extends Interpreter {
     }
 
     public boolean isYarnMode() {
-        return getProperty("master").startsWith("yarn");
+        return ClusterSettings.master().isDefined() && ClusterSettings.master().get().startsWith
+                ("yarn");
     }
 
     /**
      * Spark 2.x
      * Create SparkSession
      */
-    public Object createSparkSession() {
-        logger.info("------ Create new SparkContext {} -------", getProperty("master"));
+    public void setupConfForSession() {
+        logger.info("ClusterSettings " + ClusterSettings.master());
+        logger.info("------ Create new SparkContext {} -------", ClusterSettings.master());
         String execUri = System.getenv("SPARK_EXECUTOR_URI");
-        conf.setAppName(getProperty("spark.app.name"));
+        conf.setAppName(ClusterSettings.appName());
 
         if (outputDir != null) {
             conf.set("spark.repl.class.outputDir", outputDir.getAbsolutePath());
@@ -337,7 +343,7 @@ public class IUberSparkInterpreter extends Interpreter {
         }
 
         conf.set("spark.scheduler.mode", "FAIR");
-        if(ClusterSettings.master().isDefined()) {
+        if (ClusterSettings.master().isDefined()) {
             String master = ClusterSettings.master().get();
             conf.setMaster(master);
         }
@@ -359,36 +365,31 @@ public class IUberSparkInterpreter extends Interpreter {
 
         setupConfForPySpark(conf);
         setupConfForSparkR(conf);
-        Class SparkSession = Utils.findClass("org.apache.spark.sql.SparkSession");
-        Object builder = Utils.invokeStaticMethod(SparkSession, "builder");
-        Utils.invokeMethod(builder, "config", new Class[]{SparkConf.class}, new Object[]{conf});
+        uc = IUberdataContext.getUC(conf);
+    }
 
-        if (useHiveContext()) {
-            if (hiveClassesArePresent()) {
-                Utils.invokeMethod(builder, "enableHiveSupport");
-                sparkSession = Utils.invokeMethod(builder, "getOrCreate");
-                logger.info("Created Spark session with Hive support");
-            } else {
-                Utils.invokeMethod(builder, "config",
-                        new Class[]{String.class, String.class},
-                        new Object[]{"spark.sql.catalogImplementation", "in-memory"});
-                sparkSession = Utils.invokeMethod(builder, "getOrCreate");
-                logger.info("Created Spark session with Hive support use in-memory catalogImplementation");
-            }
+    private Object createSparkSession() {
+//        if (useHiveContext()) {
+        if (hiveClassesArePresent()) {
+            sparkSession = uc.sparkSession();
+            logger.info("Created Spark session with Hive support");
         } else {
-            sparkSession = Utils.invokeMethod(builder, "getOrCreate");
-            logger.info("Created Spark session");
+            ClusterSettings.additionalConfs().put("spark.sql.catalogImplementation", "in-memory");
+            sparkSession = uc.sparkSession();
+            logger.info("Created Spark session with Hive support use in-memory catalogImplementation");
         }
+//        } else {
+//            sparkSession = Utils.invokeMethod(builder, "getOrCreate");
+//            logger.info("Created Spark session");
+//        }
+
 
         return sparkSession;
     }
 
     public SparkContext createSparkContext() {
-        if (Utils.isSpark2()) {
-            return createSparkContext_2();
-        } else {
-            return createSparkContext_1();
-        }
+        return createSparkContext_2();
+
     }
 
     /**
@@ -402,99 +403,99 @@ public class IUberSparkInterpreter extends Interpreter {
 //        return (SparkContext) Utils.invokeMethod(sparkSession, "sparkContext");
     }
 
-    public SparkContext createSparkContext_1() {
-        logger.info("------ Create new SparkContext {} -------", getProperty("master"));
-
-        String execUri = System.getenv("SPARK_EXECUTOR_URI");
-        String[] jars = null;
-
-        if (Utils.isScala2_10()) {
-            jars = (String[]) Utils.invokeStaticMethod(SparkILoop.class, "getAddedJars");
-        } else {
-            jars = (String[]) Utils.invokeStaticMethod(
-                    Utils.findClass("org.apache.spark.repl.Main"), "getAddedJars");
-        }
-
-        String classServerUri = null;
-        String replClassOutputDirectory = null;
-
-        try { // in case of spark 1.1x, spark 1.2x
-            Method classServer = intp.getClass().getMethod("classServer");
-            Object httpServer = classServer.invoke(intp);
-            classServerUri = (String) Utils.invokeMethod(httpServer, "uri");
-        } catch (NoSuchMethodException | SecurityException | IllegalAccessException
-                | IllegalArgumentException | InvocationTargetException e) {
-            // continue
-        }
-
-        if (classServerUri == null) {
-            try { // for spark 1.3x
-                Method classServer = intp.getClass().getMethod("classServerUri");
-                classServerUri = (String) classServer.invoke(intp);
-            } catch (NoSuchMethodException | SecurityException | IllegalAccessException
-                    | IllegalArgumentException | InvocationTargetException e) {
-                // continue instead of: throw new InterpreterException(e);
-                // Newer Spark versions (like the patched CDH5.7.0 one) don't contain this method
-                logger.warn(String.format("Spark method classServerUri not available due to: [%s]",
-                        e.getMessage()));
-            }
-        }
-
-        if (classServerUri == null) {
-            try { // for RcpEnv
-                Method getClassOutputDirectory = intp.getClass().getMethod("getClassOutputDirectory");
-                File classOutputDirectory = (File) getClassOutputDirectory.invoke(intp);
-                replClassOutputDirectory = classOutputDirectory.getAbsolutePath();
-            } catch (NoSuchMethodException | SecurityException | IllegalAccessException
-                    | IllegalArgumentException | InvocationTargetException e) {
-                // continue
-            }
-        }
-
-        if (Utils.isScala2_11()) {
-            classServer = createHttpServer(outputDir);
-            Utils.invokeMethod(classServer, "start");
-            classServerUri = (String) Utils.invokeMethod(classServer, "uri");
-        }
-
-        conf.setMaster(getProperty("master"))
-                .setAppName(getProperty("spark.app.name"));
-
-        if (classServerUri != null) {
-            conf.set("spark.repl.class.uri", classServerUri);
-        }
-
-        if (replClassOutputDirectory != null) {
-            conf.set("spark.repl.class.outputDir", replClassOutputDirectory);
-        }
-
-        if (jars.length > 0) {
-            conf.setJars(jars);
-        }
-
-        if (execUri != null) {
-            conf.set("spark.executor.uri", execUri);
-        }
-        if (System.getenv("SPARK_HOME") != null) {
-            conf.setSparkHome(System.getenv("SPARK_HOME"));
-        }
-        conf.set("spark.scheduler.mode", "FAIR");
-
-        Properties intpProperty = getProperty();
-
-        for (Object k : intpProperty.keySet()) {
-            String key = (String) k;
-            String val = toString(intpProperty.get(key));
-            if (key.startsWith("spark.") && !val.trim().isEmpty()) {
-                logger.debug(String.format("SparkConf: key = [%s], value = [%s]", key, val));
-                conf.set(key, val);
-            }
-        }
-        setupConfForPySpark(conf);
-        setupConfForSparkR(conf);
-        SparkContext sparkContext = new SparkContext(conf);
-        return sparkContext;
-    }
+//    public SparkContext createSparkContext_1() {
+//        logger.info("------ Create new SparkContext {} -------", getProperty("master"));
+//
+//        String execUri = System.getenv("SPARK_EXECUTOR_URI");
+//        String[] jars = null;
+//
+//        if (Utils.isScala2_10()) {
+//            jars = (String[]) Utils.invokeStaticMethod(SparkILoop.class, "getAddedJars");
+//        } else {
+//            jars = (String[]) Utils.invokeStaticMethod(
+//                    Utils.findClass("org.apache.spark.repl.Main"), "getAddedJars");
+//        }
+//
+//        String classServerUri = null;
+//        String replClassOutputDirectory = null;
+//
+//        try { // in case of spark 1.1x, spark 1.2x
+//            Method classServer = intp.getClass().getMethod("classServer");
+//            Object httpServer = classServer.invoke(intp);
+//            classServerUri = (String) Utils.invokeMethod(httpServer, "uri");
+//        } catch (NoSuchMethodException | SecurityException | IllegalAccessException
+//                | IllegalArgumentException | InvocationTargetException e) {
+//            // continue
+//        }
+//
+//        if (classServerUri == null) {
+//            try { // for spark 1.3x
+//                Method classServer = intp.getClass().getMethod("classServerUri");
+//                classServerUri = (String) classServer.invoke(intp);
+//            } catch (NoSuchMethodException | SecurityException | IllegalAccessException
+//                    | IllegalArgumentException | InvocationTargetException e) {
+//                // continue instead of: throw new InterpreterException(e);
+//                // Newer Spark versions (like the patched CDH5.7.0 one) don't contain this method
+//                logger.warn(String.format("Spark method classServerUri not available due to: [%s]",
+//                        e.getMessage()));
+//            }
+//        }
+//
+//        if (classServerUri == null) {
+//            try { // for RcpEnv
+//                Method getClassOutputDirectory = intp.getClass().getMethod("getClassOutputDirectory");
+//                File classOutputDirectory = (File) getClassOutputDirectory.invoke(intp);
+//                replClassOutputDirectory = classOutputDirectory.getAbsolutePath();
+//            } catch (NoSuchMethodException | SecurityException | IllegalAccessException
+//                    | IllegalArgumentException | InvocationTargetException e) {
+//                // continue
+//            }
+//        }
+//
+//        if (Utils.isScala2_11()) {
+//            classServer = createHttpServer(outputDir);
+//            Utils.invokeMethod(classServer, "start");
+//            classServerUri = (String) Utils.invokeMethod(classServer, "uri");
+//        }
+//
+//        conf.setMaster(getProperty("master"))
+//                .setAppName(getProperty("spark.app.name"));
+//
+//        if (classServerUri != null) {
+//            conf.set("spark.repl.class.uri", classServerUri);
+//        }
+//
+//        if (replClassOutputDirectory != null) {
+//            conf.set("spark.repl.class.outputDir", replClassOutputDirectory);
+//        }
+//
+//        if (jars.length > 0) {
+//            conf.setJars(jars);
+//        }
+//
+//        if (execUri != null) {
+//            conf.set("spark.executor.uri", execUri);
+//        }
+//        if (System.getenv("SPARK_HOME") != null) {
+//            conf.setSparkHome(System.getenv("SPARK_HOME"));
+//        }
+//        conf.set("spark.scheduler.mode", "FAIR");
+//
+//        Properties intpProperty = getProperty();
+//
+//        for (Object k : intpProperty.keySet()) {
+//            String key = (String) k;
+//            String val = toString(intpProperty.get(key));
+//            if (key.startsWith("spark.") && !val.trim().isEmpty()) {
+//                logger.debug(String.format("SparkConf: key = [%s], value = [%s]", key, val));
+//                conf.set(key, val);
+//            }
+//        }
+//        setupConfForPySpark(conf);
+//        setupConfForSparkR(conf);
+//        SparkContext sparkContext = new SparkContext(conf);
+//        return sparkContext;
+//    }
 
     private void setupConfForPySpark(SparkConf conf) {
         String pysparkBasePath = new InterpreterProperty("SPARK_HOME", null, null, null).getValue();
@@ -503,7 +504,7 @@ public class IUberSparkInterpreter extends Interpreter {
             pysparkBasePath =
                     new InterpreterProperty("ZEPPELIN_HOME", "zeppelin.home", "../", null).getValue();
             pysparkPath = new File(pysparkBasePath,
-                    "interpreter" + File.separator + "spark" + File.separator + "pyspark");
+                    "interpreter" + File.separator + "uberdata" + File.separator + "pyspark");
         } else {
             pysparkPath = new File(pysparkBasePath,
                     "python" + File.separator + "lib");
@@ -552,7 +553,7 @@ public class IUberSparkInterpreter extends Interpreter {
             sparkRBasePath =
                     new InterpreterProperty("ZEPPELIN_HOME", "zeppelin.home", "../", null).getValue();
             sparkRPath = new File(sparkRBasePath,
-                    "interpreter" + File.separator + "spark" + File.separator + "R");
+                    "interpreter" + File.separator + "uberdata" + File.separator + "R");
         } else {
             sparkRPath = new File(sparkRBasePath, "R" + File.separator + "lib");
         }
@@ -833,27 +834,27 @@ public class IUberSparkInterpreter extends Interpreter {
                         new Object[]{intp});
             }
 
-            if (Utils.isSpark2()) {
-                sparkSession = getSparkSession();
-            }
-            SparkContext sc = getSparkContext();
-            if (sc.getPoolForName("fair").isEmpty()) {
-                Value schedulingMode = org.apache.spark.scheduler.SchedulingMode.FAIR();
-                int minimumShare = 0;
-                int weight = 1;
-                Pool pool = new Pool("fair", schedulingMode, minimumShare, weight);
-                sc.taskScheduler().rootPool().addSchedulable(pool);
-            }
 
-            sparkVersion = SparkVersion.fromVersionString(sc.version());
+//            sparkSession = getSparkSession();
 
-            sqlc = getSQLContext();
+//            SparkContext sc = getSparkContext();
+//            if (sc.getPoolForName("fair").isEmpty()) {
+//                Value schedulingMode = org.apache.spark.scheduler.SchedulingMode.FAIR();
+//                int minimumShare = 0;
+//                int weight = 1;
+//                Pool pool = new Pool("fair", schedulingMode, minimumShare, weight);
+//                sc.taskScheduler().rootPool().addSchedulable(pool);
+//            }
+
+//
+
+//            sqlc = getSQLContext();
 
             dep = getDependencyResolver();
 
             hooks = getInterpreterGroup().getInterpreterHookRegistry();
-
-            z = new ZeppelinContext(sc, sqlc, null, dep, hooks,
+            setupConfForSession();
+            z = new UberZeppelinContext(uc, null, dep, hooks,
                     Integer.parseInt(getProperty("zeppelin.spark.maxResult")));
 
             interpret("@transient val _binder = new java.util.HashMap[String, Object]()");
@@ -863,44 +864,38 @@ public class IUberSparkInterpreter extends Interpreter {
             } else {
                 binder = (Map<String, Object>) getLastObject();
             }
-            binder.put("sc", sc);
-            binder.put("sqlc", sqlc);
+//            binder.put("sc", sc);
+            binder.put("uc", uc);
+//            binder.put("sqlc", sqlc);
             binder.put("z", z);
 
-            if (Utils.isSpark2()) {
-                binder.put("spark", sparkSession);
-            }
 
-            interpret("@transient val z = "
-                    + "_binder.get(\"z\").asInstanceOf[org.apache.zeppelin.spark.ZeppelinContext]");
-            interpret("@transient val sc = "
-                    + "_binder.get(\"sc\").asInstanceOf[org.apache.spark.SparkContext]");
-            interpret("@transient val sqlc = "
-                    + "_binder.get(\"sqlc\").asInstanceOf[org.apache.spark.sql.SQLContext]");
-            interpret("@transient val sqlContext = "
-                    + "_binder.get(\"sqlc\").asInstanceOf[org.apache.spark.sql.SQLContext]");
+//            binder.put("spark", sparkSession);
 
-            if (Utils.isSpark2()) {
-                interpret("@transient val spark = "
-                        + "_binder.get(\"spark\").asInstanceOf[org.apache.spark.sql.SparkSession]");
-            }
 
-            interpret("import org.apache.spark.SparkContext._");
+//            interpret("@transient val z = "
+//                    + "_binder.get(\"z\").asInstanceOf[org.apache.zeppelin.spark.ZeppelinContext]");
+            Object res34 = interpret("@transient val uc = "
+                    + "_binder.get(\"uc\").asInstanceOf[eleflow.uberdata.core.IUberdataContext]");
+//            interpret("@transient val sc = "
+//                    + "_binder.get(\"sc\").asInstanceOf[org.apache.spark.SparkContext]");
+//            interpret("@transient val sqlc = "
+//                    + "_binder.get(\"sqlc\").asInstanceOf[org.apache.spark.sql.SQLContext]");
+//            interpret("@transient val sqlContext = "
+//                    + "_binder.get(\"sqlc\").asInstanceOf[org.apache.spark.sql.SQLContext]");
+
+//            interpret("@transient val spark = "
+//                    + "_binder.get(\"spark\").asInstanceOf[org.apache.spark.sql.SparkSession]");
+
+            Object res1 =interpret("import org.apache.spark.SparkContext._");
+            Object res2 =interpret("import eleflow.uberdata.core.util.ClusterSettings");
 
             if (importImplicit()) {
-                if (Utils.isSpark2()) {
-                    interpret("import spark.implicits._");
-                    interpret("import spark.sql");
-                    interpret("import org.apache.spark.sql.functions._");
-                } else {
-                    if (sparkVersion.oldSqlContextImplicits()) {
-                        interpret("import sqlContext._");
-                    } else {
-                        interpret("import sqlContext.implicits._");
-                        interpret("import sqlContext.sql");
-                        interpret("import org.apache.spark.sql.functions._");
-                    }
-                }
+
+                interpret("import spark.implicits._");
+                interpret("import spark.sql");
+                interpret("import org.apache.spark.sql.functions._");
+
             }
         }
 
@@ -914,21 +909,21 @@ public class IUberSparkInterpreter extends Interpreter {
             Integer.parseInt(getProperty("zeppelin.spark.maxResult")) + ")");
      */
 
-        if (Utils.isScala2_10()) {
-            try {
-                if (sparkVersion.oldLoadFilesMethodName()) {
-                    Method loadFiles = this.interpreter.getClass().getMethod("loadFiles", Settings.class);
-                    loadFiles.invoke(this.interpreter, settings);
-                } else {
-                    Method loadFiles = this.interpreter.getClass().getMethod(
-                            "org$apache$spark$repl$SparkILoop$$loadFiles", Settings.class);
-                    loadFiles.invoke(this.interpreter, settings);
-                }
-            } catch (NoSuchMethodException | SecurityException | IllegalAccessException
-                    | IllegalArgumentException | InvocationTargetException e) {
-                throw new InterpreterException(e);
-            }
-        }
+//        if (Utils.isScala2_10()) {
+//            try {
+//                if (sparkVersion.oldLoadFilesMethodName()) {
+//                    Method loadFiles = this.interpreter.getClass().getMethod("loadFiles", Settings.class);
+//                    loadFiles.invoke(this.interpreter, settings);
+//                } else {
+//                    Method loadFiles = this.interpreter.getClass().getMethod(
+//                            "loadFiles", Settings.class);
+//                    loadFiles.invoke(this.interpreter, settings);
+//                }
+//            } catch (NoSuchMethodException | SecurityException | IllegalAccessException
+//                    | IllegalArgumentException | InvocationTargetException e) {
+//                throw new InterpreterException(e);
+//            }
+//        }
 
         // add jar from DepInterpreter
         if (depInterpreter != null) {
@@ -971,6 +966,7 @@ public class IUberSparkInterpreter extends Interpreter {
         numReferenceOfSparkContext.incrementAndGet();
     }
 
+
     private String getSparkUIUrl() {
         Option<SparkUI> sparkUiOption = (Option<SparkUI>) Utils.invokeMethod(uc.sparkContext(), "ui");
         SparkUI sparkUi = sparkUiOption.get();
@@ -987,7 +983,7 @@ public class IUberSparkInterpreter extends Interpreter {
     }
 
     public void populateSparkWebUrl(InterpreterContext ctx) {
-        if (sparkUrl == null) {
+        if (sparkUrl == null && uc != null && uc.isContextDefined()) {
             sparkUrl = getSparkUIUrl();
             Map<String, String> infos = new java.util.HashMap<>();
             if (sparkUrl != null) {
@@ -1132,10 +1128,10 @@ public class IUberSparkInterpreter extends Interpreter {
      */
     @Override
     public InterpreterResult interpret(String line, InterpreterContext context) {
-        if (sparkVersion.isUnsupportedVersion()) {
-            return new InterpreterResult(Code.ERROR, "Spark " + sparkVersion.toString()
-                    + " is not supported");
-        }
+//        if (sparkVersion.isUnsupportedVersion()) {
+//            return new InterpreterResult(Code.ERROR, "Spark " + sparkVersion.toString()
+//                    + " is not supported");
+//        }
         populateSparkWebUrl(context);
         z.setInterpreterContext(context);
         if (line == null || line.trim().length() == 0) {
@@ -1147,9 +1143,13 @@ public class IUberSparkInterpreter extends Interpreter {
     public InterpreterResult interpret(String[] lines, InterpreterContext context) {
         synchronized (this) {
             z.setGui(context.getGui());
-            uc.sparkContext().setJobGroup(getJobGroup(context), "Zeppelin", false);
+            if (uc != null && uc.isContextDefined()) {
+                uc.sparkContext().setJobGroup(getJobGroup(context), "Zeppelin", false);
+            }
             InterpreterResult r = interpretInput(lines, context);
-            uc.sparkContext().clearJobGroup();
+            if (uc != null && uc.isContextDefined()) {
+                uc.sparkContext().clearJobGroup();
+            }
             return r;
         }
     }
@@ -1204,7 +1204,7 @@ public class IUberSparkInterpreter extends Interpreter {
             try {
                 res = interpret(incomplete + s);
             } catch (Exception e) {
-                uc.sparkContext().clearJobGroup();
+                if (uc != null && uc.isContextDefined()) uc.sparkContext().clearJobGroup();
                 out.setInterpreterOutput(null);
                 logger.info("Interpreter exception", e);
                 return new InterpreterResult(Code.ERROR, InterpreterUtils.getMostRelevantMessage(e));
@@ -1213,7 +1213,7 @@ public class IUberSparkInterpreter extends Interpreter {
             r = getResultCode(res);
 
             if (r == Code.ERROR) {
-                uc.sparkContext().clearJobGroup();
+                if (uc != null && uc.isContextDefined()) uc.sparkContext().clearJobGroup();
                 out.setInterpreterOutput(null);
                 return new InterpreterResult(r, "");
             } else if (r == Code.INCOMPLETE) {
@@ -1231,11 +1231,11 @@ public class IUberSparkInterpreter extends Interpreter {
         }
 
         if (r == Code.INCOMPLETE) {
-            uc.sparkContext().clearJobGroup();
+            if (uc != null && uc.isContextDefined()) uc.sparkContext().clearJobGroup();
             out.setInterpreterOutput(null);
             return new InterpreterResult(r, "Incomplete expression");
         } else {
-            uc.sparkContext().clearJobGroup();
+            if (uc != null && uc.isContextDefined()) uc.sparkContext().clearJobGroup();
             putLatestVarInResourcePool(context);
             out.setInterpreterOutput(null);
             return new InterpreterResult(Code.SUCCESS);
@@ -1281,7 +1281,10 @@ public class IUberSparkInterpreter extends Interpreter {
         int completedTasks = 0;
         int totalTasks = 0;
 
-        DAGScheduler scheduler = uc.sparkContext().dagScheduler();
+        DAGScheduler scheduler = null;
+        if (uc != null && uc.isContextDefined()) {
+            scheduler = uc.sparkContext().dagScheduler();
+        }
         if (scheduler == null) {
             return 0;
         }
@@ -1297,11 +1300,11 @@ public class IUberSparkInterpreter extends Interpreter {
                 int[] progressInfo = null;
                 try {
                     Object finalStage = job.getClass().getMethod("finalStage").invoke(job);
-                    if (sparkVersion.getProgress1_0()) {
-                        progressInfo = getProgressFromStage_1_0x(sparkListener, finalStage);
-                    } else {
-                        progressInfo = getProgressFromStage_1_1x(sparkListener, finalStage);
-                    }
+//                    if (sparkVersion.getProgress1_0()) {
+//                        progressInfo = getProgressFromStage_1_0x(sparkListener, finalStage);
+//                    } else {
+                    progressInfo = getProgressFromStage_1_1x(sparkListener, finalStage);
+//                    }
                 } catch (IllegalAccessException | IllegalArgumentException
                         | InvocationTargetException | NoSuchMethodException
                         | SecurityException e) {
@@ -1435,7 +1438,7 @@ public class IUberSparkInterpreter extends Interpreter {
                 IUberSparkInterpreter.class.getName() + this.hashCode());
     }
 
-    public ZeppelinContext getZeppelinContext() {
+    public UberZeppelinContext getZeppelinContext() {
         return z;
     }
 
@@ -1451,7 +1454,7 @@ public class IUberSparkInterpreter extends Interpreter {
                 Utils.findClass("org.apache.spark.util.Utils"),
                 "createTempDir",
                 new Class[]{String.class, String.class},
-                new Object[]{dir, "spark"});
+                new Object[]{dir, "uberdata"});
 
         // fallback to old method
         if (file == null) {

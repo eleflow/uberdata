@@ -26,12 +26,13 @@ val scalaV = "2.11.8"
 //WARNING: changing the zeppelin version requires changing the dependency version in setup_zeppelin_local.sh and iuberdata.sh
 lazy val zeppelin_version = "0.7.0"
 lazy val sparkVersion = "2.1.0"
+val sparkV : sbt.SettingKey[scala.Predef.String] = SettingKey(sparkVersion)
 lazy val mysqlV = "5.1.34"
 lazy val slf4jVersion = "1.7.24"
 
 lazy val commonSettings = Seq(
   organization := "br.com.eleflow",
-  version := "0.1.0",
+  version := "0.2.0",
   scalaVersion := "2.11.8"
 )
 
@@ -55,6 +56,7 @@ lazy val iuberdata_core = project settings (libraryDependencies ++= Seq(
     "ml.dmlc" % "xgboost4j" % "0.7" % "provided",
     "ml.dmlc" % "xgboost4j-spark" % "0.7" % "provided",
     "com.databricks" %% "spark-csv" % "1.5.0",
+  "com.databricks" %% "spark-xml" % "0.4.1",
     "mysql" % "mysql-connector-java" % mysqlV % "runtime",
     "org.slf4j" % "slf4j-api" % slf4jVersion,
     "org.slf4j" % "slf4j-log4j12" % slf4jVersion
@@ -64,12 +66,8 @@ lazy val iuberdata_core = project settings (libraryDependencies ++= Seq(
 
 lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;compile->compile") settings
     (commonSettings, libraryDependencies ++= Seq(
-      "org.apache.zeppelin" % "zeppelin-interpreter" % zeppelin_version % "provided",
-      "org.apache.zeppelin" %% "zeppelin-spark" % zeppelin_version % "provided" excludeAll
-        ExclusionRule(
-        organization = "org.rosuda.REngine"),
-      "org.apache.zeppelin" % "zeppelin-shell" % zeppelin_version excludeAll ExclusionRule(
-        organization = "org.mortbay.jetty") excludeAll ExclusionRule(organization = "org.slf4j"),
+      "org.apache.zeppelin" % "zeppelin-interpreter" % zeppelin_version,
+      "org.jsoup" % "jsoup" % "1.8.2",
       "org.apache.spark" %% "spark-repl" % sparkVersion % "provided",
       "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
       "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
@@ -78,7 +76,6 @@ lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;co
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5" % "provided",
       "org.scala-lang" % "scala-compiler" % scalaV,
       "org.apache.spark" %% "spark-streaming" % sparkVersion % "provided",
-//      "org.apache.spark" %% "spark-streaming-twitter" % sparkVersion % "provided",
       "org.apache.spark" %% "spark-catalyst" % sparkVersion % "provided",
       "org.apache.maven" % "maven-plugin-api" % "3.0" exclude ("org.codehaus.plexus", "plexus-utils")
         exclude ("org.sonatype.sisu", "sisu-inject-plexus")
@@ -88,7 +85,7 @@ lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;co
       "org.rosuda.REngine" % "REngine" % "2.1.1-SNAPSHOT",
       "org.rosuda.REngine" % "Rserve" % "1.8.2-SNAPSHOT",
       "junit" % "junit" % "4.11" % "test"
-    )) settings (dependencyOverrides ++= Set(
+    )) settings (commonSettings, dependencyOverrides ++= Set(
     "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5"
   ))
 
