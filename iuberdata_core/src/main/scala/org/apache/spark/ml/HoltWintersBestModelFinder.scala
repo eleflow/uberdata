@@ -17,7 +17,6 @@
 package org.apache.spark.ml
 
 import com.cloudera.sparkts.models.UberHoltWintersModel
-//import org.apache.spark.Logging
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.HasGroupByCol
@@ -38,7 +37,6 @@ class HoltWintersBestModelFinder[G](
     with DefaultParamsWritable
     with HasGroupByCol
     with TimeSeriesBestModelFinder {
-//    with Logging {
 
   def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[G]): this.type =
     set(timeSeriesEvaluator, eval)

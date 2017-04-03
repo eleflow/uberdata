@@ -20,7 +20,6 @@ import com.cloudera.sparkts.models.UberArimaModel
 import eleflow.uberdata.IUberdataForecastUtil
 import eleflow.uberdata.enums.SupportedAlgorithm
 import org.apache.hadoop.fs.Path
-//import org.apache.spark.Logging
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.HasNFutures
 import org.apache.spark.ml.util._
@@ -107,7 +106,6 @@ object ArimaModel extends MLReadable[ArimaModel[_]] {
 
   private[ArimaModel] class ARIMARegressionModelWriter(instance: ArimaModel[_])
       extends MLWriter
-//      with Logging {
   {
 
     //TODO validar este metodo

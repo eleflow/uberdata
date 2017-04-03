@@ -19,7 +19,6 @@ package org.apache.spark.ml
 import com.cloudera.sparkts.models.UberHoltWintersModel
 import eleflow.uberdata.enums.SupportedAlgorithm
 import org.apache.hadoop.fs.Path
-//import org.apache.spark.Logging
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.{HasGroupByCol, HasNFutures, HasValidationCol}
 import org.apache.spark.ml.util.{DefaultParamsReader, _}
@@ -27,7 +26,6 @@ import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.Dataset
-import org.apache.spark.mllib.util.MLUtils
 
 import scala.reflect.ClassTag
 
@@ -102,7 +100,6 @@ object HoltWintersModel extends MLReadable[HoltWintersModel[_]] {
   private[HoltWintersModel] class HOLTWintersRegressionModelWriter(
     instance: HoltWintersModel[_]
   ) extends MLWriter
-//      with Logging {
     {
 
     //TODO validar este metodo

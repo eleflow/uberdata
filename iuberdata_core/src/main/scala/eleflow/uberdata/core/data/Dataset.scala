@@ -34,7 +34,6 @@ import org.apache.spark.sql.types.{StringType, StructField, StructType, DataType
 import scala.collection.immutable.TreeSet
 import dataset._
 import eleflow.uberdata.core.io.IUberdataIO
-//import org.apache.spark.Logging
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -360,21 +359,18 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 																	header: Option[String] = None,
 																	dateTimeParser: DateTimeParser = DateTimeParser()
 																	//                                  , schema2: Option[StructType]
-//																 ) extends Serializable with Logging {
 																 ) extends Serializable {
 	val slf4jLogger: Logger  = LoggerFactory.getLogger(Dataset.getClass);
 
 	lazy val numberOfPartitions = 4 * ClusterSettings.getNumberOfCores
 	lazy val firstLine: String = {
 		slf4jLogger.info(s"firstLine: ${loadedRDD.count()}")
-		//logInfo(s"firstLine: ${loadedRDD.count()}")
 		loadedRDD.first
 	}
 	lazy val columnNames: Array[String] =
 		headerOrFirstLine().split(separator, -1)
 	lazy val loadedRDD = {
 		slf4jLogger.info(s"localFileName:$localFileName")
-		//logInfo(s"localFileName:$localFileName")
 		uc.sparkContext.textFile(localFileName)
 	}
 	lazy val localFileName: String = {
@@ -470,7 +466,6 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 
 	protected def extractFirstCompleteLine(dataRdd: RDD[Row]): Array[String] = {
 		slf4jLogger.info(s"extractFirstCompleteLine ${dataRdd.first()}")
-		//logInfo(s"extractFirstCompleteLine ${dataRdd.first()}")
 		val df = dataRdd.filter { value =>
 			val data = value.toSeq
 			!data.contains(null) && {

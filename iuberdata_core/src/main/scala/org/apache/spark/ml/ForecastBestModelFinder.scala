@@ -43,7 +43,6 @@ class ForecastBestModelFinder[I, M <: ForecastBaseModel[M]](
     with ArimaParams
     with HasTimeSeriesEvaluator[I]
     with TimeSeriesBestModelFinder {
-//    with Logging {
 
   def this()(implicit kt: ClassTag[I]) =
     this(Identifiable.randomUID("BestForecast"))

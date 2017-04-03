@@ -44,7 +44,6 @@ class XGBoostBestBigModelFinder[L, G](override val uid: String)(implicit gt: Cla
     with HasIdCol
 		with HasTimeCol
     with TimeSeriesBestModelFinder {
-//    with Logging {
   def this()(implicit gt: ClassTag[G], lt: ClassTag[L]) =
     this(Identifiable.randomUID("xgboostbig"))
 

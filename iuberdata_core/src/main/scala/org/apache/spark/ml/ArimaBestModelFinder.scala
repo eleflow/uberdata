@@ -16,7 +16,6 @@
 
 package org.apache.spark.ml
 
-//import org.apache.spark.Logging
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.regression._
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
@@ -43,7 +42,6 @@ class ArimaBestModelFinder[G](
     with DefaultParamsWritable
     with HasNFutures
     with TimeSeriesBestModelFinder {
-//    with Logging {
   def this()(implicit kt: ClassTag[G]) = this(Identifiable.randomUID("arima"))
 
   def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[G]): this.type =

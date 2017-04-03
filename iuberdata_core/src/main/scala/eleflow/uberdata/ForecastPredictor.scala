@@ -27,7 +27,6 @@ import org.apache.spark._
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SparkSession
 
-//import org.apache.spark.Logging
 import org.apache.spark.ml._
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.feature.{StringIndexer, VectorAssembler}
@@ -47,7 +46,6 @@ object ForecastPredictor {
   def apply(): ForecastPredictor = new ForecastPredictor
 }
 
-//class ForecastPredictor extends Serializable with Logging {
 class ForecastPredictor extends Serializable {
 
   lazy val defaultRange = (0 to 2).toArray
