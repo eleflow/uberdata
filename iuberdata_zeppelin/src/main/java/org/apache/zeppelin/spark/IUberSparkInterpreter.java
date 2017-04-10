@@ -246,8 +246,10 @@ public class IUberSparkInterpreter extends Interpreter {
      * Get SQLContext for spark 2.x
      */
     private SQLContext getSQLContext_2() {
+
         if (sqlc == null) {
             sqlc = uc.sqlContext();
+            env = SparkEnv.get();
         }
         return sqlc;
     }
@@ -364,7 +366,6 @@ public class IUberSparkInterpreter extends Interpreter {
             sparkSession = uc.sparkSession();
             logger.info("Created Spark session with Hive support use in-memory catalogImplementation");
         }
-
 
         return sparkSession;
     }
@@ -726,6 +727,7 @@ public class IUberSparkInterpreter extends Interpreter {
 
             hooks = getInterpreterGroup().getInterpreterHookRegistry();
             setupConfForSession();
+
             z = new UberZeppelinContext(uc, null, dep, hooks,
                     Integer.parseInt(getProperty("zeppelin.spark.maxResult")));
 
@@ -984,7 +986,7 @@ public class IUberSparkInterpreter extends Interpreter {
     }
 
     public InterpreterResult interpretInput(String[] lines, InterpreterContext context) {
-        SparkEnv.set(env);
+//        SparkEnv.set(env);
 
         String[] linesToRun = new String[lines.length];
         for (int i = 0; i < lines.length; i++) {
