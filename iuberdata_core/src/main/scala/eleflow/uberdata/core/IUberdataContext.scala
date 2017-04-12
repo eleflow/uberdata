@@ -147,10 +147,11 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 	def configuredBuilder: SparkSession.Builder = builder.config(confBuild).enableHiveSupport()
 
 	@deprecated
-	def sparkContext: SparkContext = {
+	def sparkContext: SparkContext = sc getOrElse {
 		val context = builder.config(confBuild)
 			.config("spark.sql.warehouse.dir", "file:///tmp/spark-warehouse").enableHiveSupport().getOrCreate().sparkContext
 		addClasspathToSparkContext(context)
+		sc = Some(context)
 		val listener = new UberdataSparkListener(context.getConf)
 		context.addSparkListener(listener)
 		context
