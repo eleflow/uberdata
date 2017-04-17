@@ -1275,6 +1275,8 @@ public class IUberSparkInterpreter extends Interpreter {
     }
 
     public SparkVersion getSparkVersion() {
+        if(sparkVersion == null)
+            sparkVersion = SparkVersion.fromVersionString(uc.sparkContext().version());
         return sparkVersion;
     }
 

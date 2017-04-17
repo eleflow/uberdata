@@ -78,8 +78,10 @@ public class SparkRInterpreter extends Interpreter {
         this.jsc = sparkInterpreter.getJavaSparkContext();
         SparkVersion sparkVersion = new SparkVersion(sc.version());
 //TODO reanalisar
-        //        UberZeppelinContext.setSparkContext(this.sc);
-//        ZeppelinRContext.setJavaSparkContext(jsc);
+        ZeppelinRContext.setSparkContext(sc);
+        ZeppelinRContext.setJavaSparkContext(jsc);
+          //ZeppelinRContext.setSparkContext(sc);
+          //ZeppelinRContext.setJavaSparkContext(jsc);
         ZeppelinRContext.setSparkSession(sparkInterpreter.getSparkSession());
         UberZeppelinRContext.setSqlContext(sparkInterpreter.getSQLContext());
         UberZeppelinRContext.setZeppelinContext(sparkInterpreter.getZeppelinContext());
