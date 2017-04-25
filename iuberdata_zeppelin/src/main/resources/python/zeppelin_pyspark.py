@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-import sys, getopt, traceback, json, re
+import os, sys, getopt, traceback, json, re
 
 from py4j.java_gateway import java_import, JavaGateway, GatewayClient
 from py4j.protocol import Py4JJavaError
@@ -27,19 +27,23 @@ from pyspark.storagelevel import StorageLevel
 from pyspark.accumulators import Accumulator, AccumulatorParam
 from pyspark.broadcast import Broadcast
 from pyspark.serializers import MarshalSerializer, PickleSerializer
+import warnings
+import ast
+import traceback
+import warnings
 
 # for back compatibility
-from pyspark.sql import SQLContext, HiveContext, SchemaRDD, Row
+from pyspark.sql import SQLContext, HiveContext, Row
 
 class Logger(object):
   def __init__(self):
-    self.out = ""
+    pass
 
   def write(self, message):
     intp.appendOutput(message)
 
   def reset(self):
-    self.out = ""
+    pass
 
   def flush(self):
     pass
@@ -48,6 +52,7 @@ class Logger(object):
 class PyZeppelinContext(dict):
   def __init__(self, zc):
     self.z = zc
+    self._displayhook = lambda *args: None
 
   def show(self, obj):
     from pyspark.sql import DataFrame
@@ -78,7 +83,10 @@ class PyZeppelinContext(dict):
   def get(self, key):
     return self.__getitem__(key)
 
-  def input(self, name, defaultValue = ""):
+  def getInterpreterContext(self):
+    return self.z.getInterpreterContext()
+
+  def input(self, name, defaultValue=""):
     return self.z.input(name, defaultValue)
 
   def select(self, name, options, defaultValue = ""):
@@ -97,6 +105,56 @@ class PyZeppelinContext(dict):
     checkedIterables = self.z.checkbox(name, defaultCheckedIterables, optionIterables)
     return gateway.jvm.scala.collection.JavaConversions.asJavaCollection(checkedIterables)
 
+  def registerHook(self, event, cmd, replName=None):
+    if replName is None:
+      self.z.registerHook(event, cmd)
+    else:
+      self.z.registerHook(event, cmd, replName)
+
+  def unregisterHook(self, event, replName=None):
+    if replName is None:
+      self.z.unregisterHook(event)
+    else:
+      self.z.unregisterHook(event, replName)
+
+  def getHook(self, event, replName=None):
+    if replName is None:
+      return self.z.getHook(event)
+    return self.z.getHook(event, replName)
+
+  def _setup_matplotlib(self):
+    # If we don't have matplotlib installed don't bother continuing
+    try:
+      import matplotlib
+    except ImportError:
+      return
+    
+    # Make sure custom backends are available in the PYTHONPATH
+    rootdir = os.environ.get('ZEPPELIN_HOME', os.getcwd())
+    mpl_path = os.path.join(rootdir, 'interpreter', 'lib', 'python')
+    if mpl_path not in sys.path:
+      sys.path.append(mpl_path)
+    
+    # Finally check if backend exists, and if so configure as appropriate
+    try:
+      matplotlib.use('module://backend_zinline')
+      import backend_zinline
+      
+      # Everything looks good so make config assuming that we are using
+      # an inline backend
+      self._displayhook = backend_zinline.displayhook
+      self.configure_mpl(width=600, height=400, dpi=72, fontsize=10,
+                         interactive=True, format='png', context=self.z)
+    except ImportError:
+      # Fall back to Agg if no custom backend installed
+      matplotlib.use('Agg')
+      warnings.warn("Unable to load inline matplotlib backend, "
+                    "falling back to Agg")
+
+  def configure_mpl(self, **kwargs):
+    import mpl_config
+    mpl_config.configure(**kwargs)
+
   def __tupleToScalaTuple2(self, tuple):
     if (len(tuple) == 2):
       return gateway.jvm.scala.Tuple2(tuple[0], tuple[1])
@@ -105,8 +163,9 @@ class PyZeppelinContext(dict):
 
 
 class SparkVersion(object):
-  SPARK_1_4_0 = 140
-  SPARK_1_3_0 = 130
+  SPARK_1_4_0 = 10400
+  SPARK_1_3_0 = 10300
+  SPARK_2_0_0 = 20000
 
   def __init__(self, versionNumber):
     self.version = versionNumber
@@ -116,6 +175,9 @@ class SparkVersion(object):
 
   def isImportAllPackageUnderSparkSql(self):
     return self.version >= self.SPARK_1_3_0
+
+  def isSpark2(self):
+    return self.version >= self.SPARK_2_0_0
 
 class PySparkCompletion:
   def __init__(self, interpreterObject):
@@ -175,6 +237,12 @@ sys.stderr = output
 client = GatewayClient(port=int(sys.argv[1]))
 sparkVersion = SparkVersion(int(sys.argv[2]))
 
+if sparkVersion.isSpark2():
+  from pyspark.sql import SparkSession
+else:
+  from pyspark.sql import SchemaRDD
+
+
 if sparkVersion.isAutoConvertEnabled():
   gateway = JavaGateway(client, auto_convert = True)
 else:
@@ -187,7 +255,7 @@ java_import(gateway.jvm, "org.apache.spark.api.python.*")
 java_import(gateway.jvm, "org.apache.spark.mllib.api.python.*")
 
 intp = gateway.entry_point
-intp.onPythonScriptInitialized()
+intp.onPythonScriptInitialized(os.getpid())
 
 jsc = intp.getJavaSparkContext()
 
@@ -217,7 +285,23 @@ while True :
   try:
     stmts = req.statements().split("\n")
     jobGroup = req.jobGroup()
-    final_code = None
+    final_code = []
+    
+    # Get post-execute hooks
+    try:
+      global_hook = intp.getHook('post_exec_dev')
+    except:
+      global_hook = None
+      
+    try:
+      user_hook = z.getHook('post_exec')
+    except:
+      user_hook = None
+      
+    nhooks = 0
+    for hook in (global_hook, user_hook):
+      if hook:
+        nhooks += 1
 
     for s in stmts:
       if s == None:
@@ -228,15 +312,36 @@ while True :
       if len(s_stripped) == 0 or s_stripped.startswith("#"):
         continue
 
-      if final_code:
-        final_code += "\n" + s
-      else:
-        final_code = s
+      final_code.append(s)
 
     if final_code:
-      compiledCode = compile(final_code, "<string>", "exec")
+      # use exec mode to compile the statements except the last statement,
+      # so that the last statement's evaluation will be printed to stdout
       sc.setJobGroup(jobGroup, "Zeppelin")
-      eval(compiledCode)
+      code = compile('\n'.join(final_code), '<stdin>', 'exec', ast.PyCF_ONLY_AST, 1)
+      to_run_hooks = []
+      if (nhooks > 0):
+        to_run_hooks = code.body[-nhooks:]
+      to_run_exec, to_run_single = (code.body[:-(nhooks + 1)],
+                                    [code.body[-(nhooks + 1)]])
+
+      try:
+        for node in to_run_exec:
+          mod = ast.Module([node])
+          code = compile(mod, '<stdin>', 'exec')
+          exec(code)
+
+        for node in to_run_single:
+          mod = ast.Interactive([node])
+          code = compile(mod, '<stdin>', 'single')
+          exec(code)
+          
+        for node in to_run_hooks:
+          mod = ast.Module([node])
+          code = compile(mod, '<stdin>', 'exec')
+          exec(code)
+      except:
+        raise Exception(traceback.format_exc())
 
     intp.setStatementsFinished("", False)
   except Py4JJavaError:

@@ -184,6 +184,7 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 					|| iuberdata.findFirstIn(url.getFile).isDefined
 		)
 		jarUrls.foreach { url =>
+			//logInfo(s"adding ${url.getPath} to spark context jars")
 			slf4jLogger.info(s"adding ${url.getPath} to spark context jars")
 			context.addJar(url.getPath)
 		}
@@ -191,6 +192,7 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 	}
 
 	def createSparkContextForNewCluster(conf: SparkConf): SparkConf = {
+		//log.info(s"connecting to $masterHost")
 		slf4jLogger.info(s"connecting to $masterHost")
 		conf.setMaster(s"spark://$masterHost:7077")
 		confSetup(conf)
