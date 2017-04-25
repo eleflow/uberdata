@@ -25,9 +25,7 @@ import org.apache.commons.io.IOUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
 import org.apache.spark.sql.{SQLContext, SparkSession}
-import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.sql.hive.thriftserver.HiveThriftServer2
-//import org.apache.spark.{Logging, SparkConf, SparkContext}
 import org.apache.spark.{SparkConf, SparkContext}
 import ClusterSettings._
 import org.apache.spark.sql.DataFrame
@@ -36,7 +34,6 @@ import org.apache.spark.sql.types.DataType
 import scala.annotation.tailrec
 import scala.sys.process._
 import scala.util.matching.Regex
-
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -60,14 +57,13 @@ object IUberdataContext {
  * Date: 8/15/14 12:24 PM
  */
 class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
-	//class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable with Logging {
 	protected def this(sparkConf: SparkConf, data: String) = this(sparkConf)
 
 	//  @transient protected lazy val s3Client: AmazonS3 = new AmazonS3Client()
 	val version: String = UberdataCoreVersion.version
 
 	protected val basePath: String = "/"
-//	@transient var _sqlContext: Option[HiveContext] = None
+	@transient var _sqlContext: Option[SQLContext] = None
 	@transient protected var sc: Option[SparkContext] = None
 	protected val builder: SparkSession.Builder = SparkSession.builder()
 	private var _masterHost: Option[String] = None
@@ -142,14 +138,14 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 		iter(fs, Seq(fullPath), Seq())
 	}
 
-	def sparkSession: SparkSession = builder.config(confBuild).enableHiveSupport().getOrCreate()
+	def sparkSession: SparkSession = configuredBuilder.getOrCreate()
 
 	def configuredBuilder: SparkSession.Builder = builder.config(confBuild).enableHiveSupport()
 
 	@deprecated
 	def sparkContext: SparkContext = {
-		val context = builder.config(confBuild)
-			.config("spark.sql.warehouse.dir", "file:///tmp/spark-warehouse").enableHiveSupport().getOrCreate().sparkContext
+		val context = configuredBuilder
+			.config("spark.sql.warehouse.dir", "file:///tmp/spark-warehouse").getOrCreate().sparkContext
 		addClasspathToSparkContext(context)
 		val listener = new UberdataSparkListener(context.getConf)
 		context.addSparkListener(listener)
@@ -188,7 +184,6 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 					|| iuberdata.findFirstIn(url.getFile).isDefined
 		)
 		jarUrls.foreach { url =>
-			//logInfo(s"adding ${url.getPath} to spark context jars")
 			slf4jLogger.info(s"adding ${url.getPath} to spark context jars")
 			context.addJar(url.getPath)
 		}
@@ -196,7 +191,6 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 	}
 
 	def createSparkContextForNewCluster(conf: SparkConf): SparkConf = {
-		//log.info(s"connecting to $masterHost")
 		slf4jLogger.info(s"connecting to $masterHost")
 		conf.setMaster(s"spark://$masterHost:7077")
 		confSetup(conf)
@@ -254,7 +248,7 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 		Some(host)
 	}
 
-	def masterHost_=(host: String): Unit = _masterHost = Some(host)
+	def masterHost_(host: String): Unit = _masterHost = Some(host)
 
 	private def confSetup(conf: SparkConf): SparkConf = {
 		ClusterSettings.additionalConfs.map {
@@ -303,7 +297,6 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 	}
 
 	def createSparkContextForProvisionedCluster(conf: SparkConf): SparkConf = {
-		//log.info("connecting to localhost")
 		slf4jLogger.info("connecting to localhost")
 		conf.setMaster(ClusterSettings.master.get)
 		confSetup(conf)
@@ -320,20 +313,19 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 		sqlContext.sql(sql)
 	}
 
-	def sqlContext: SQLContext = builder.getOrCreate().sqlContext
+	def sqlContext: SQLContext = _sqlContext match {
+		case None =>
+			val cont = sparkSession.sparkContext
+			_sqlContext = if (!sparkConf.get("spark.master").startsWith("yarn")) {
+				val context = sparkSession.sqlContext
+				HiveThriftServer2.startWithContext(context)
+				Some(context)
+			} else Some(sparkSession.sqlContext)
+			_sqlContext.get
 
-	//	: HiveContext = {
-	//		_sqlContext match {
-	//			case None =>
-	//				_sqlContext = Some(new HiveContext(sparkContext))
-	//				if (!sparkConf.get("spark.master").startsWith("yarn")) {
-	//					HiveThriftServer2.startWithContext(_sqlContext.get)
-	//				}
-	//				_sqlContext.get
-	//
-	//			case Some(ctx) => ctx
-	//		}
-	//	}
+		case Some(ctx) => ctx
+	}
+
 
 	def load(file: String, separator: String, loadSchema: Seq[DataType]): Dataset = {
 		val fileDataSet = Dataset(this, file, separator)

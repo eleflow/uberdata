@@ -31,6 +31,7 @@ abstract class Mappable {
         case a: AnyRef => a.toString
       }
     }
+
     (Map[String, String]() /: this.getClass.getDeclaredFields) { (a, f) =>
       f.setAccessible(true)
       a + (f.getName -> {
@@ -38,8 +39,4 @@ abstract class Mappable {
       })
     }
   }
-
-  import reflect.runtime.{universe => ru}
-
-  Option.getClass.getFields
 }
