@@ -38,18 +38,33 @@ object ThriftDatasetWriter {
 				List(Nil)
 			}
 		}
+
 		rec(typeOf[T]).withFilter(_.nonEmpty).map(_.mkString(".")).toArray
 	}
 
-	def writeToHiveStream[T](united: Dataset[T], metastore: String = null,
+	def writeClassToHiveStream[T](toBeWriten: Dataset[T], metastore: String = null,
 													 dbName: String = "default", tableName: String = "cdrs",
 													 maxBatchGroups: Int = 1000): Unit = {
-		val context = united.sparkSession.sparkContext
+		writeData(toBeWriten.toJSON, metastore, dbName, tableName, maxBatchGroups)
+	}
+
+	def writeFileToHiveStream(toBeWriten: Dataset[(String,String)], metastore: String = null,
+													 dbName: String = "default", tableName: String = "xmls",
+													 maxBatchGroups: Int = 1000): Unit = {
+		val spark = toBeWriten.sparkSession
+		import spark.implicits._
+		writeData(toBeWriten.map(_.toString), metastore, dbName, tableName, maxBatchGroups)
+	}
+
+	private def writeData(toBeWriten: Dataset[String], metastore: String,
+												dbName: String, tableName: String,
+												maxBatchGroups: Int): Unit = {
+		val context = toBeWriten.sparkSession.sparkContext
 		val broadDbName = context.broadcast(dbName)
 		val broadTableName = context.broadcast(tableName)
 		val broadMetastore = context.broadcast(metastore)
 		val broadMaxBatchGroups = context.broadcast(maxBatchGroups)
-		united.toJSON.foreachPartition {
+		toBeWriten.foreachPartition {
 			data =>
 				val maxSize = 1000
 				val endPt = new HiveEndPoint(
@@ -89,7 +104,7 @@ object ThriftDatasetWriter {
 
 	def writeData(data: List[String], maxSize: Int, txnBatch: TransactionBatch,
 								writer: StrictJsonWriter, connection: StreamingConnection, maxBatchGroups: Int):
-	Unit	= {
+	Unit = {
 		logger.warn(s"datasize ${data.size} maxSize = $maxSize")
 		if (data.size > maxSize) {
 			val txn = getNextTransaction(txnBatch, writer, connection, maxBatchGroups)
