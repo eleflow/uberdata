@@ -52,6 +52,7 @@ class TaskEnd(val appId: String,
               val index: Int,
               val attemptNumber: Int,
               val launchTime: Long,
+              val finishTime: Long,
               val executorId: String,
               val host: String,
               val taskLocality: String,
@@ -84,7 +85,7 @@ class TaskEnd(val appId: String,
     with Serializable {
   def canEqual(that: Any) = that.isInstanceOf[TaskEnd]
 
-  def productArity = 39 // number of columns
+  def productArity = 37 // number of columns
 
   def productElement(idx: Int) = idx match {
     case 0 => appId
@@ -96,33 +97,34 @@ class TaskEnd(val appId: String,
     case 6 => index
     case 7 => attemptNumber
     case 8 => launchTime
-    case 9 => executorId
-    case 10 => host
-    case 11 => taskLocality
-    case 12 => speculative
-    case 13 => executorDeserializeTime
-    case 14 => executorRunTime
-    case 15 => resultSize
-    case 16 => jvmGCTime
-    case 17 => resultSerializationTime
-    case 18 => memoryBytesSpilled
-    case 19 => diskBytesSpilled
-    case 20 => bytesRead
-    case 21 => recordsRead
-    case 22 => bytesWritten
-    case 23 => recordsWritten
-    case 24 => remoteBlocksFetched
-    case 25 => localBlocksFetched
-    case 26 => fetchWaitTime
-    case 27 => remoteBytesRead
-    case 28 => localBytesRead
-    case 29 => totalBytesRead
-    case 30 => totalBlocksFetched
-    case 31 => shuffleRecordsRead
-    case 32 => shuffleBytesWritten
-    case 33 => shuffleWriteTime
-    case 34 => shuffleRecordsWritten
-    case 35 => updatedBlocks
+    case 9 => finishTime
+    case 10 => executorId
+    case 11 => host
+    case 12 => taskLocality
+    case 13 => speculative
+    case 14 => executorDeserializeTime
+    case 15 => executorRunTime
+    case 16 => resultSize
+    case 17 => jvmGCTime
+    case 18 => resultSerializationTime
+    case 19 => memoryBytesSpilled
+    case 20 => diskBytesSpilled
+    case 21 => bytesRead
+    case 22 => recordsRead
+    case 23 => bytesWritten
+    case 24 => recordsWritten
+    case 25 => remoteBlocksFetched
+    case 26 => localBlocksFetched
+    case 27 => fetchWaitTime
+    case 28 => remoteBytesRead
+    case 29 => localBytesRead
+    case 30 => totalBytesRead
+    case 31 => totalBlocksFetched
+    case 32 => shuffleRecordsRead
+    case 33 => shuffleBytesWritten
+    case 34 => shuffleWriteTime
+    case 35 => shuffleRecordsWritten
+    case 36 => updatedBlocks
   }
 
   def apply(appId: String,
@@ -134,6 +136,7 @@ class TaskEnd(val appId: String,
             index: Int,
             attemptNumber: Int,
             launchTime: Long,
+            finishTime: Long,
             executorId: String,
             host: String,
             taskLocality: String,
@@ -171,6 +174,7 @@ class TaskEnd(val appId: String,
       index,
       attemptNumber,
       launchTime,
+      finishTime,
       executorId,
       host,
       taskLocality,
