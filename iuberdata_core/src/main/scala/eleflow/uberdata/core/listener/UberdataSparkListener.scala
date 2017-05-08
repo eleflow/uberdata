@@ -209,7 +209,7 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 		}
 
 		val task = new TaskEnd(sparkConf.getAppId, taskEnd.stageId, taskEnd.stageAttemptId, taskEnd.taskType,
-			taskInfo.taskId, reason, taskInfo.index, taskInfo.attemptNumber, taskInfo.launchTime, taskInfo.finishTime,taskInfo.executorId,
+			taskInfo.taskId, reason, taskInfo.index, taskInfo.attemptNumber, taskInfo.launchTime, taskInfo.duration,taskInfo.executorId,
 			taskInfo.host, taskInfo.taskLocality.toString, taskInfo.speculative,
 			taskMetrics.map(_.executorDeserializeTime).getOrElse(0l), taskMetrics.map(_.executorRunTime).getOrElse(0l),
 			taskMetrics.map(_.resultSize).getOrElse(0l), taskMetrics.map(_.jvmGCTime).getOrElse(0l),

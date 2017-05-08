@@ -52,7 +52,7 @@ class TaskEnd(val appId: String,
               val index: Int,
               val attemptNumber: Int,
               val launchTime: Long,
-              val finishTime: Long,
+              val totalExecutionTime: Long,
               val executorId: String,
               val host: String,
               val taskLocality: String,
@@ -97,7 +97,7 @@ class TaskEnd(val appId: String,
     case 6 => index
     case 7 => attemptNumber
     case 8 => launchTime
-    case 9 => finishTime
+    case 9 => totalExecutionTime
     case 10 => executorId
     case 11 => host
     case 12 => taskLocality
@@ -136,7 +136,7 @@ class TaskEnd(val appId: String,
             index: Int,
             attemptNumber: Int,
             launchTime: Long,
-            finishTime: Long,
+            totalExecutionTime: Long,
             executorId: String,
             host: String,
             taskLocality: String,
@@ -174,7 +174,7 @@ class TaskEnd(val appId: String,
       index,
       attemptNumber,
       launchTime,
-      finishTime,
+      totalExecutionTime,
       executorId,
       host,
       taskLocality,
