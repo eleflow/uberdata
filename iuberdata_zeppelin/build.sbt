@@ -16,10 +16,13 @@
 
 import sbt.Keys._
 
-val nm = "uberdata-zeppelin"
+val nm = "eleflow.uberdata.IUberdata-Zeppelin"
+
+val ver = "0.1.0"
 
 name := nm
 
+version := ver
 
 test in assembly := {}
 

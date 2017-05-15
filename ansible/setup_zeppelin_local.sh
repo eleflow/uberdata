@@ -4,8 +4,8 @@ sudo bash spark-jars.sh
 sudo chmod -R 777 /opt/spark
 
 # WARNING: changing the zeppelin version requires changing the dependency version in build.sbt and iuberdata.sh
-zeppelinVersion="0.6.1"
-sparkVersion="1.6.2"
+zeppelinVersion="0.7.1"
+sparkVersion="2.1.0"
 mySqlConnectorVersion="5.1.34"
 zeppelinInterpreterUberdataDir="/usr/share/zeppelin/interpreter/uberdata/"
 

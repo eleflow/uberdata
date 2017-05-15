@@ -11,19 +11,19 @@
     - name: copy iuberdata to init.d
       copy: src=iuberdata dest=/etc/init.d/iuberdata
     - name: copy local iuberdata
-      copy: src=../iuberdata_zeppelin/target/scala-2.10/eleflow.uberdata.IUberdata-Zeppelin-0.1.0.jar dest=/tmp/eleflow.uberdata.IUberdata-Zeppelin-0.1.0.jar
+      copy: src=../iuberdata_zeppelin/target/scala-2.11/eleflow.uberdata.IUberdata-Zeppelin-0.1.0.jar dest=/tmp/eleflow.uberdata.IUberdata-Zeppelin-0.1.0.jar
       ignore_errors: yes
     - name: copy local iuberdata_addon_zeppelin
-      copy: src=../iuberdata_addon_zeppelin/target/scala-2.10/iuberdata_addon_zeppelin-assembly-0.1.0.jar dest=/tmp/iuberdata_addon_zeppelin-assembly-0.1.0.jar
+      copy: src=../iuberdata_addon_zeppelin/target/scala-2.11/iuberdata_addon_zeppelin-assembly-0.1.0.jar dest=/tmp/iuberdata_addon_zeppelin-assembly-0.1.0.jar
       ignore_errors: yes
     - name: copy local xgboost
-      copy: src=../../xgboost/jvm-packages/xgboost4j/target/xgboost4j-0.5-jar-with-dependencies.jar dest=/tmp/xgboost4j-0.5-jar-with-dependencies.jar
+      copy: src=../../xgboost/jvm-packages/xgboost4j/target/xgboost4j-0.7-jar-with-dependencies.jar dest=/tmp/xgboost4j-0.7-jar-with-dependencies.jar
       ignore_errors: yes
     - name: copy local xgboost-spark
-      copy: src=../../xgboost/jvm-packages/xgboost4j-spark/target/xgboost4j-spark-0.5-jar-with-dependencies.jar dest=/tmp/xgboost4j-spark-0.5-jar-with-dependencies.jar
+      copy: src=../../xgboost/jvm-packages/xgboost4j-spark/target/xgboost4j-spark-0.7-jar-with-dependencies.jar dest=/tmp/xgboost4j-spark-0.7-jar-with-dependencies.jar
       ignore_errors: yes
     - name: copy local sparkts
-      copy: src=../../spark-timeseries/target/sparkts-0.3.0-jar-with-dependencies.jar dest=/tmp/sparkts-0.3.0-jar-with-dependencies.jar
+      copy: src=../../spark-timeseries/target/sparkts-0.4.0-jar-with-dependencies.jar dest=/tmp/sparkts-0.4.0-jar-with-dependencies.jar
       ignore_errors: yes
     - name: copy zeppelin-site.xml
       copy: src=zeppelin-site.xml dest=/tmp/zeppelin-site.xml

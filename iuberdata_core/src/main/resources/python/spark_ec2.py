@@ -39,7 +39,7 @@ else:
   xrange = range
 
 
-SPARK_EC2_VERSION = "1.6.2"
+SPARK_EC2_VERSION = "2.1.0"
 DEFAULT_SPARK_VERSION=SPARK_EC2_VERSION
 SPARK_EC2_DIR = "/opt/spark"
 
@@ -67,6 +67,12 @@ VALID_SPARK_VERSIONS = set([
     "1.6.0",
     "1.6.1",
     "1.6.2",
+    "1.6.3",
+    "2.0.0-preview",
+    "2.0.0",
+    "2.0.1",
+    "2.0.2",
+    "2.1.0"
 ])
 
 SPARK_TACHYON_MAP = {
@@ -87,6 +93,7 @@ SPARK_TACHYON_MAP = {
     "1.6.0": "0.8.2",
     "1.6.1": "0.8.2",
     "1.6.2": "0.8.2",
+    "2.0.0-preview": "",
 }
 
 
@@ -94,7 +101,7 @@ DEFAULT_SPARK_GITHUB_REPO = "https://github.com/apache/spark"
 
 # Default location to get the spark-ec2 scripts (and ami-list) from
 DEFAULT_SPARK_EC2_GITHUB_REPO = "https://github.com/paulomagalhaes/spark-ec2"
-DEFAULT_SPARK_EC2_BRANCH = "branch-1.5"
+DEFAULT_SPARK_EC2_BRANCH = "branch-2.1"
 
 def setup_external_libs(libs):
   """
@@ -750,7 +757,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, opts, deploy_ssh_key):
   print( stderr,"Done!", file=sys.stderr)
 
 def get_master_setup_files(master, opts):
-  scp(master, opts, "/root/spark/lib/datanucleus*.jar", "%s/lib" % SPARK_EC2_DIR)
+  scp(master, opts, "/root/spark/jars/datanucleus*.jar", "%s/lib" % SPARK_EC2_DIR)
   scp(master, opts, "/root/spark/conf/*", "%s/conf" % SPARK_EC2_DIR)
 
 def setup_spark_cluster(master, opts):
