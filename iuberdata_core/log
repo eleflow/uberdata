@@ -1,0 +1,125 @@
+[0m[[0minfo[0m] [0mLoading project definition from /home/dirceu/projects/conversaouberdata/uberdata/iuberdata_core/project[0m
+[0m[[0minfo[0m] [0mUpdating {file:/home/dirceu/projects/conversaouberdata/uberdata/iuberdata_core/project/}iuberdata_core-build...[0m
+[0m[[0minfo[0m] [0mResolving com.typesafe.sbt#sbt-native-packager;0.7.4 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.apache.commons#commons-compress;1.4.1 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.tukaani#xz;1.0 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.vafer#jdeb;1.3 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving commons-io#commons-io;2.4 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.apache.commons#commons-compress;1.7 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.tukaani#xz;1.4 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.apache.maven#maven-core;3.2.2 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.apache.maven#maven-model;3.2.2 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.codehaus.plexus#plexus-utils;3.0.17 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.apache.maven#maven-settings;3.2.2 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.apache.maven#maven-settings-builder;3.2.2 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.codehaus.plexus#plexus-interpolation;1.19 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.codehaus.plexus#plexus-component-annotations;1.5.5 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.sonatype.plexus#plexus-sec-dispatcher;1.3 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.sonatype.plexus#plexus-cipher;1.4 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.apache.maven#maven-repository-metadata;3.2.2 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.apache.maven#maven-artifact;3.2.2 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.apache.maven#maven-plugin-api;3.2.2 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.eclipse.sisu#org.eclipse.sisu.plexus;0.0.0.M5 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving javax.enterprise#cdi-api;1.0 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving javax.annotation#jsr250-api;1.0 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving javax.inject#javax.inject;1 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving com.google.guava#guava;10.0.1 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving com.google.code.findbugs#jsr305;1.3.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.sonatype.sisu#sisu-guice;3.1.0 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving aopalliance#aopalliance;1.0 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.eclipse.sisu#org.eclipse.sisu.inject;0.0.0.M5 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.apache.maven#maven-model-builder;3.2.2 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.apache.maven#maven-aether-provider;3.2.2 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.eclipse.aether#aether-api;0.9.0.M2 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.eclipse.aether#aether-spi;0.9.0.M2 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.eclipse.aether#aether-util;0.9.0.M2 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.eclipse.aether#aether-impl;0.9.0.M2 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.codehaus.plexus#plexus-classworlds;2.5.1 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.apache.ant#ant;1.9.3 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.apache.ant#ant-launcher;1.9.3 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.bouncycastle#bcpg-jdk15on;1.51 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.bouncycastle#bcprov-jdk15on;1.51 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving com.typesafe.sbt#sbt-git;0.6.2 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.eclipse.jgit#org.eclipse.jgit.pgm;2.2.0.201212191850-r ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving args4j#args4j;2.0.12 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.eclipse.jgit#org.eclipse.jgit;2.2.0.201212191850-r ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving com.jcraft#jsch;0.1.44-1 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.eclipse.jgit#org.eclipse.jgit.iplog;2.2.0.201212191850-r ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.eclipse.jgit#org.eclipse.jgit.ui;2.2.0.201212191850-r ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scoverage#sbt-scoverage;1.1.0 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scoverage#scalac-scoverage-plugin_2.10;1.1.0 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-lang#scala-library;2.10.5 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#sbt;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#main;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#actions;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#classpath;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-lang#scala-compiler;2.10.5 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-lang#scala-reflect;2.10.5 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#interface;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#io;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#control;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#launcher-interface;1.0.0-M1 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#completion;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#collections;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving jline#jline;2.11 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#api;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#compiler-integration;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#incremental-compiler;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#logging;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#process;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#relation;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#compile;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#classfile;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#persist;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-tools.sbinary#sbinary_2.10;0.4.2 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#compiler-ivy-integration;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#ivy;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#cross;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt.ivy#ivy;2.3.0-sbt-c5d1b95fdcc1e1007740ffbecf4eb07abc51ec93 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving com.jcraft#jsch;0.1.46 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#serialization_2.10;0.1.1 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-lang.modules#scala-pickling_2.10;0.10.0 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scalamacros#quasiquotes_2.10;2.0.1 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.json4s#json4s-core_2.10;3.2.10 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.json4s#json4s-ast_2.10;3.2.10 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving com.thoughtworks.paranamer#paranamer;2.6 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.spire-math#jawn-parser_2.10;0.6.0 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.spire-math#json4s-support_2.10;0.6.0 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#run;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#task-system;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#tasks;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#tracking;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#cache;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#testing;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#test-agent;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#test-interface;1.0 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#main-settings;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#apply-macro;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#command;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#logic;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#compiler-interface;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#precompiled-2_8_2;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#precompiled-2_9_2;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-sbt#precompiled-2_9_3;0.13.9 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.scala-lang#jline;2.10.5 ...[0m
+[A[2K[0m[[0minfo[0m] [0mResolving org.fusesource.jansi#jansi;1.4 ...[0m
+[0m[[0minfo[0m] [0mdownloading https://repo.scala-sbt.org/scalasbt/sbt-plugin-releases/com.typesafe.sbt/sbt-native-packager/scala_2.10/sbt_0.13/0.7.4/jars/sbt-native-packager.jar ...[0m
+[0m[[0minfo[0m] [0m	[SUCCESSFUL ] com.typesafe.sbt#sbt-native-packager;0.7.4!sbt-native-packager.jar (7282ms)[0m
+[0m[[0minfo[0m] [0mdownloading https://jcenter.bintray.com/org/apache/commons/commons-compress/1.7/commons-compress-1.7.jar ...[0m
+[0m[[0minfo[0m] [0m	[SUCCESSFUL ] org.apache.commons#commons-compress;1.7!commons-compress.jar (3129ms)[0m
+[0m[[0minfo[0m] [0mdownloading https://jcenter.bintray.com/org/tukaani/xz/1.4/xz-1.4.jar ...[0m
+[0m[[0minfo[0m] [0m	[SUCCESSFUL ] org.tukaani#xz;1.4!xz.jar (1897ms)[0m
+[0m[[0minfo[0m] [0mdownloading https://jcenter.bintray.com/com/google/guava/guava/10.0.1/guava-10.0.1.jar ...[0m
+[0m[[0minfo[0m] [0m	[SUCCESSFUL ] com.google.guava#guava;10.0.1!guava.jar (3720ms)[0m
+[0m[[0minfo[0m] [0mDone updating.[0m
+[0m[[31merror[0m] [0mType error in expression[0m
+Project loading failed: (r)etry, (q)uit, (l)ast, or (i)gnore? 
+[0m[[0minfo[0m] [0mLoading project definition from /home/dirceu/projects/conversaouberdata/uberdata/iuberdata_core/project[0m
+[0m[[31merror[0m] [0mType error in expression[0m
+Project loading failed: (r)etry, (q)uit, (l)ast, or (i)gnore? 
+[0m[[0minfo[0m] [0mLoading project definition from /home/dirceu/projects/conversaouberdata/uberdata/iuberdata_core/project[0m
+[0m[[31merror[0m] [0mType error in expression[0m
+Project loading failed: (r)etry, (q)uit, (l)ast, or (i)gnore? 
+[0m[[0minfo[0m] [0mLoading project definition from /home/dirceu/projects/conversaouberdata/uberdata/iuberdata_core/project[0m
+[0m[[31merror[0m] [0mType error in expression[0m
+Project loading failed: (r)etry, (q)uit, (l)ast, or (i)gnore? 

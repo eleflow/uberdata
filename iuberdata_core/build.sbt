@@ -23,6 +23,13 @@ import com.typesafe.sbt.SbtGit._
 
 versionWithGit
 
+
+//lazy val publishRepo = Some("Objective Nexus Snapshots" at
+//  "http://repo:8080/archiva/repository/snapshots")
+//
+//publishTo := publishRepo
+publishMavenStyle := true
+
 resolvers += Resolver.sonatypeRepo("public")
 
 resolvers += Resolver.typesafeIvyRepo("releases")
@@ -47,7 +54,6 @@ def iUberdataCoreVersion(version: Option[String] = Some("Not a Git Repository"),
 			 |}\n""".stripMargin)
   Seq(file)
 }
-
 
 
 sourceGenerators in Compile <+= (git.gitHeadCommit, sourceManaged in Compile) map

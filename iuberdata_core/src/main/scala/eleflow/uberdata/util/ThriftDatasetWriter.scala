@@ -13,14 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eleflow.uberdata.util
+package org.apache.hive.hcatalog.streaming
+
 
 
 import scala.reflect.runtime.universe._
-import org.apache.hive.hcatalog.streaming._
 import org.apache.spark.sql.Dataset
 import io.circe.syntax._
+import org.apache.hive.hcatalog.streaming.TransactionBatch.TxnState
+import org.apache.spark.broadcast.Broadcast
 import org.slf4j.LoggerFactory
+
+import scala.collection.JavaConversions._
+import scala.util.matching.Regex
 
 
 object ThriftDatasetWriter {
@@ -42,57 +47,96 @@ object ThriftDatasetWriter {
 		rec(typeOf[T]).withFilter(_.nonEmpty).map(_.mkString(".")).toArray
 	}
 
-	def writeClassToHiveStream[T](toBeWriten: Dataset[T], metastore: String = null,
-													 dbName: String = "default", tableName: String = "cdrs",
-													 maxBatchGroups: Int = 1000): Unit = {
-		writeData(toBeWriten.toJSON, metastore, dbName, tableName, maxBatchGroups)
+	def writeClassToHiveStream(toBeWriten: Dataset[String], metastore: String,
+														 dbName: String, tableName: String,
+														 maxBatchGroups: Int, columns: Array[String]): Unit = {
+		import toBeWriten.sparkSession.implicits._
+		writeData(toBeWriten.map((_, "")), metastore, dbName, tableName, maxBatchGroups, columns)
 	}
 
-	def writeFileToHiveStream(toBeWriten: Dataset[(String,String)], metastore: String = null,
-													 dbName: String = "default", tableName: String = "xmls",
-													 maxBatchGroups: Int = 1000): Unit = {
-		val spark = toBeWriten.sparkSession
-		import spark.implicits._
-		writeData(toBeWriten.map(_.toString), metastore, dbName, tableName, maxBatchGroups)
+
+	def writeClassToHiveStream(toBeWriten: Dataset[(String, String)],
+																	 metastore: String,
+																	 dbName: String, tableName: String,
+																	 maxBatchGroups: Int, partitionCol: Option[String] = None): Unit = {
+		writeData(toBeWriten, metastore, dbName, tableName,
+			maxBatchGroups)
 	}
 
-	private def writeData(toBeWriten: Dataset[String], metastore: String,
+	private def extractPartitions(list: List[String], broadPattern: Regex):
+	List[String] = list.filter {
+		value =>
+			logger.warn(s"Json: $value")
+			broadPattern.findFirstIn(formatJson(value)).isDefined
+	}
+
+	private def writeData(toBeWriten: Dataset[(String, String)], metastore: String,
 												dbName: String, tableName: String,
-												maxBatchGroups: Int): Unit = {
+												maxBatchGroups: Int, columns: Array[String] = Array.empty[String],
+												pattern: Option[Regex] = None): Unit = {
 		val context = toBeWriten.sparkSession.sparkContext
 		val broadDbName = context.broadcast(dbName)
 		val broadTableName = context.broadcast(tableName)
 		val broadMetastore = context.broadcast(metastore)
 		val broadMaxBatchGroups = context.broadcast(maxBatchGroups)
+		val broadColumns = context.broadcast(columns)
+		logger.warn(s"Tablename $tableName")
 		toBeWriten.foreachPartition {
-			data =>
-				val maxSize = 1000
-				val endPt = new HiveEndPoint(
-					broadMetastore.value,
-					broadDbName.value, broadTableName.value, null)
-				val writer = new StrictJsonWriter(endPt)
-				val connection = endPt.newConnection(false)
-				val txnBatch = connection.fetchTransactionBatch(broadMaxBatchGroups.value,
-					writer)
-				txnBatch.beginNextTransaction()
-				writeData(data.toList, maxSize, txnBatch, writer, connection, broadMaxBatchGroups.value)
-				txnBatch.close()
+			dataPartition =>
+				val list = dataPartition.toList
+				if (list.nonEmpty) {
+					val maxSize = 1000
+					val data = list.map(_._1)
+					val partitions = list.map(_._2).filter(_.nonEmpty).map(_.substring(0,6)).distinct
+					logger.warn(s"Partitions: ${partitions.mkString}")
+					val endPt = new HiveEndPoint(
+						broadMetastore.value,
+						broadDbName.value, broadTableName.value, partitions)
+					val connection = endPt.newConnection(true, s"$tableName:${partitions.mkString}")
+					val writer = broadColumns.value.headOption.map {
+						_ => new DelimitedInputWriter(broadColumns.value, ",", endPt);
+					}.getOrElse(new StrictJsonWriter(endPt))
+					val txnBatch = connection.fetchTransactionBatch(broadMaxBatchGroups.value,
+						writer)
+					try {
+						writeData(data, maxSize, txnBatch, writer, connection, broadMaxBatchGroups.value,
+							broadColumns.value, broadTableName.value)
+					} catch {
+						case e: Exception =>
+							e.printStackTrace()
+							throw e
+					} finally {
+						logger.warn(txnBatch.getCurrentTransactionState.toString)
+						if (txnBatch.getCurrentTransactionState == TxnState.OPEN) {
+							//							writer.flush()
+							txnBatch.commit()
+						}
+						txnBatch.close()
+						connection.close()
+					}
+				}
 		}
 	}
 
-	private def writeStream(data: String, txnBatch: TransactionBatch): Unit = {
-		try {
-			val jsonString = data.asJson.toString
-			val outputString = jsonString.substring(1, jsonString.size - 1).replaceAll("""\\"""", """"""")
-			txnBatch.write(outputString.getBytes())
-		} catch {
-			case (e: Exception) =>
-				e.printStackTrace()
-		}
+	private def writeXMLStream(data: String, txnBatch: TransactionBatch): Unit = {
+		val outputString = data.replaceAll("""\\"""", """"""")
+		txnBatch.write(outputString.getBytes())
+	}
+
+
+	private def writeJSONStream(data: String, txnBatch: TransactionBatch): Unit = {
+		txnBatch.write(formatJson(data).getBytes())
+	}
+
+	private def formatJson(string: String) = {
+		val json = string.asJson.noSpaces.substring(1)
+		logger.warn(s"Json: $json")
+		logger.warn(s"String: $string")
+			json.replaceAll("""\\"""", """"""").replaceAll("""\\"""", """"""")
 	}
 
 	private def getNextTransaction(txnBatch: TransactionBatch,
-																 writer: StrictJsonWriter, connection: StreamingConnection,
+																 writer: AbstractRecordWriter, connection: StreamingConnection,
 																 maxBatchGroups: Int) =
 		if (txnBatch.remainingTransactions() > 0) {
 			logger.warn(s"->  txnBatch transactions remaining: ${txnBatch.remainingTransactions()}")
@@ -103,29 +147,47 @@ object ThriftDatasetWriter {
 		}
 
 	def writeData(data: List[String], maxSize: Int, txnBatch: TransactionBatch,
-								writer: StrictJsonWriter, connection: StreamingConnection, maxBatchGroups: Int):
-	Unit = {
+								writer: AbstractRecordWriter, connection: StreamingConnection, maxBatchGroups: Int,
+								columns: Array[String], tableName: String): Unit = {
+		logger.warn(s"Tablename: $tableName")
 		logger.warn(s"datasize ${data.size} maxSize = $maxSize")
 		if (data.size > maxSize) {
+			logger.warn(s"Writing data")
 			val txn = getNextTransaction(txnBatch, writer, connection, maxBatchGroups)
-			writeData(data.take(maxSize), txn, writer, connection)
-			writeData(data.drop(maxSize), maxSize, txn, writer, connection, maxBatchGroups)
+			writeData(data.take(maxSize), txn, writer, connection, columns)
+			writeData(data.drop(maxSize), maxSize, txn, writer, connection, maxBatchGroups, columns,
+				tableName)
 			logger.warn(s"-> Begining Transaction Commit: Transaction State: " +
 				s"${txn.getCurrentTransactionState()}")
-		} else {
+		} else if (data.size > 0) {
 			val txn = getNextTransaction(txnBatch, writer, connection, maxBatchGroups)
-			writeData(data, txn, writer, connection)
+			logger.warn(s"-> Begining Transaction Commit: Transaction State: " +
+				s"${txn.getCurrentTransactionState()}")
+			writeData(data, txn, writer, connection, columns)
 		}
 		logger.warn("commit")
 	}
 
 	private def writeData(data: List[String], txnBatch: TransactionBatch,
-												writer: StrictJsonWriter, connection: StreamingConnection) = {
-		txnBatch.beginNextTransaction()
-		data.foreach { dt =>
-			writeStream(dt, txnBatch)
+												writer: AbstractRecordWriter, connection: StreamingConnection,
+												columns: Array[String]) = {
+		try {
+			txnBatch.beginNextTransaction()
+			data.filterNot(_.isEmpty).foreach { dt =>
+				writer match {
+					case _: StrictJsonWriter =>
+						writeJSONStream(dt, txnBatch)
+					case _: DelimitedInputWriter =>
+						writeXMLStream(dt, txnBatch)
+				}
+			}
+			writer.flush()
+			txnBatch.commit()
+		} catch {
+			case e: Exception =>
+				e.printStackTrace()
+				txnBatch.abort()
+				throw e
 		}
-		writer.flush()
-		txnBatch.commit()
 	}
 }

@@ -247,6 +247,7 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 			"Spark standalone cluster started at http://([^:]+):8080"
 		)
 		val host = pattern.findAllIn(output).matchData.map(_.group(1)).next
+		val x : org.apache.spark.sql.Dataset[String] = null
 		Some(host)
 	}
 
