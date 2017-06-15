@@ -76,6 +76,7 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 
 	def terminate(): Unit = {
 		clearContext()
+		builder.getOrCreate().stop()
 		val path = getSparkEc2Py
 		shellRun(Seq(path, "destroy", clusterName))
 		_masterHost = None
@@ -84,7 +85,7 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 
 	def clearContext(): Unit = {
 		ClusterSettings.resume = true
-		builder.getOrCreate().stop()
+		//builder.getOrCreate().stop()
 	}
 
 	def clusterInfo(): Unit = {

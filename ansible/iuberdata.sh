@@ -7,7 +7,7 @@ uberdataVersion="0.1.0"
 mySqlConnectorVersion="5.1.34"
 
 # WARNING: changing the zeppelin version requires changing the dependency version in build.sbt and setup_zeppelin_local.sh
-zeppelinVersion="0.6.1"
+zeppelinVersion="0.7.1"
 zeppelinInterpreterUberdataDir="/usr/share/zeppelin/interpreter/uberdata/"
 
 # java-devel
@@ -51,9 +51,9 @@ mkdir -p $zeppelinInterpreterUberdataDir
 cd $zeppelinInterpreterUberdataDir
 
 sudo rm -rf ../spark
-bash /usr/share/zeppelin/bin/install-interpreter.sh --name spark --artifact org.apache.zeppelin:zeppelin-spark_2.10:0.6.1
+bash /usr/share/zeppelin/bin/install-interpreter.sh --name spark --artifact org.apache.zeppelin:zeppelin-spark_2.11:0.7.1
 
-cp ../spark/zeppelin-spark*jar ./
+#cp ../spark/zeppelin-spark*jar ./
 rm -rf ../spark
 rm -rf ../hive
 rm -rf ../tajo
@@ -65,10 +65,7 @@ chmod +x /usr/share/zeppelin/bin/interpreter.sh
 # install IUberdata
 cp /tmp/eleflow.uberdata.IUberdata-Zeppelin-$uberdataVersion.jar ./
 
-ln -s /opt/spark/lib/spark-assembly* ./spark-assembly.jar
-ln -s /opt/spark/lib/datanucleus-core*.jar ./datanucleus-core.jar
-ln -s /opt/spark/lib/datanucleus-api*.jar ./datanucleus-api.jar
-ln -s /opt/spark/lib/datanucleus-rdbms*.jar ./datanucleus-rdbms.jar
+ln -s /opt/spark/jars/* .
 
 cp -f /tmp/iuberdata_addon_zeppelin-assembly-$uberdataVersion.jar /usr/share/zeppelin/lib/
 
@@ -88,9 +85,9 @@ rm -f /tmp/notebook/interpreter.json
 cp -rf /tmp/notebook/* /usr/share/zeppelin/notebook
 rm -rf /tmp/notebook*
 
-mv /tmp/xgboost4j-spark-0.5-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
-mv /tmp/xgboost4j-0.5-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
-mv /tmp/sparkts-0.3.0-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
+mv /tmp/xgboost4j-spark-0.7-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
+mv /tmp/xgboost4j-0.7-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
+mv /tmp/sparkts-0.4.0-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
 
 sudo rm -f /tmp/iuberdata_addon_zeppelin-assembly-0.1.0.jar
 sudo rm -f /tmp/eleflow.uberdata.IUberdata-Zeppelin-0.1.0.jar
