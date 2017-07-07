@@ -16,7 +16,6 @@
 package org.apache.hive.hcatalog.streaming
 
 
-
 import scala.reflect.runtime.universe._
 import org.apache.spark.sql.Dataset
 import io.circe.syntax._
@@ -47,27 +46,19 @@ object ThriftDatasetWriter {
 		rec(typeOf[T]).withFilter(_.nonEmpty).map(_.mkString(".")).toArray
 	}
 
-	def writeClassToHiveStream(toBeWriten: Dataset[String], metastore: String,
+	def writeClassToHiveStream(toBeWriten: Dataset[(String, String)], metastore: String,
 														 dbName: String, tableName: String,
 														 maxBatchGroups: Int, columns: Array[String]): Unit = {
-		import toBeWriten.sparkSession.implicits._
-		writeData(toBeWriten.map((_, "")), metastore, dbName, tableName, maxBatchGroups, columns)
+		writeData(toBeWriten, metastore, dbName, tableName, maxBatchGroups, columns)
 	}
 
 
 	def writeClassToHiveStream(toBeWriten: Dataset[(String, String)],
-																	 metastore: String,
-																	 dbName: String, tableName: String,
-																	 maxBatchGroups: Int, partitionCol: Option[String] = None): Unit = {
+														 metastore: String,
+														 dbName: String, tableName: String,
+														 maxBatchGroups: Int): Unit = {
 		writeData(toBeWriten, metastore, dbName, tableName,
 			maxBatchGroups)
-	}
-
-	private def extractPartitions(list: List[String], broadPattern: Regex):
-	List[String] = list.filter {
-		value =>
-			logger.warn(s"Json: $value")
-			broadPattern.findFirstIn(formatJson(value)).isDefined
 	}
 
 	private def writeData(toBeWriten: Dataset[(String, String)], metastore: String,
@@ -80,39 +71,58 @@ object ThriftDatasetWriter {
 		val broadMetastore = context.broadcast(metastore)
 		val broadMaxBatchGroups = context.broadcast(maxBatchGroups)
 		val broadColumns = context.broadcast(columns)
-		logger.warn(s"Tablename $tableName")
-		toBeWriten.foreachPartition {
+
+		val tobe = if (toBeWriten.count > 0) {
+			val first = toBeWriten.first()
+			writeSingle(toBeWriten, broadTableName, broadDbName, broadMetastore, broadColumns, broadMaxBatchGroups)
+		} else writeSingle(toBeWriten, broadTableName, broadDbName, broadMetastore, broadColumns,
+			broadMaxBatchGroups)
+
+
+	}
+
+	private def writeSingle(tobe: Dataset[(String, String)], broadTableName: Broadcast[String],
+													broadDbName: Broadcast[String], broadMetastore: Broadcast[String],
+													broadColumns: Broadcast[Array[String]], broadMaxBatchGroups:
+													Broadcast[Int]) = {
+		tobe.foreachPartition {
 			dataPartition =>
+
 				val list = dataPartition.toList
 				if (list.nonEmpty) {
-					val maxSize = 1000
-					val data = list.map(_._1)
-					val partitions = list.map(_._2).filter(_.nonEmpty).map(_.substring(0,6)).distinct
-					logger.warn(s"Partitions: ${partitions.mkString}")
-					val endPt = new HiveEndPoint(
-						broadMetastore.value,
-						broadDbName.value, broadTableName.value, partitions)
-					val connection = endPt.newConnection(true, s"$tableName:${partitions.mkString}")
-					val writer = broadColumns.value.headOption.map {
-						_ => new DelimitedInputWriter(broadColumns.value, ",", endPt);
-					}.getOrElse(new StrictJsonWriter(endPt))
-					val txnBatch = connection.fetchTransactionBatch(broadMaxBatchGroups.value,
-						writer)
-					try {
-						writeData(data, maxSize, txnBatch, writer, connection, broadMaxBatchGroups.value,
-							broadColumns.value, broadTableName.value)
-					} catch {
-						case e: Exception =>
-							e.printStackTrace()
-							throw e
-					} finally {
-						logger.warn(txnBatch.getCurrentTransactionState.toString)
-						if (txnBatch.getCurrentTransactionState == TxnState.OPEN) {
-							//							writer.flush()
-							txnBatch.commit()
+					val maxSize = Int.MaxValue
+					val data = list.map(_._2)
+					val partitionNames = list.map(_._1).filter(_.nonEmpty).map(_.substring(0, 6)).distinct
+					logger.warn(s"Partitions: ${partitionNames.mkString}")
+					logger.warn(s"TableName: ${broadTableName.value}")
+					partitionNames.map {
+						partitions =>
+						val endPt = new HiveEndPoint(
+							broadMetastore.value, broadDbName.value, broadTableName.value, List(partitions))
+						val connection = endPt.newConnection(true, s"${broadTableName.value}:" +
+							s"${partitions.mkString}")
+						val writer = broadColumns.value.headOption.map {
+							_ => new DelimitedInputWriter(broadColumns.value, ",", endPt);
+						}.getOrElse(new StrictJsonWriter(endPt))
+						val txnBatch = connection.fetchTransactionBatch(broadMaxBatchGroups.value,
+							writer)
+						try {
+							writeData(data, maxSize, txnBatch, writer, connection, broadMaxBatchGroups.value,
+								broadColumns.value, broadTableName.value)
+						} catch {
+							case e: Exception =>
+								e.printStackTrace()
+								txnBatch.abort()
+								throw e
+						} finally {
+							logger.warn(txnBatch.getCurrentTransactionState.toString)
+							if (txnBatch.getCurrentTransactionState == TxnState.OPEN) {
+								//							writer.flush()
+								txnBatch.commit()
+							}
+							txnBatch.close()
+							connection.close()
 						}
-						txnBatch.close()
-						connection.close()
 					}
 				}
 		}
@@ -130,9 +140,7 @@ object ThriftDatasetWriter {
 
 	private def formatJson(string: String) = {
 		val json = string.asJson.noSpaces.substring(1)
-		logger.warn(s"Json: $json")
-		logger.warn(s"String: $string")
-			json.replaceAll("""\\"""", """"""").replaceAll("""\\"""", """"""")
+		json.replaceAll("""\\"""", """"""").replaceAll("""\\"""", """"""")
 	}
 
 	private def getNextTransaction(txnBatch: TransactionBatch,
@@ -152,7 +160,6 @@ object ThriftDatasetWriter {
 		logger.warn(s"Tablename: $tableName")
 		logger.warn(s"datasize ${data.size} maxSize = $maxSize")
 		if (data.size > maxSize) {
-			logger.warn(s"Writing data")
 			val txn = getNextTransaction(txnBatch, writer, connection, maxBatchGroups)
 			writeData(data.take(maxSize), txn, writer, connection, columns)
 			writeData(data.drop(maxSize), maxSize, txn, writer, connection, maxBatchGroups, columns,
@@ -165,7 +172,6 @@ object ThriftDatasetWriter {
 				s"${txn.getCurrentTransactionState()}")
 			writeData(data, txn, writer, connection, columns)
 		}
-		logger.warn("commit")
 	}
 
 	private def writeData(data: List[String], txnBatch: TransactionBatch,
@@ -191,3 +197,5 @@ object ThriftDatasetWriter {
 		}
 	}
 }
+
+case class Contents(key: String, value: String)

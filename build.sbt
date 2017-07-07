@@ -20,7 +20,6 @@ resolvers += Resolver.mavenLocal
 
 resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/releases"
 
-//TODO when moving spark to 1.5, we can update to scala version 2.11.7 according to this issue https://issues.apache.org/jira/browse/SPARK-8013
 val scalaV = "2.11.8"
 
 //WARNING: changing the zeppelin version requires changing the dependency version in setup_zeppelin_local.sh and iuberdata.sh
@@ -29,16 +28,36 @@ lazy val sparkVersion = "2.1.0"
 val sparkV : sbt.SettingKey[scala.Predef.String] = SettingKey(sparkVersion)
 lazy val mysqlV = "5.1.34"
 lazy val slf4jVersion = "1.7.24"
+lazy val circeVersion = "0.7.1"
 
 lazy val commonSettings = Seq(
   organization := "br.com.eleflow",
-  version := "0.2.0",
+  version := "0.2.0-SNAPSHOT",
   scalaVersion := "2.11.8"
 )
 
+isSnapshot := true
+
+lazy val publishRepo =  {
+  val nexus = "http://10.44.1.88:8080/archiva/repository"
+//  if (snap)
+    Some("snapshots" at nexus + "/snapshots")
+//  else
+//    Some("releases"  at nexus + "/internal")
+}
+
+publishTo in ThisBuild := publishRepo
+
+resolvers ++= Seq(
+//  "Local Maven Repository" at "file://" + Path.userHome.absolutePath + "/.m2/repository",
+  "Objective Nexus Snapshots" at "http://10.44.1.88:8080/archiva/repository/snapshots",
+  "Objective Nexus Release" at "http://10.44.1.88:8080/archiva/repository/internal")
 scalaVersion := scalaV
 
-lazy val iuberdata_core = project settings (libraryDependencies ++= Seq(
+lazy val iuberdata_core = project settings (
+  isSnapshot := true,
+  publishTo := publishRepo,
+  libraryDependencies ++= Seq(
     "com.amazonaws" % "aws-java-sdk" % "1.8.9.1" excludeAll ExclusionRule(
       organization = "com.fasterxml.jackson.core"),
     "joda-time" % "joda-time" % "2.5",
@@ -47,22 +66,33 @@ lazy val iuberdata_core = project settings (libraryDependencies ++= Seq(
     "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-hive-thriftserver" % sparkVersion % "provided",
-    "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5" % "provided",
+ "org.apache.hive.hcatalog" % "hive-hcatalog-core" % "2.1.0" % "provided" excludeAll ExclusionRule
+ (organization = "org.pentaho"),
+  "org.apache.hive.hcatalog" % "hive-hcatalog-streaming" % "2.1.0" % "provided",
+//    "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5" % "provided",
     "com.typesafe" % "config" % "1.3.0",
     "org.scalatest" %% "scalatest" % "2.2.4",
     "org.easymock" % "easymock" % "3.4" % "test",
-    "com.typesafe.play" %% "play-json" % "2.4.6",
+    "com.typesafe.play" %% "play-json" % "2.5.13" excludeAll ExclusionRule(
+      organization = "com.fasterxml.jackson.core"),
     "com.cloudera.sparkts" % "sparkts" % "0.4.1" % "provided",
     "ml.dmlc" % "xgboost4j" % "0.7" % "provided",
     "ml.dmlc" % "xgboost4j-spark" % "0.7" % "provided",
     "com.databricks" %% "spark-csv" % "1.5.0",
-  "com.databricks" %% "spark-xml" % "0.4.1",
-    "mysql" % "mysql-connector-java" % mysqlV % "runtime",
+//  "com.databricks" %% "spark-xml" % "0.4.1",
+//    "mysql" % "mysql-connector-java" % mysqlV % "runtime",
     "org.slf4j" % "slf4j-api" % slf4jVersion,
-    "org.slf4j" % "slf4j-log4j12" % slf4jVersion
-  )) settings (commonSettings, dependencyOverrides ++= Set(
-    "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5"
-  )) enablePlugins JavaAppPackaging
+    "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
+    "io.circe" %% "circe-core" % circeVersion,
+  "io.circe" %% "circe-generic" % circeVersion,
+  "io.circe" %% "circe-parser" % circeVersion,
+  "ai.x" %% "play-json-extensions" % "0.8.0"
+
+  )) settings (commonSettings
+, dependencyOverrides ++= Set(
+    "com.fasterxml.jackson.core" % "jackson-databind" % "2.8.7"
+  )
+) enablePlugins JavaAppPackaging
 
 lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;compile->compile") settings
     (commonSettings, libraryDependencies ++= Seq(
@@ -73,7 +103,6 @@ lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;co
       "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
       "com.google.code.gson" % "gson" % "2.2",
       "commons-collections" % "commons-collections" % "3.2.1",
-      "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5" % "provided",
       "org.scala-lang" % "scala-compiler" % scalaV,
       "org.apache.spark" %% "spark-streaming" % sparkVersion % "provided",
       "org.apache.spark" %% "spark-catalyst" % sparkVersion % "provided",
@@ -85,16 +114,18 @@ lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;co
       "org.rosuda.REngine" % "REngine" % "2.1.1-SNAPSHOT",
       "org.rosuda.REngine" % "Rserve" % "1.8.2-SNAPSHOT",
       "junit" % "junit" % "4.11" % "test"
-    )) settings (commonSettings, dependencyOverrides ++= Set(
-    "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5"
-  ))
+    )) settings (commonSettings)
+//, dependencyOverrides ++= Set(
+//    "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5"
+//  ))
 
 lazy val iuberdata_addon_zeppelin = project settings (libraryDependencies ++= Seq(
     "org.apache.zeppelin" % "zeppelin-zengine" % zeppelin_version % "provided",
     "org.scala-lang" % "scala-reflect" % scalaV
-  )) settings (commonSettings, dependencyOverrides ++= Set(
-    "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5"
-  )) enablePlugins JavaAppPackaging
+  )) settings (commonSettings) enablePlugins JavaAppPackaging
+//, dependencyOverrides ++= Set(
+//    "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5"
+//  ))
 
 test in assembly := {}
 
