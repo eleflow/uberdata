@@ -53,7 +53,7 @@ trait BaseXGBoostBestModelFinder[G, M <: org.apache.spark.ml.ForecastBaseModel[M
       .getAs[Array[org.apache.spark.ml.linalg.Vector]](IUberdataForecastUtil.FEATURES_COL_NAME)
       .map { vec =>
         val values = vec.toArray.map(DataTransformer.toFloat)
-        LabeledPoint.fromDenseVector(values.head, values.tail)
+        LabeledPoint(values.head, null, values.tail)
       }
     val features = new DMatrix(featuresArray.toIterator)
     log.warn(s"Evaluating forecast for id $id, with xgboost")

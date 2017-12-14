@@ -57,7 +57,7 @@ class TestXGBoost
 
 		val testData = test.formatDateValues("Date", DayMonthYear).rdd.map{
 		row =>
-			XGBLabeledPoint.fromDenseVector(row.getAs[Long]("Id"), Array(row.getAs[Long]("Store").toFloat,
+			XGBLabeledPoint(row.getAs[Long]("Id"), null, Array(row.getAs[Long]("Store").toFloat,
 				row.getAs[Long]("DayOfWeek").toFloat, row.getAs[Int]("Date1").toFloat,
 				row.getAs[Int]("Date2").toFloat,row.getAs[Int]("Date3").toFloat))
 		}
