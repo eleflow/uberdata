@@ -50,6 +50,11 @@ object IUberdataContext {
 		uc
 	}
 
+	def getNewUC(conf: SparkConf = conf) = {
+		this.conf = conf
+
+	}
+
 }
 
 /**
@@ -78,13 +83,17 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 		clearContext()
 		builder.getOrCreate().stop()
 		val path = getSparkEc2Py
-		shellRun(Seq(path, "destroy", clusterName))
+		ClusterSettings.master.getOrElse(
+			shellRun(Seq(path, "destroy", clusterName))
+		)
 		_masterHost = None
 		ClusterSettings.resume = false
 	}
 
 	def clearContext(): Unit = {
 		ClusterSettings.resume = true
+		_sqlContext = None
+		sparkSession.stop()
 		//builder.getOrCreate().stop()
 	}
 
@@ -248,7 +257,6 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 			"Spark standalone cluster started at http://([^:]+):8080"
 		)
 		val host = pattern.findAllIn(output).matchData.map(_.group(1)).next
-		val x : org.apache.spark.sql.Dataset[String] = null
 		Some(host)
 	}
 

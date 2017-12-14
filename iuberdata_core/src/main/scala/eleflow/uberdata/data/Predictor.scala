@@ -563,6 +563,8 @@ trait Predictor extends Serializable {
     }
   }
 
+  def xgboost(trainDataSet: RDD[LabeledPoint], iterations: Int) = throw new NotImplementedError()
+
   /**/
   protected def trainForAlgorithm(trainDataSet: RDD[LabeledPoint],
                                   algorithm: Algorithm,
@@ -582,6 +584,8 @@ trait Predictor extends Serializable {
       case NaiveBayesClassifier => naiveBayesModel(trainDataSet, iterations)
       case LinearLeastSquares =>
         linearLeastSquaresModel(trainDataSet, iterations)
+      case XGBoostAlgorithm =>
+        xgboost(trainDataSet,iterations)
     }
   }
 

@@ -120,6 +120,7 @@ class IUberdataIO extends Serializable {
   def readFromS3(input: URI): Try[InputStream] = {
     val rangeObjectRequest: GetObjectRequest =
       new GetObjectRequest(input.getHost, input.getPath.substring(1))
+
     Try {
 
       val objectPortion: S3Object = s3Client.getObject(rangeObjectRequest)
@@ -140,4 +141,13 @@ class IUberdataIO extends Serializable {
     path.getFileSystem(new Configuration)
   }
 
+  def listAllFilesFromURI(input: URI) = {
+    input.getScheme match{
+      case "s3" => listAllFilesFromS3(input)
+      case scheme: String => throw new IllegalArgumentException(s"Unsuported scheme $scheme")
+    }
+  }
+  private def listAllFilesFromS3(input: URI) = {
+
+  }
 }

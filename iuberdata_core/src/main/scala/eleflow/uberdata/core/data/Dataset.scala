@@ -418,7 +418,7 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 		oRdd.cache
 	}
 
-	def header(newHeader: String) = {
+	def header(newHeader: String): FileDataset = {
 		new FileDataset(uc, file, separator, header = Some(newHeader))
 	}
 
@@ -453,7 +453,7 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 		}
 		val dataFrame = sqlContext.createDataFrame(rowRdd, types)
 		val tableName = extractTableName(file)
-		dataFrame.registerTempTable(tableName)
+		dataFrame.createOrReplaceTempView(tableName)
 		dataFrame.repartition(numberOfPartitions)
 		dataFrame
 	}

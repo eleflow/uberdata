@@ -54,13 +54,13 @@ object ClusterSettings {
 
 	var jarsToBeAdded: Set[String] = Set.empty[String]
 
-	def setMaster(mas: String) = {
+	def setMaster(mas: String): Unit = {
 		master = Some(mas)
 	}
 
-	def getNumberOfCores = ClusterSettings.coreInstanceCount * slavesCores
+	def getNumberOfCores: Int = ClusterSettings.coreInstanceCount * slavesCores
 
-	def slavesCores = ClusterSettings.coreInstanceType match {
+	def slavesCores: Int = ClusterSettings.coreInstanceType match {
 		case s: String if s.endsWith("xlarge") => 4
 		case s: String if s.endsWith("2xlarge") => 8
 		case s: String if s.endsWith("4xlarge") => 16

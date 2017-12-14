@@ -16,9 +16,12 @@
 package org.apache.hive.hcatalog.streaming
 
 
+import java.sql.{Connection, DriverManager, Statement}
+
 import scala.reflect.runtime.universe._
 import org.apache.spark.sql.Dataset
 import io.circe.syntax._
+import org.apache.hive.hcatalog.streaming.ThriftDatasetWriter.dbName
 import org.apache.hive.hcatalog.streaming.TransactionBatch.TxnState
 import org.apache.spark.broadcast.Broadcast
 import org.slf4j.LoggerFactory
@@ -72,14 +75,11 @@ object ThriftDatasetWriter {
 		val broadMaxBatchGroups = context.broadcast(maxBatchGroups)
 		val broadColumns = context.broadcast(columns)
 
-		val tobe = if (toBeWriten.count > 0) {
-			val first = toBeWriten.first()
-			writeSingle(toBeWriten, broadTableName, broadDbName, broadMetastore, broadColumns, broadMaxBatchGroups)
-		} else writeSingle(toBeWriten, broadTableName, broadDbName, broadMetastore, broadColumns,
-			broadMaxBatchGroups)
+		writeSingle(toBeWriten, broadTableName, broadDbName, broadMetastore, broadColumns, broadMaxBatchGroups)
 
 
 	}
+
 
 	private def writeSingle(tobe: Dataset[(String, String)], broadTableName: Broadcast[String],
 													broadDbName: Broadcast[String], broadMetastore: Broadcast[String],
@@ -92,39 +92,193 @@ object ThriftDatasetWriter {
 				if (list.nonEmpty) {
 					val maxSize = Int.MaxValue
 					val data = list.map(_._2)
-					val partitionNames = list.map(_._1).filter(_.nonEmpty).map(_.substring(0, 6)).distinct
+					val partitions = list.map(_._1).filter(_.nonEmpty)
+					val partitionNames = partitions.flatMap(_ => partitions.map(_.substring(0, 6))).distinct
 					logger.warn(s"Partitions: ${partitionNames.mkString}")
 					logger.warn(s"TableName: ${broadTableName.value}")
-					partitionNames.map {
+					logger.warn(s"DataSize: ${data.size}")
+
+					partitionNames.foreach {
 						partitions =>
-						val endPt = new HiveEndPoint(
-							broadMetastore.value, broadDbName.value, broadTableName.value, List(partitions))
-						val connection = endPt.newConnection(true, s"${broadTableName.value}:" +
-							s"${partitions.mkString}")
-						val writer = broadColumns.value.headOption.map {
-							_ => new DelimitedInputWriter(broadColumns.value, ",", endPt);
-						}.getOrElse(new StrictJsonWriter(endPt))
-						val txnBatch = connection.fetchTransactionBatch(broadMaxBatchGroups.value,
-							writer)
-						try {
-							writeData(data, maxSize, txnBatch, writer, connection, broadMaxBatchGroups.value,
-								broadColumns.value, broadTableName.value)
-						} catch {
-							case e: Exception =>
-								e.printStackTrace()
-								txnBatch.abort()
-								throw e
-						} finally {
-							logger.warn(txnBatch.getCurrentTransactionState.toString)
-							if (txnBatch.getCurrentTransactionState == TxnState.OPEN) {
-								//							writer.flush()
-								txnBatch.commit()
-							}
-							txnBatch.close()
-							connection.close()
-						}
+							writeToPartitionedTable(broadMetastore.value, broadDbName.value, broadTableName.value,
+								List(partitions), broadColumns.value, broadMaxBatchGroups.value, data, maxSize)
+					}
+					partitionNames.headOption.getOrElse {
+						writeToPartitionedTable(broadMetastore.value, broadDbName.value, broadTableName.value,
+							List.empty[String], broadColumns.value, broadMaxBatchGroups.value, data, maxSize)
 					}
 				}
+		}
+	}
+
+	private lazy val driverName = "org.apache.hive.jdbc.HiveDriver"
+
+	def assemblySelectQuery(dbName: String, tableName: String, columns: Seq[String],
+													whereClause: Option[String] = None) =
+		s"select ${columns.mkString(",")} from $dbName.$tableName ${
+			whereClause.map { where => s"where $where" }.getOrElse("")
+		}"
+
+	def select(serverAddress: String, dbName: String, tableName: String, user: String,
+						 password: String, columns: Seq[String] = Seq(" * "), whereClause: Option[String] =
+						 None): 	List[Seq[String]] = {
+		try {
+			val func: Statement => List[Seq[String]] = { stmt =>
+				val query = assemblySelectQuery(dbName, tableName, columns, whereClause)
+				val resultSet = stmt.executeQuery(query)
+				val metadata = resultSet.getMetaData
+				val sz = metadata.getColumnCount
+				val result = new Iterator[Seq[String]] {
+					def hasNext = resultSet.next()
+
+					def next = (1 to sz).map(resultSet.getString)
+				}.toList
+				resultSet.close()
+				result
+			}
+			createConnection[List[Seq[String]]](serverAddress, dbName, user, password, func)
+		} catch {
+			case e: Exception =>
+				e.printStackTrace()
+				throw e
+		}
+	}
+
+	def delete(serverAddress: String, dbName: String, tableName: String, user: String,
+						 password: String, whereClause: Option[String] = None): Unit = {
+		try {
+			val func: Statement => Unit = { stmt =>
+				val query = s"delete from $dbName.$tableName ${whereClause.map(w => s"where $w")
+					.getOrElse("")}"
+				stmt.executeUpdate(query)
+			}
+			createConnection[Unit](serverAddress, dbName, user, password, func)
+		} catch {
+			case e: Exception =>
+				e.printStackTrace()
+				throw e
+		}
+	}
+
+	def insertTable(serverAddress: String, dbName: String, tableName: String, user: String,
+									password: String, columns: Array[String], values: Array[String]): Unit = {
+		try {
+			val func: Statement => Unit = { stmt =>
+				stmt.execute(s"insert into $tableName ${buildInsertValues(columns, values)}")
+				Unit
+			}
+			createConnection[Unit](serverAddress, dbName, user, password, func)
+		} catch {
+			case e: Exception =>
+				e.printStackTrace()
+				throw e
+		}
+	}
+
+	private def buildInsertValues(columns: Array[String], values: Array[String]): String =
+		s"(${columns.mkString(",")}) values('${values.mkString("','")}')"
+
+
+	def updateTable(serverAddress: String, dbName: String, tableName: String, user: String,
+									password: String, columns: Array[String], values: Array[String],
+									whereclause: String): Unit = {
+		try {
+			val func: Statement => Unit = { stmt =>
+				stmt.execute(s"update $tableName set ${removeLastComma(buildUpdateValues(columns, values))}"
+					+ s" where $whereclause")
+				Unit
+			}
+			createConnection[Unit](serverAddress, dbName, user, password, func)
+		} catch {
+			case e: Exception =>
+				e.printStackTrace()
+				throw e
+		}
+	}
+
+	private def createStatement[T](connection: Connection, stmtFunc: Statement => T): T = {
+		val stmt: Statement = connection.createStatement()
+		try {
+			stmtFunc.apply(stmt)
+		} finally {
+			stmt.close()
+		}
+	}
+
+	private var password = ""
+	private var user = "uberdata"
+	private var dbName = "default"
+	private var serverAddress: String = "localhost:10500"
+	private var con: Connection = null
+
+	private def createConnection[T](serverAddress: String, dbName: String, user: String,
+																	password: String, func: Statement => T): T = {
+		Class.forName(driverName)
+		this.serverAddress = serverAddress
+		this.user = user
+		this.dbName = dbName
+		this.password = password
+		createConnection
+		createStatement[T](con, func)
+	}
+
+	private def createConnection = {
+		if (con == null || con.isClosed) {
+			logger.warn(s"serverAddress $serverAddress")
+			logger.warn(s"DBName $dbName")
+			con = DriverManager.getConnection(s"$serverAddress/$dbName", user,
+				password)
+		}
+	}
+
+	def closeConnection = {
+		try {
+			if (!con.isClosed()) con.close
+		} catch {
+			case e: Exception => e.printStackTrace
+		}
+	}
+
+	private def removeLastComma(updateClause: String) =
+		updateClause.substring(0, updateClause.lastIndexOf(','))
+
+
+	private def buildUpdateValues(columns: Array[String], values: Array[String]): String =
+		columns.zip(values).foldLeft("") {
+			case (result, (column, value)) => result + s"$column = ${processNullValue(value)}, "
+		}
+
+	private def processNullValue(value: String) = if (value == null) "null" else s"'$value'"
+
+
+	private def writeToPartitionedTable(metastore: String, dbName: String, tableName: String,
+																			partitions: List[String], columns: Array[String],
+																			maxBatchGroups: Int, data: List[String], maxSize: Int)
+	= {
+
+		val endPt = new HiveEndPoint(metastore, dbName, tableName, partitions)
+		val connection = endPt.newConnection(true, null)
+		val writer = columns.headOption.map {
+			_ => new DelimitedInputWriter(columns, ",", endPt);
+		}.getOrElse(new StrictJsonWriter(endPt))
+		val txnBatch = connection.fetchTransactionBatch(maxBatchGroups,
+			writer)
+		try {
+			writeData(data, maxSize, txnBatch, writer, connection, maxBatchGroups,
+				columns, tableName)
+		} catch {
+			case e: Exception =>
+				e.printStackTrace()
+				txnBatch.abort()
+				throw e
+		} finally {
+			logger.warn(txnBatch.getCurrentTransactionState.toString)
+			if (txnBatch.getCurrentTransactionState == TxnState.OPEN) {
+				//							writer.flush()
+				txnBatch.commit()
+			}
+			txnBatch.close()
+			connection.close()
 		}
 	}
 
