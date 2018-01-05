@@ -47,14 +47,15 @@ parallelExecution in Test := false
 net.virtualvoid.sbt.graph.Plugin.graphSettings
 
 def iUberdataCoreVersion(version: Option[String] = Some("Not a Git Repository"), dir: File) = {
-  val file = dir / "UberdataCoreVersion.scala"
-  IO.write(
-    file,
-    s"""package eleflow.uberdata.core\n  object UberdataCoreVersion{\n          val version = "${version.get}"\n
+	val file = dir / "UberdataCoreVersion.scala"
+	IO.write(
+		file,
+		s"""package eleflow.uberdata.core\n  object UberdataCoreVersion{\n          val version = "${version.get}"\n
 			 |}\n""".stripMargin)
-  Seq(file)
+	Seq(file)
+
 }
 
 
-sourceGenerators in Compile <+= (git.gitHeadCommit, sourceManaged in Compile) map
-  iUberdataCoreVersion
+sourceGenerators in Compile += ((git.gitHeadCommit, sourceManaged in Compile) map
+	iUberdataCoreVersion).taskValue

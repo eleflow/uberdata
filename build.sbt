@@ -1,4 +1,3 @@
-import sbt.ExclusionRule
 //
 // Copyright 2015 eleflow.com.br.
 //
@@ -69,15 +68,18 @@ lazy val iuberdata_core = project settings (
     "org.apache.spark" %% "spark-hive-thriftserver" % sparkVersion % "provided",
  "org.apache.hive.hcatalog" % "hive-hcatalog-core" % "1.2.1" % "provided" excludeAll ExclusionRule
  (organization = "org.pentaho"),
-  "org.apache.hive.hcatalog" % "hive-hcatalog-streaming" % "1.2.1" % "provided",
+  "org.apache.hive.hcatalog" % "hive-hcatalog-streaming" % "2.1.0" % "provided",
+    "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5" % "provided",
     "com.typesafe" % "config" % "1.3.0",
     "org.scalatest" %% "scalatest" % "2.2.4",
     "org.easymock" % "easymock" % "3.4" % "test",
     "com.typesafe.play" %% "play-json" % "2.5.13" excludeAll ExclusionRule(
       organization = "com.fasterxml.jackson.core"),
     "com.cloudera.sparkts" % "sparkts" % "0.4.1" % "provided",
-    "ml.dmlc" % "xgboost4j" % "0.7" % "provided",
-    "ml.dmlc" % "xgboost4j-spark" % "0.7" % "provided",
+    "ml.dmlc" % "xgboost4j" % "0.7",
+    "ml.dmlc" % "xgboost4j-spark" % "0.7",
+    //    "ml.dmlc" % "xgboost4j" % "0.7" % "provided",
+//    "ml.dmlc" % "xgboost4j-spark" % "0.7" % "provided",
     "com.databricks" %% "spark-csv" % "1.5.0",
     "org.slf4j" % "slf4j-api" % slf4jVersion,
     "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
@@ -88,7 +90,12 @@ lazy val iuberdata_core = project settings (
 , "org.apache.hive" % "hive-jdbc" %	"1.2.1" % "provided"
     ,"ai.x" %% "play-json-extensions" % "0.9.0"
 
-))  settings (commonSettings) enablePlugins JavaAppPackaging
+  )) settings (commonSettings
+, dependencyOverrides ++= Set(
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5"
+    //"com.fasterxml.jackson.core" % "jackson-databind" % "2.8.7"
+  )
+) enablePlugins JavaAppPackaging
 
 lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;compile->compile") settings
     (commonSettings, libraryDependencies ++= Seq(

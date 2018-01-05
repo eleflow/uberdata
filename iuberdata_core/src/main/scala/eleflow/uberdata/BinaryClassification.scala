@@ -79,8 +79,8 @@ class BinaryClassification {
 			val clause2 = privateid + " <= " + (index + trainingWindowSize - 1)
 			val clause3 = privateid + " > " + (index + trainingWindowSize - 1)
 			val clause4 = privateid + " <= " + (index + trainingWindowSize + numberOfPredictionsByModelUpdate - 1)
-			val trainingPartial = orderedTrainDataFrame.where(clause1).where(clause2).drop(privateid).repartition(1)
-			val testPartial = orderedTrainDataFrame.where(clause3).where(clause4).drop(privateid).repartition(1)
+			val trainingPartial = orderedTrainDataFrame.where(clause1).where(clause2).drop(privateid)
+			val testPartial = orderedTrainDataFrame.where(clause3).where(clause4).drop(privateid)
 
 			val (predictionsPartial, modelPartial) = predict(trainingPartial, testPartial.drop(labelCol), algorithm, labelCol, idCol, featuresCol, rounds, params)
 			insertDecileColumn(predictionsPartial, idCol, decile)
@@ -95,8 +95,8 @@ class BinaryClassification {
 
 		val clause1 = privateid + " > " + (trainDataSize - trainingWindowSize)
 		val clause2 = privateid + " <= " + trainDataSize
-		val trainDataForPredictionToBeReturned = orderedTrainDataFrame.where(clause1).where(clause2).drop(privateid).repartition(1)
-		val (predictionsForTestSet, modelForTestSet) = predict(trainDataForPredictionToBeReturned, test.repartition(1), algorithm, labelCol, idCol, featuresCol, rounds, params)
+		val trainDataForPredictionToBeReturned = orderedTrainDataFrame.where(clause1).where(clause2).drop(privateid)
+		val (predictionsForTestSet, modelForTestSet) = predict(trainDataForPredictionToBeReturned, test, algorithm, labelCol, idCol, featuresCol, rounds, params)
 
 		val predictionsAndLabels = allPredictionsForTrainingSetDF.join(orderedTrainDataFrame, allPredictionsForTrainingSetDF("id1") === orderedTrainDataFrame(idCol)).select("prediction", labelCol)
 		val metricsAUC = new BinaryClassificationMetrics(predictionsAndLabels.rdd.map { case Row(a: Float, b: Long) => (a.toDouble, b.toDouble) })
@@ -130,9 +130,9 @@ class BinaryClassification {
 		val united = train.cache.drop(labelCol).union(test.cache)
 		val encoded = applyOneHotEncoder(united, featuresCol)
 		val encodedTrain = train.select(col(idCol).alias(joinIdColName), col(labelCol)).
-			join(encoded, col(joinIdColName) === encoded(idCol)).repartition(1)
+			join(encoded, col(joinIdColName) === encoded(idCol))
 		val encodedTest = test.select(col(idCol).alias(joinIdColName)).join(encoded, col
-		(joinIdColName) === encoded(idCol)).repartition(1)
+		(joinIdColName) === encoded(idCol))
 		val model = pipeline.fit(encodedTrain.cache)
 		val predictions = model.transform(encodedTest.cache).cache
 		(predictions.sort(idCol), model)

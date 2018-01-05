@@ -1,5 +1,5 @@
 ---
-- hosts: tag_Name_iuberdata
+- hosts: tag_Name_iuberdata-dirceu
   gather_facts: True
   user: ec2-user
   sudo: yes

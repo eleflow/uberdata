@@ -21,6 +21,7 @@ import java.sql.{Connection, DriverManager, Statement}
 import scala.reflect.runtime.universe._
 import org.apache.spark.sql.Dataset
 import io.circe.syntax._
+import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hive.hcatalog.streaming.ThriftDatasetWriter.dbName
 import org.apache.hive.hcatalog.streaming.TransactionBatch.TxnState
 import org.apache.spark.broadcast.Broadcast
@@ -257,7 +258,8 @@ object ThriftDatasetWriter {
 	= {
 
 		val endPt = new HiveEndPoint(metastore, dbName, tableName, partitions)
-		val connection = endPt.newConnection(true, null)
+		val conf: HiveConf = null
+		val connection = endPt.newConnection(true, conf)
 		val writer = columns.headOption.map {
 			_ => new DelimitedInputWriter(columns, ",", endPt);
 		}.getOrElse(new StrictJsonWriter(endPt))

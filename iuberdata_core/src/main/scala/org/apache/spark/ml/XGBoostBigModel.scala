@@ -66,7 +66,7 @@ class XGBoostBigModel[I](val uid: String, val models: Seq[(ParamMap, XGBoostMode
     val features = dataSet.rdd.map { case (row: Row) =>
       val features = row.getAs[SparkVector](IUberdataForecastUtil.FEATURES_COL_NAME)
       val id = row.getAs[I]($(idCol))
-      LabeledPoint.fromDenseVector(DataTransformer.toFloat(id), features.toArray.map(_.toFloat))
+      LabeledPoint(DataTransformer.toFloat(id), null, features.toArray.map(_.toFloat))
     }.cache
     val (_, model) = models.head
     UberXGBoostModel.labelPredict(features, booster = model)

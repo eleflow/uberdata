@@ -90,7 +90,7 @@ class XGBoostSmallModel[G](
         }.map(_._1)
         val metric = metrics.minBy(_.metricResult).metricResult
         val featuresAsFloat = features.toArray.map(_.toFloat)
-        val labeledPoints = Iterator(XGBLabeledPoint.fromDenseVector(0, featuresAsFloat))
+        val labeledPoints = Iterator(XGBLabeledPoint(0, null, featuresAsFloat))
         val forecast = bestModel.boosterInstance
           .predict(new DMatrix(labeledPoints, null))
           .flatMap(_.map(_.toDouble))

@@ -120,7 +120,7 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
           .getAs[org.apache.spark.ml.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
           .toArray
         val label = DataTransformer.toFloat(row.getAs[L]($(labelCol)))
-        LabeledPoint.fromDenseVector(label, values.map(_.toFloat))
+        LabeledPoint(label, null, values.map(_.toFloat))
       }.toIterator
       val valuesVector = array.map { row =>
         val vector =

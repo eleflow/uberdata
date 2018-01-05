@@ -50,7 +50,7 @@ object ClusterSettings {
 	var baseDir: String = "/tmp"
 	var localDir: String = "/tmp"
 	val additionalConfs: scala.collection.mutable.Map[String, String] =
-		scala.collection.mutable.Map.empty
+		scala.collection.mutable.Map("spark.sql.warehouse.dir"->"///tmp/spark-warehouse")
 
 	var jarsToBeAdded: Set[String] = Set.empty[String]
 

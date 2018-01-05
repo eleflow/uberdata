@@ -69,7 +69,7 @@ class XGBoost[I](override val uid: String,
         val label = DataTransformer.toFloat(row.getAs($(featuresCol)))
         val labelPoint = features.map { vec =>
           val array = vec.toArray.map(_.toFloat)
-          LabeledPoint.fromDenseVector(label, array)
+          LabeledPoint(label, null, array)
         }
         val matrix = new DMatrix(labelPoint.toIterator)
         val (ownFeaturesPrediction, forecast) = bestModel.boosterInstance

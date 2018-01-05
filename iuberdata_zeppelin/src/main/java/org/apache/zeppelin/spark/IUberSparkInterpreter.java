@@ -801,8 +801,8 @@ public class IUberSparkInterpreter extends Interpreter {
     private String getSparkUIUrl() {
         Option<SparkUI> sparkUiOption = (Option<SparkUI>) Utils.invokeMethod(uc.sparkContext(), "ui");
         SparkUI sparkUi = sparkUiOption.get();
-        String sparkWebUrl = sparkUi.appUIAddress();
-        return sparkWebUrl;
+        return sparkUi.appUIAddress();
+
     }
 
     private Results.Result interpret(String line) {
