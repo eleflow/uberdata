@@ -1,6 +1,7 @@
 .sbtopts
 *.class
 *.log
+lo
 .project
 # sbt specific
 .cache/
@@ -22,3 +23,12 @@ ansible/examples/
 metastore_db
 log
 ansible/ansible/
+ansible/ansible log path
+hive-exec-1.2.1000.2.6.1.0-129.jar
+iuberdata_core/project/project/
+iuberdata_core/src/main/scala/org/apache/hive/
+iuberdata_core/src/main/scala/org/apache/spark/hive/
+lib/
+logs/
+project/project/
+uberdata-zeppelin-0.2.0.jar
