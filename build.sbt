@@ -24,11 +24,13 @@ val scalaV = "2.11.8"
 
 //WARNING: changing the zeppelin version requires changing the dependency version in setup_zeppelin_local.sh and iuberdata.sh
 lazy val zeppelin_version = "0.7.0"
-lazy val sparkVersion = "2.1.0"
+lazy val sparkVersion = "2.1.2"
 val sparkV : sbt.SettingKey[scala.Predef.String] = SettingKey(sparkVersion)
 lazy val mysqlV = "5.1.34"
 lazy val slf4jVersion = "1.7.24"
 lazy val circeVersion = "0.7.1"
+lazy val hcatalogVersion = "2.1.0"
+lazy val xgboostVersion = "0.5"
 
 lazy val commonSettings = Seq(
   organization := "br.com.eleflow",
@@ -66,9 +68,9 @@ lazy val iuberdata_core = project settings (
     "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-hive-thriftserver" % sparkVersion % "provided",
- "org.apache.hive.hcatalog" % "hive-hcatalog-core" % "1.2.1" % "provided" excludeAll ExclusionRule
+ "org.apache.hive.hcatalog" % "hive-hcatalog-core" % hcatalogVersion % "provided" excludeAll ExclusionRule
  (organization = "org.pentaho"),
-  "org.apache.hive.hcatalog" % "hive-hcatalog-streaming" % "2.1.0" % "provided",
+  "org.apache.hive.hcatalog" % "hive-hcatalog-streaming" % hcatalogVersion % "provided",
     "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5" % "provided",
     "com.typesafe" % "config" % "1.3.0",
     "org.scalatest" %% "scalatest" % "2.2.4",
@@ -76,8 +78,10 @@ lazy val iuberdata_core = project settings (
     "com.typesafe.play" %% "play-json" % "2.5.13" excludeAll ExclusionRule(
       organization = "com.fasterxml.jackson.core"),
     "com.cloudera.sparkts" % "sparkts" % "0.4.1" % "provided",
-    "ml.dmlc" % "xgboost4j" % "0.7",
-    "ml.dmlc" % "xgboost4j-spark" % "0.7",
+    "ml.dmlc" % "xgboost4j" % xgboostVersion excludeAll ExclusionRule(
+      organization = "com.esotericsoftware.minlog"),
+    "ml.dmlc" % "xgboost4j-spark" % xgboostVersion excludeAll ExclusionRule(
+      organization = "com.esotericsoftware.minlog"),
     //    "ml.dmlc" % "xgboost4j" % "0.7" % "provided",
 //    "ml.dmlc" % "xgboost4j-spark" % "0.7" % "provided",
     "com.databricks" %% "spark-csv" % "1.5.0",
@@ -99,7 +103,8 @@ lazy val iuberdata_core = project settings (
 
 lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;compile->compile") settings
     (commonSettings, libraryDependencies ++= Seq(
-      "org.apache.zeppelin" % "zeppelin-interpreter" % zeppelin_version,
+      "org.apache.zeppelin" % "zeppelin-interpreter" % zeppelin_version excludeAll ExclusionRule(
+      organization = "asm"),
       "org.jsoup" % "jsoup" % "1.8.2",
       "org.apache.spark" %% "spark-repl" % sparkVersion % "provided",
       "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
