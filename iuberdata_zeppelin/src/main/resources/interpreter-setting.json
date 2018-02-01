@@ -27,6 +27,18 @@
         "propertyName": "master",
         "defaultValue": "eleflow.uberdata.core.InterpreterSetup",
         "description": "Classes used to setup the interpreter"
+      },
+      "zeppelin.dep.localrepo": {
+        "envName": null,
+        "propertyName": "zeppelin.dep.localrepo",
+        "defaultValue": "local-repo",
+        "description": "Local repository for dependency loader"
+      },
+      "zeppelin.spark.printREPLOutput": {
+        "envName": null,
+        "propertyName": "zeppelin.spark.printREPLOutput",
+        "defaultValue": "true",
+        "description": "Print REPL output"
       }
     },
     "editor": {

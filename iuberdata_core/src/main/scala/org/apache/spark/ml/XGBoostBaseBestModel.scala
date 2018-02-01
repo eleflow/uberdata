@@ -37,12 +37,13 @@ trait BaseXGBoostBestModelFinder[G, M <: org.apache.spark.ml.ForecastBaseModel[M
     extends BestModelFinder[G, M]
     with HasGroupByCol {
 
-  protected def buildTrainSchema(sparkContext: SparkContext) = sparkContext.broadcast {
+  protected def buildTrainSchema(sparkContext: SparkContext): Broadcast[StructType] = sparkContext.broadcast {
     StructType(
       Seq(
         StructField($(groupByCol).get, FloatType),
         StructField(IUberdataForecastUtil.FEATURES_COL_NAME, ArrayType(new VectorUDT))))
   }
+
 
   protected def xGBoostEvaluation(row: Row,
                                   model: Booster,

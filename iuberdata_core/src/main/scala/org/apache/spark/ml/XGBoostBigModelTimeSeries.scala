@@ -56,6 +56,7 @@ class XGBoostBigModelTimeSeries[I](override val uid: String,
     dataSet.sqlContext.createDataFrame(rows, transformSchema(dataSet.schema))
   }
 
+
   @DeveloperApi
   override def transformSchema(schema: StructType): StructType =
     StructType(Array(

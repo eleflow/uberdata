@@ -101,7 +101,9 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
     val trainSchema = buildTrainSchema(dataSet.sqlContext.sparkContext)
     val idModels = dataSet.rdd.groupBy { case (row: Row) =>
       row.getAs[G]($(groupByCol).get)
-    }.map{case f=> train(f._1, f._2.toIterator.asInstanceOf[Iterator[Row]], trainSchema)}
+    }.map{
+      f=> train(f._1, f._2.toIterator.asInstanceOf[Iterator[Row]], trainSchema)
+    }
     new XGBoostSmallModel[G](uid, modelEvaluation(idModels))
       .setValidationCol($(validationCol))
       .setIdCol($(idCol))

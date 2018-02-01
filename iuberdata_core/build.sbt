@@ -23,6 +23,7 @@ import com.typesafe.sbt.SbtGit._
 
 versionWithGit
 
+val ver = "0.2.0"
 
 //lazy val publishRepo = Some("Objective Nexus Snapshots" at
 //  "http://repo:8080/archiva/repository/snapshots")
@@ -46,11 +47,12 @@ parallelExecution in Test := false
 
 net.virtualvoid.sbt.graph.Plugin.graphSettings
 
-def iUberdataCoreVersion(version: Option[String] = Some("Not a Git Repository"), dir: File) = {
+def iUberdataCoreVersion(gitVersion: Option[String] = Some("Not a Git Repository"), dir: File) = {
 	val file = dir / "UberdataCoreVersion.scala"
 	IO.write(
 		file,
-		s"""package eleflow.uberdata.core\n  object UberdataCoreVersion{\n          val version = "${version.get}"\n
+		s"""package eleflow.uberdata.core\n  object UberdataCoreVersion{\n          val gitVersion =
+			 |"${gitVersion.get}"\n
 			 |}\n""".stripMargin)
 	Seq(file)
 

@@ -281,6 +281,8 @@ public class IUberSparkInterpreter extends Interpreter {
 
 
     public SparkDependencyResolver getDependencyResolver() {
+        System.out.println("###############DependencyResolver##############");
+        System.out.println(getProperty("zeppelin.dep.localrepo"));
         if (dep == null) {
             dep = new SparkDependencyResolver(
                     (Global) Utils.invokeMethod(intp, "global"),
@@ -814,6 +816,7 @@ public class IUberSparkInterpreter extends Interpreter {
         Utils.invokeMethod(
                 intp,
                 "printResults");
+        System.out.println(res.toString());
         return res;
     }
 

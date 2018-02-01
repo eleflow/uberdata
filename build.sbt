@@ -23,14 +23,14 @@ resolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repos
 val scalaV = "2.11.8"
 
 //WARNING: changing the zeppelin version requires changing the dependency version in setup_zeppelin_local.sh and iuberdata.sh
-lazy val zeppelin_version = "0.7.0"
+lazy val zeppelin_version = "0.7.1"
 lazy val sparkVersion = "2.1.2"
 val sparkV : sbt.SettingKey[scala.Predef.String] = SettingKey(sparkVersion)
 lazy val mysqlV = "5.1.34"
 lazy val slf4jVersion = "1.7.24"
 lazy val circeVersion = "0.7.1"
-lazy val hcatalogVersion = "2.1.0"
-lazy val xgboostVersion = "0.5"
+lazy val hiveVersion = "2.1.0"
+lazy val xgboostVersion = "0.7"
 
 lazy val commonSettings = Seq(
   organization := "br.com.eleflow",
@@ -68,36 +68,37 @@ lazy val iuberdata_core = project settings (
     "org.apache.spark" %% "spark-hive" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-mllib" % sparkVersion % "provided",
     "org.apache.spark" %% "spark-hive-thriftserver" % sparkVersion % "provided",
- "org.apache.hive.hcatalog" % "hive-hcatalog-core" % hcatalogVersion % "provided" excludeAll ExclusionRule
+ "org.apache.hive.hcatalog" % "hive-hcatalog-core" % hiveVersion % "provided" excludeAll ExclusionRule
  (organization = "org.pentaho"),
-  "org.apache.hive.hcatalog" % "hive-hcatalog-streaming" % hcatalogVersion % "provided",
-    "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5" % "provided",
+  "org.apache.hive.hcatalog" % "hive-hcatalog-streaming" % hiveVersion % "provided",
     "com.typesafe" % "config" % "1.3.0",
     "org.scalatest" %% "scalatest" % "2.2.4",
     "org.easymock" % "easymock" % "3.4" % "test",
     "com.typesafe.play" %% "play-json" % "2.5.13" excludeAll ExclusionRule(
-      organization = "com.fasterxml.jackson.core"),
+      organization = "com.fasterxml.jackson.core") excludeAll ExclusionRule(
+      organization = "com.fasterxml.jackson.datatype"),
     "com.cloudera.sparkts" % "sparkts" % "0.4.1" % "provided",
     "ml.dmlc" % "xgboost4j" % xgboostVersion excludeAll ExclusionRule(
       organization = "com.esotericsoftware.minlog"),
     "ml.dmlc" % "xgboost4j-spark" % xgboostVersion excludeAll ExclusionRule(
       organization = "com.esotericsoftware.minlog"),
-    //    "ml.dmlc" % "xgboost4j" % "0.7" % "provided",
-//    "ml.dmlc" % "xgboost4j-spark" % "0.7" % "provided",
     "com.databricks" %% "spark-csv" % "1.5.0",
     "org.slf4j" % "slf4j-api" % slf4jVersion,
     "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
     "io.circe" %% "circe-core" % circeVersion,
   "io.circe" %% "circe-generic" % circeVersion,
-  "io.circe" %% "circe-parser" % circeVersion,
-  "ai.x" %% "play-json-extensions" % "0.8.0"
-, "org.apache.hive" % "hive-jdbc" %	"1.2.1" % "provided"
-    ,"ai.x" %% "play-json-extensions" % "0.9.0"
+  "io.circe" %% "circe-parser" % circeVersion
+  , "org.apache.hive" % "hive-jdbc" %	hiveVersion % "provided"
+    ,"ai.x" %% "play-json-extensions" % "0.9.0" excludeAll ExclusionRule(
+      organization = "com.fasterxml.jackson.core") excludeAll ExclusionRule(
+      organization = "com.fasterxml.jackson.module")
+    ,"org.apache.thrift" % "libthrift" % "0.9.3"
 
   )) settings (commonSettings
 , dependencyOverrides ++= Set(
-  "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5"
-    //"com.fasterxml.jackson.core" % "jackson-databind" % "2.8.7"
+  "com.fasterxml.jackson.core" % "jackson-databind" % "2.8.7"
+,"com.fasterxml.jackson.core" % "jackson-databind" % "2.8.7"
+,"com.fasterxml.jackson.module" % "jackson-module-scala_2.11" % "2.8.7"
   )
 ) enablePlugins JavaAppPackaging
 

@@ -371,10 +371,10 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 		headerOrFirstLine().split(separator, -1)
 	lazy val loadedRDD = {
 		slf4jLogger.info(s"localFileName:$localFileName")
-		uc.sparkContext.textFile(localFileName)
+		uc.sparkSession.sparkContext.textFile(localFileName)
 	}
 	lazy val localFileName: String = {
-		uc.sparkContext
+		uc.sparkSession.sparkContext
 		// make sure that the cluster is up
 		val uri = Some(new URI(file))
 		val destURI = uri.filter { f =>

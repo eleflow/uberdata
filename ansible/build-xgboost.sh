@@ -17,10 +17,10 @@ sudo yum -y install git-all
 cd /home/ec2-user
 git clone --recursive https://github.com/dmlc/xgboost
 cd xgboost
-git checkout -b version6 v0.60
+git checkout -b version7 v0.7
 ./build.sh
 cd jvm-packages/
 mvn clean install -DskipTests
 
-cp /home/ec2-user/xgboost/jvm-packages/xgboost4j/target/xgboost4j-0.5-jar-with-dependencies.jar /tmp/xgboost4j-0.5-jar-with-dependencies.jar
-cp /home/ec2-user/xgboost/jvm-packages/xgboost4j-spark/target/xgboost4j-spark-0.5-jar-with-dependencies.jar /tmp/xgboost4j-spark-0.5-jar-with-dependencies.jar
+cp /home/ec2-user/xgboost/jvm-packages/xgboost4j/target/xgboost4j-0.7-jar-with-dependencies.jar /tmp/xgboost4j-0.7-jar-with-dependencies.jar
+cp /home/ec2-user/xgboost/jvm-packages/xgboost4j-spark/target/xgboost4j-spark-0.7-jar-with-dependencies.jar /tmp/xgboost4j-spark-0.7-jar-with-dependencies.jar

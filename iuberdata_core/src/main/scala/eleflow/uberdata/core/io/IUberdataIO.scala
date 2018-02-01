@@ -141,8 +141,8 @@ class IUberdataIO extends Serializable {
     path.getFileSystem(new Configuration)
   }
 
-  def listAllFilesFromURI(input: URI) = {
-    input.getScheme match{
+  def listAllFilesFromURI(input: URI): Unit = {
+    input.getScheme match {
       case "s3" => listAllFilesFromS3(input)
       case scheme: String => throw new IllegalArgumentException(s"Unsuported scheme $scheme")
     }

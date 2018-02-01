@@ -39,7 +39,7 @@ else:
   xrange = range
 
 
-SPARK_EC2_VERSION = "2.1.0"
+SPARK_EC2_VERSION = "2.1.2"
 DEFAULT_SPARK_VERSION=SPARK_EC2_VERSION
 SPARK_EC2_DIR = "/opt/spark"
 
@@ -72,7 +72,8 @@ VALID_SPARK_VERSIONS = set([
     "2.0.0",
     "2.0.1",
     "2.0.2",
-    "2.1.0"
+    "2.1.0",
+    "2.1.2"
 ])
 
 SPARK_TACHYON_MAP = {
@@ -355,6 +356,19 @@ EC2_INSTANCE_TYPES = {
   "r3.2xlarge":  "hvm",
   "r3.4xlarge":  "hvm",
   "r3.8xlarge":  "hvm",
+  "r4.large":    "hvm",
+  "r4.xlarge":   "hvm",
+  "r4.2xlarge":  "hvm",
+  "r4.4xlarge":  "hvm",
+  "r4.8xlarge":  "hvm",
+  "r4.16xlarge": "hvm",
+  "x1e.large":   "hvm",
+  "x1e.xlarge":  "hvm",
+  "x1e.2xlarge": "hvm",
+  "x1e.4xlarge": "hvm",
+  "x1e.8xlarge": "hvm",
+  "x1e.16xlarge":"hvm",
+  "x1e.32xlarge":"hvm",
   "t1.micro":    "pvm",
   "t2.micro":    "hvm",
   "t2.small":    "hvm",
@@ -916,6 +930,17 @@ def get_num_disks(instance_type):
     "r3.2xlarge":  1,
     "r3.4xlarge":  1,
     "r3.8xlarge":  2,
+    "r4.xlarge":   1,
+    "r4.2xlarge":  1,
+    "r4.4xlarge":  1,
+    "r4.8xlarge":  1,
+    "r4.16xlarge": 1,
+    "x1e.xlarge":   1,
+    "x1e.2xlarge":  1,
+    "x1e.4xlarge":  1,
+    "x1e.8xlarge":  1,
+    "x1e.16xlarge": 1,
+    "x1e.32xlarge": 2,
     "t1.micro":    0,
     "t2.micro":    0,
     "t2.small":    0,

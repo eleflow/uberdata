@@ -1,5 +1,5 @@
 #!/bin/bash
-buildVersion=2.1.0-bin-2.6.0-cdh5.4.2
+buildVersion=2.1.2-bin-2.6.0-cdh5.4.2
 
 rm -rf /opt/spark
 rm -rf /tmp/spark-$buildVersion.tgz*

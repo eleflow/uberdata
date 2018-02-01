@@ -18,7 +18,7 @@ import sbt.Keys._
 
 val nm = "eleflow.uberdata.IUberdata-Zeppelin"
 
-val ver = "0.1.0"
+val ver = "0.2.0"
 
 name := nm
 
@@ -33,3 +33,16 @@ net.virtualvoid.sbt.graph.Plugin.graphSettings
 resolvers in ThisBuild += Resolver.mavenLocal
 
 resolvers in ThisBuild += Resolver.sonatypeRepo("snapshots")
+
+sourceGenerators in Compile <+= (sourceManaged in Compile, version, name) map { (d, v, n) =>
+  val file = d / "UberdataJarVersion.scala"
+  IO.write(file, """package eleflow.uberdata.core
+    |object UberdataJarVersion {
+    |  val version = "%s"
+    |  val name = "%s"
+		|  val jarName = s"${name}-${version}.jar"
+    |}
+    |""".stripMargin.format(v, n))
+  Seq(file)
+}
+

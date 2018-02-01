@@ -51,7 +51,7 @@ class XGBoostBigModel[I](val uid: String, val models: Seq[(ParamMap, XGBoostMode
       .map {
         case (row: Row) =>
           (DataTransformer.toFloat(row.getAs($(idCol))),
-            (row.getAs[SparkVector](IUberdataForecastUtil.FEATURES_COL_NAME))
+            row.getAs[SparkVector](IUberdataForecastUtil.FEATURES_COL_NAME)
             )
       }
       .join(prediction)

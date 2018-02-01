@@ -60,7 +60,7 @@ class XGBoostSmallModel[G](
 
   def setTimeCol(value: String): this.type = set(timeCol, Some(value))
 
-  def setSummary(summary: XGBoostTrainingSummary[G]) = {
+  def setSummary(summary: XGBoostTrainingSummary[G]): XGBoostSmallModel[G] = {
     trainingSummary = Some(summary)
     this
   }

@@ -5,7 +5,7 @@ sudo chmod -R 777 /opt/spark
 
 # WARNING: changing the zeppelin version requires changing the dependency version in build.sbt and iuberdata.sh
 zeppelinVersion="0.7.1"
-sparkVersion="2.1.0"
+sparkVersion="2.1.2"
 mySqlConnectorVersion="5.1.34"
 zeppelinInterpreterUberdataDir="/usr/share/zeppelin/interpreter/uberdata/"
 
@@ -67,12 +67,12 @@ cd ../..
 echo "clonning and building xgboost v0.6"
 git clone --recursive https://github.com/eleflow/xgboost.git
 cd xgboost
-git checkout -b version6 v0.60
+git checkout -b version7 v0.7
 ./build.sh
 cd jvm-packages/
 mvn clean install -DskipTests
-sudo cp xgboost4j/target/xgboost4j-0.5-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
-sudo cp xgboost4j-spark/target/xgboost4j-spark-0.5-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
+sudo cp xgboost4j/target/xgboost4j-0.7-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
+sudo cp xgboost4j-spark/target/xgboost4j-spark-0.7-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
 
 cd $SCRIPTPATH
 cd ../
@@ -86,8 +86,8 @@ cd $SCRIPTPATH
 
 # install IUberdata
 echo "preparing uberdata"
-sudo cp -f ../iuberdata_zeppelin/target/scala-2.10/eleflow.uberdata.IUberdata-Zeppelin-0.1.0.jar $zeppelinInterpreterUberdataDir
-sudo cp -f ../iuberdata_addon_zeppelin/target/scala-2.10/iuberdata_addon_zeppelin-assembly-0.1.0.jar /usr/share/zeppelin/lib/
+sudo cp -f ../iuberdata_zeppelin/target/scala-2.11/eleflow.uberdata.IUberdata-Zeppelin-0.2.0.jar $zeppelinInterpreterUberdataDir
+sudo cp -f ../iuberdata_addon_zeppelin/target/scala-2.11/iuberdata_addon_zeppelin-assembly-0.2.0.jar /usr/share/zeppelin/lib/
 
 sudo unzip notebook.zip -d /usr/share/zeppelin/notebook
 sudo cp -f /usr/share/zeppelin/notebook/interpreter.json /usr/share/zeppelin/conf/

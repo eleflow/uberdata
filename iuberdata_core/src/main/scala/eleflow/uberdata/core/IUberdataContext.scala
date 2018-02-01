@@ -43,16 +43,18 @@ object IUberdataContext {
 
 	private lazy val uc: IUberdataContext = new IUberdataContext(conf)
 
-	def getUC = uc
+	def getUC: IUberdataContext = uc
 
-	def getUC(conf: SparkConf) = {
+	def getUC(conf: SparkConf): IUberdataContext = {
 		this.conf = conf
 		uc
 	}
 
-	def getNewUC(conf: SparkConf = conf) = {
+	def getNewUC(conf: SparkConf = conf): IUberdataContext = {
+		uc.terminate()
 		this.conf = conf
-
+		uc.sparkSession
+		uc
 	}
 
 }
@@ -65,12 +67,13 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 	protected def this(sparkConf: SparkConf, data: String) = this(sparkConf)
 
 	//  @transient protected lazy val s3Client: AmazonS3 = new AmazonS3Client()
-	val version: String = UberdataCoreVersion.version
+	val version: String = UberdataCoreVersion.gitVersion
 
 	protected val basePath: String = "/"
 	@transient var _sqlContext: Option[SQLContext] = None
 	@transient protected var sc: Option[SparkContext] = None
-	protected val builder: SparkSession.Builder = SparkSession.builder()
+	protected lazy val builder: SparkSession.Builder = SparkSession.builder().
+		appName(ClusterSettings.appName)
 	private var _masterHost: Option[String] = None
 
 	val slf4jLogger: Logger = LoggerFactory.getLogger(IUberdataContext.getClass);
@@ -152,7 +155,7 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 
 	def configuredBuilder: SparkSession.Builder = builder.config(confBuild).enableHiveSupport()
 
-	@deprecated
+	@deprecated("user sparkSession instead")
 	def sparkContext: SparkContext = {
 		val context = configuredBuilder
 			.config("spark.sql.warehouse.dir", "file:///tmp/spark-warehouse").getOrCreate().sparkContext
@@ -314,20 +317,13 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 		confSetup(conf)
 	}
 
-	def fs(pathStr: String): FileSystem = {
-		val path = createPathInstance(pathStr)
-		path.getFileSystem(new Configuration)
-	}
-
-	protected def createPathInstance(input: String) = new Path(input)
-
 	def sql(sql: String): DataFrame = {
 		sqlContext.sql(sql)
 	}
 
 	def sqlContext: SQLContext = _sqlContext match {
 		case None =>
-			val cont = sparkSession.sparkContext
+			sparkSession.sparkContext
 			_sqlContext = if (!sparkConf.get("spark.master").startsWith("yarn")) {
 				val context = sparkSession.sqlContext
 				HiveThriftServer2.startWithContext(context)

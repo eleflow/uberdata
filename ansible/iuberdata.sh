@@ -3,7 +3,7 @@ yum -y update
 
 yum -y groupinstall "Development Tools"
 
-uberdataVersion="0.1.0"
+uberdataVersion="0.2.0"
 mySqlConnectorVersion="5.1.34"
 
 # WARNING: changing the zeppelin version requires changing the dependency version in build.sbt and setup_zeppelin_local.sh
@@ -89,8 +89,8 @@ mv /tmp/xgboost4j-spark-0.7-jar-with-dependencies.jar $zeppelinInterpreterUberda
 mv /tmp/xgboost4j-0.7-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
 mv /tmp/sparkts-0.4.0-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
 
-sudo rm -f /tmp/iuberdata_addon_zeppelin-assembly-0.1.0.jar
-sudo rm -f /tmp/eleflow.uberdata.IUberdata-Zeppelin-0.1.0.jar
+sudo rm -f /tmp/iuberdata_addon_zeppelin-assembly-$uberdataVersion.jar
+sudo rm -f /tmp/eleflow.uberdata.IUberdata-Zeppelin-$uberdataVersion.jar
 
 file="~/.ssh/id_rsa"
 if ! sudo su - iuberdata -c "test $file"
