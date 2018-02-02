@@ -1,5 +1,5 @@
 ---
-- hosts: tag_Name_iuberdata-dirceu-nova
+- hosts: tag_Name_iuberdata
   gather_facts: True
   user: ec2-user
   sudo: yes
