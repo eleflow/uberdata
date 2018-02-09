@@ -5,7 +5,7 @@
     keypair: "objeleflow"
     instance_type: "r3.xlarge"
     price: "0.15"
-    image: "ami-e9527ed9"
+    image: "ami-7f43f307"
     group: "IUberdataApplication"
     region: "us-west-2"
     zone: "us-west-2c"

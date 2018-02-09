@@ -1,6 +1,7 @@
 package eleflow.uberdata.data
 
 import java.nio.file.{FileSystems, Files}
+
 import eleflow.uberdata.core.IUberdataContext
 import eleflow.uberdata.core.conf.SparkNotebookConfig
 import eleflow.uberdata.core.data.{DataTransformer, Dataset, FileDataset}
@@ -12,11 +13,14 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
 import org.scalatest.{FlatSpec, Matchers}
 import Dataset._
+import org.apache.spark.ml.tuning.TrainValidationSplitModel
 
 /**
   * Created by caio.martins on 19/10/16.
   */
 class TestDataset extends FlatSpec with Matchers with BeforeAndAfterWithContext  {
+
+  val  model: TrainValidationSplitModel
 
   it should "Correct handle date dayofaweek values" in {
     val dataSet = Dataset(context, s"${defaultFilePath}HandleDataTransformer.csv")

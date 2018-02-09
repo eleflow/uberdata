@@ -429,9 +429,9 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 	}
 
 	protected def initCSVDataFrame: DataFrame = {
-		val df = uc.sqlContext.read.format("com.databricks.spark.csv")
+		val df = uc.sqlContext.read
 			.option("header", "true")
-			.load(localFileName)
+			.csv(localFileName)
 		df.na.fill("")
 	}
 

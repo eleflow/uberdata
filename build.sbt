@@ -78,11 +78,11 @@ lazy val iuberdata_core = project settings (
       organization = "com.fasterxml.jackson.core") excludeAll ExclusionRule(
       organization = "com.fasterxml.jackson.datatype"),
     "com.cloudera.sparkts" % "sparkts" % "0.4.1" % "provided",
-    "ml.dmlc" % "xgboost4j" % xgboostVersion excludeAll ExclusionRule(
-      organization = "com.esotericsoftware.minlog"),
-    "ml.dmlc" % "xgboost4j-spark" % xgboostVersion excludeAll ExclusionRule(
-      organization = "com.esotericsoftware.minlog"),
-    "com.databricks" %% "spark-csv" % "1.5.0",
+    "ml.dmlc" % "xgboost4j" % xgboostVersion % "provided" excludeAll ExclusionRule(
+      organization = "com.esotericsoftware.minlog") ,
+    "ml.dmlc" % "xgboost4j-spark" % xgboostVersion % "provided" excludeAll ExclusionRule(
+      organization = "com.esotericsoftware.minlog") ,
+//    "com.databricks" %% "spark-csv" % "1.5.0",
     "org.slf4j" % "slf4j-api" % slf4jVersion,
     "org.slf4j" % "slf4j-log4j12" % slf4jVersion,
     "io.circe" %% "circe-core" % circeVersion,

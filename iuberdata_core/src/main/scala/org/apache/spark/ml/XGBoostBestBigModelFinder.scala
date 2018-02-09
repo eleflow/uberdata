@@ -27,6 +27,7 @@ import org.apache.spark.ml.param.shared.{HasIdCol, HasTimeCol, HasXGBoostParams}
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.ml.feature.LabeledPoint
+import org.apache.spark.mllib.util.MLUtils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.Dataset

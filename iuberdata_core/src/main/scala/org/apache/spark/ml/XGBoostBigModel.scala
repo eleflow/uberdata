@@ -26,6 +26,7 @@ import ml.dmlc.xgboost4j.LabeledPoint
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.ml.linalg.{VectorUDT, Vector => SparkVector}
 import org.apache.spark.ml.param.ParamMap
+import org.apache.spark.ml.feature.{LabeledPoint => SparkLabeledPoint}
 import org.apache.spark.ml.param.shared.{HasIdCol, HasLabelCol}
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.Dataset
@@ -66,10 +67,10 @@ class XGBoostBigModel[I](val uid: String, val models: Seq[(ParamMap, XGBoostMode
     val features = dataSet.rdd.map { case (row: Row) =>
       val features = row.getAs[SparkVector](IUberdataForecastUtil.FEATURES_COL_NAME)
       val id = row.getAs[I]($(idCol))
-      LabeledPoint(DataTransformer.toFloat(id), null, features.toArray.map(_.toFloat))
+      SparkLabeledPoint(DataTransformer.toFloat(id), features)
     }.cache
     val (_, model) = models.head
-    UberXGBoostModel.labelPredict(features, booster = model)
+    UberXGBoostModel.labelPredict(features.map(_.features.toDense), booster = model)
   }
 
   @DeveloperApi

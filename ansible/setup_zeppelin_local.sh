@@ -64,7 +64,7 @@ sudo cp target/sparkts-0.3.0-jar-with-dependencies.jar $zeppelinInterpreterUberd
 cd $SCRIPTPATH
 cd ../..
 
-echo "clonning and building xgboost v0.6"
+echo "clonning and building xgboost v0.7"
 git clone --recursive https://github.com/eleflow/xgboost.git
 cd xgboost
 git checkout -b version7 v0.7

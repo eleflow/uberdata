@@ -1090,7 +1090,7 @@ def ssh(host, opts, command):
       return subprocess.check_call(
         ssh_command(opts) + ['-t', '-t', '%s@%s' % (opts.user, host), stringify_command(command)])
     except subprocess.CalledProcessError as e:
-      if (tries > 10):
+      if (tries > 25):
         print('Failed to SSH to remote host %s after %s retries.' % (host, tries), file=sys.stderr)
         # If this was an ssh failure, provide the user with hints.
         if e.returncode == 255:
@@ -1108,7 +1108,7 @@ def scp(host, opts, src, target):
       return subprocess.check_call(
         scp_command(opts) + ['%s@%s:%s' % (opts.user, host,src), target])
     except subprocess.CalledProcessError as e:
-      if (tries > 10):
+      if (tries > 25):
         print("Failed to SCP to remote host {0} after r retries.".format(host), file=sys.stderr)
         # If this was an ssh failure, provide the user with hints.
         if e.returncode == 255:
@@ -1150,7 +1150,7 @@ def ssh_write(host, opts, command, input):
     status = proc.wait()
     if status == 0:
       break
-    elif (tries > 5):
+    elif (tries > 15):
       raise RuntimeError("ssh_write failed with error %s" % proc.returncode)
     else:
       print("Error {0} while executing remote command, retrying after 30 seconds".format(status), file=sys.stderr)
