@@ -91,6 +91,9 @@ rm -rf /tmp/notebook*
 mv /tmp/xgboost4j-spark-0.5-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
 mv /tmp/xgboost4j-0.5-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
 mv /tmp/sparkts-0.3.0-jar-with-dependencies.jar $zeppelinInterpreterUberdataDir
+mv /tmp/hsqldb.jar $zeppelinInterpreterUberdataDir
+mv /tmp/jackcess-2.1.6.jar $zeppelinInterpreterUberdataDir
+mv /tmp/ucanaccess-4.0.2.jar $zeppelinInterpreterUberdataDir
 
 sudo rm -f /tmp/iuberdata_addon_zeppelin-assembly-0.1.0.jar
 sudo rm -f /tmp/eleflow.uberdata.IUberdata-Zeppelin-0.1.0.jar
