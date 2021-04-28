@@ -21,6 +21,7 @@ import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.types.StructType
 
 /**
@@ -36,10 +37,10 @@ class ArimaBestModel[L, M <: TimeSeriesModel](
     with TimeSeriesBestModelFinderParam[L] {
 
   //TODO avaliar necessidade
-  override def transform(dataset: DataFrame): DataFrame = {
+  override def transform(dataset: Dataset[_]): DataFrame = {
     transformSchema(dataset.schema, logging = true)
 
-    dataset
+    dataset.toDF()
   }
 
   override def transformSchema(schema: StructType): StructType = {

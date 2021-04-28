@@ -16,7 +16,8 @@
 
 package org.apache.spark.ml.evaluation
 
-import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.ml.linalg.Vectors
+import org.apache.spark.mllib.linalg.Vector
 import org.apache.spark.mllib.stat.{MultivariateOnlineSummarizer, MultivariateStatisticalSummary}
 
 /**
@@ -31,7 +32,7 @@ class TimeSeriesSmallModelRegressionMetrics(
       case (observation, prediction) =>
         Vectors.dense(observation, observation - prediction)
     }.aggregate(new MultivariateOnlineSummarizer())(
-      (summary, current) => summary.add(current),
+      (summary, current) => summary.add(org.apache.spark.mllib.linalg.Vectors.fromML(current)),
       (sum1, sum2) => sum1.merge(sum2)
     )
 

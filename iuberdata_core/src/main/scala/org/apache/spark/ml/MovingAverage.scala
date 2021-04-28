@@ -19,8 +19,9 @@ package org.apache.spark.ml
 import org.apache.spark.ml.param.{IntParam, ParamMap}
 import org.apache.spark.ml.param.shared.{HasInputCol, HasOutputCol}
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
-import org.apache.spark.mllib.linalg.{VectorUDT, Vectors}
+import org.apache.spark.ml.linalg.{VectorUDT, Vectors}
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.types._
 
 /**
@@ -56,7 +57,7 @@ class MovingAverage[T](override val uid: String)
 
   setDefault(windowSize -> 3)
 
-  override def transform(dataSet: DataFrame): DataFrame = {
+  override def transform(dataSet: Dataset[_]): DataFrame = {
     val outputSchema = transformSchema(dataSet.schema)
     val sparkContext = dataSet.sqlContext.sparkContext
     val inputType = outputSchema($(inputCol)).dataType
@@ -66,10 +67,10 @@ class MovingAverage[T](override val uid: String)
     val inputColIndex = dataSet.columns.indexOf($(inputCol))
     val inputColIndexBr = sparkContext.broadcast(inputColIndex)
     val windowSizeBr = sparkContext.broadcast($(windowSize))
-    val maRdd = dataSetRdd.map { row =>
+    val maRdd = dataSetRdd.map { case (row: Row) =>
       val (array, rawValue) = if (inputTypeBr.value.isInstanceOf[VectorUDT]) {
         val vector =
-          row.getAs[org.apache.spark.mllib.linalg.Vector](inputColName.value)
+          row.getAs[org.apache.spark.ml.linalg.Vector](inputColName.value)
         (vector.toArray, Vectors.dense(vector.toArray.drop(windowSizeBr.value - 1)))
       } else {
         val iterable = row.getAs[Iterable[Double]](inputColName.value)

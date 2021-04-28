@@ -21,6 +21,7 @@ import org.apache.spark.ml.util.{DefaultParamsReadable, Identifiable}
 
 import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Dataset
 
 import scala.reflect.ClassTag
 
@@ -47,15 +48,16 @@ class AllColumnsTimeSeriesGenerator[T, U](
   /** @group setParam */
   def setOutputCol(value: String): this.type = set(outputCol, value)
 
-  override def transform(dataSet: DataFrame): DataFrame = {
+//  override def transform(dataSet: DataFrame): DataFrame = {
+  override def transform(dataSet: Dataset[_] ): DataFrame = {
     val rdd = dataSet.rdd
     val sparkContext = dataSet.sqlContext.sparkContext
     val labelColIndex =
       sparkContext.broadcast(dataSet.schema.fieldIndex($(labelCol)))
-    val keyValueDataSet = rdd.map { row =>
+    val keyValueDataSet = rdd.map { case (row: Row) =>
       Row(
         row.getAs[T](labelColIndex.value),
-        row.getAs[org.apache.spark.mllib.linalg.Vector]($(featuresCol))
+        row.getAs[org.apache.spark.ml.linalg.Vector]($(featuresCol))
       )
     }
     val trainSchema = transformSchema(dataSet.schema)
@@ -66,7 +68,7 @@ class AllColumnsTimeSeriesGenerator[T, U](
   override def transformSchema(schema: StructType): StructType = {
     StructType(
       schema.filter(_.name == $(labelCol)).head +: Seq(
-        StructField($(outputCol), new org.apache.spark.mllib.linalg.VectorUDT)
+        StructField($(outputCol), new org.apache.spark.ml.linalg.VectorUDT)
       )
     )
   }

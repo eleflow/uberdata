@@ -26,7 +26,7 @@ import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.HasGroupByCol
-import org.apache.spark.mllib.linalg.VectorUDT
+import org.apache.spark.ml.linalg.VectorUDT
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{ArrayType, FloatType, StructField, StructType}
 
@@ -37,12 +37,13 @@ trait BaseXGBoostBestModelFinder[G, M <: org.apache.spark.ml.ForecastBaseModel[M
     extends BestModelFinder[G, M]
     with HasGroupByCol {
 
-  protected def buildTrainSchema(sparkContext: SparkContext) = sparkContext.broadcast {
+  protected def buildTrainSchema(sparkContext: SparkContext): Broadcast[StructType] = sparkContext.broadcast {
     StructType(
       Seq(
         StructField($(groupByCol).get, FloatType),
         StructField(IUberdataForecastUtil.FEATURES_COL_NAME, ArrayType(new VectorUDT))))
   }
+
 
   protected def xGBoostEvaluation(row: Row,
                                   model: Booster,
@@ -50,10 +51,10 @@ trait BaseXGBoostBestModelFinder[G, M <: org.apache.spark.ml.ForecastBaseModel[M
                                   id: G,
                                   parameters: ParamMap): ModelParamEvaluation[G] = {
     val featuresArray = row
-      .getAs[Array[org.apache.spark.mllib.linalg.Vector]](IUberdataForecastUtil.FEATURES_COL_NAME)
+      .getAs[Array[org.apache.spark.ml.linalg.Vector]](IUberdataForecastUtil.FEATURES_COL_NAME)
       .map { vec =>
         val values = vec.toArray.map(DataTransformer.toFloat)
-        LabeledPoint.fromDenseVector(values.head, values.tail)
+        LabeledPoint(values.head, null, values.tail)
       }
     val features = new DMatrix(featuresArray.toIterator)
     log.warn(s"Evaluating forecast for id $id, with xgboost")

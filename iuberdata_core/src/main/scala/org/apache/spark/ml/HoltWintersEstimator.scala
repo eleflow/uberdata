@@ -23,6 +23,7 @@ import org.apache.spark.ml.param.shared._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.Dataset
 
 /**
   * Created by dirceu on 19/05/16.
@@ -35,9 +36,9 @@ class HoltWintersBestModel[T, M <: TimeSeriesModel](
     with TimeSeriesBestModelFinderParam[T] {
 
   //TODO look for this method usage to see if it can be removed
-  override def transform(dataset: DataFrame): DataFrame = {
+  override def transform(dataset: Dataset[_]): DataFrame = {
     transformSchema(dataset.schema, logging = true)
-    dataset
+    dataset.toDF()
   }
 
   override def transformSchema(schema: StructType): StructType = {

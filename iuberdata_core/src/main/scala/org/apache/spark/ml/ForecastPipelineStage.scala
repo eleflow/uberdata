@@ -18,7 +18,7 @@ package org.apache.spark.ml
 
 import eleflow.uberdata.IUberdataForecastUtil
 import org.apache.spark.ml.param.shared.{HasNFutures, HasPredictionCol, HasValidationCol}
-import org.apache.spark.mllib.linalg.VectorUDT
+import org.apache.spark.ml.linalg.VectorUDT
 import org.apache.spark.sql.types.{StructType, StringType, StructField, MapType}
 
 /**

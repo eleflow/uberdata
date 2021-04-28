@@ -39,7 +39,7 @@ else:
   xrange = range
 
 
-SPARK_EC2_VERSION = "1.6.2"
+SPARK_EC2_VERSION = "2.1.2"
 DEFAULT_SPARK_VERSION=SPARK_EC2_VERSION
 SPARK_EC2_DIR = "/opt/spark"
 
@@ -67,6 +67,13 @@ VALID_SPARK_VERSIONS = set([
     "1.6.0",
     "1.6.1",
     "1.6.2",
+    "1.6.3",
+    "2.0.0-preview",
+    "2.0.0",
+    "2.0.1",
+    "2.0.2",
+    "2.1.0",
+    "2.1.2"
 ])
 
 SPARK_TACHYON_MAP = {
@@ -87,6 +94,7 @@ SPARK_TACHYON_MAP = {
     "1.6.0": "0.8.2",
     "1.6.1": "0.8.2",
     "1.6.2": "0.8.2",
+    "2.0.0-preview": "",
 }
 
 
@@ -94,7 +102,7 @@ DEFAULT_SPARK_GITHUB_REPO = "https://github.com/apache/spark"
 
 # Default location to get the spark-ec2 scripts (and ami-list) from
 DEFAULT_SPARK_EC2_GITHUB_REPO = "https://github.com/paulomagalhaes/spark-ec2"
-DEFAULT_SPARK_EC2_BRANCH = "branch-1.5"
+DEFAULT_SPARK_EC2_BRANCH = "branch-2.1"
 
 def setup_external_libs(libs):
   """
@@ -348,6 +356,19 @@ EC2_INSTANCE_TYPES = {
   "r3.2xlarge":  "hvm",
   "r3.4xlarge":  "hvm",
   "r3.8xlarge":  "hvm",
+  "r4.large":    "hvm",
+  "r4.xlarge":   "hvm",
+  "r4.2xlarge":  "hvm",
+  "r4.4xlarge":  "hvm",
+  "r4.8xlarge":  "hvm",
+  "r4.16xlarge": "hvm",
+  "x1e.large":   "hvm",
+  "x1e.xlarge":  "hvm",
+  "x1e.2xlarge": "hvm",
+  "x1e.4xlarge": "hvm",
+  "x1e.8xlarge": "hvm",
+  "x1e.16xlarge":"hvm",
+  "x1e.32xlarge":"hvm",
   "t1.micro":    "pvm",
   "t2.micro":    "hvm",
   "t2.small":    "hvm",
@@ -750,7 +771,7 @@ def setup_cluster(conn, master_nodes, slave_nodes, opts, deploy_ssh_key):
   print( stderr,"Done!", file=sys.stderr)
 
 def get_master_setup_files(master, opts):
-  scp(master, opts, "/root/spark/lib/datanucleus*.jar", "%s/lib" % SPARK_EC2_DIR)
+  scp(master, opts, "/root/spark/jars/datanucleus*.jar", "%s/lib" % SPARK_EC2_DIR)
   scp(master, opts, "/root/spark/conf/*", "%s/conf" % SPARK_EC2_DIR)
 
 def setup_spark_cluster(master, opts):
@@ -909,6 +930,17 @@ def get_num_disks(instance_type):
     "r3.2xlarge":  1,
     "r3.4xlarge":  1,
     "r3.8xlarge":  2,
+    "r4.xlarge":   1,
+    "r4.2xlarge":  1,
+    "r4.4xlarge":  1,
+    "r4.8xlarge":  1,
+    "r4.16xlarge": 1,
+    "x1e.xlarge":   1,
+    "x1e.2xlarge":  1,
+    "x1e.4xlarge":  1,
+    "x1e.8xlarge":  1,
+    "x1e.16xlarge": 1,
+    "x1e.32xlarge": 2,
     "t1.micro":    0,
     "t2.micro":    0,
     "t2.small":    0,
@@ -1058,7 +1090,7 @@ def ssh(host, opts, command):
       return subprocess.check_call(
         ssh_command(opts) + ['-t', '-t', '%s@%s' % (opts.user, host), stringify_command(command)])
     except subprocess.CalledProcessError as e:
-      if (tries > 10):
+      if (tries > 25):
         print('Failed to SSH to remote host %s after %s retries.' % (host, tries), file=sys.stderr)
         # If this was an ssh failure, provide the user with hints.
         if e.returncode == 255:
@@ -1076,7 +1108,7 @@ def scp(host, opts, src, target):
       return subprocess.check_call(
         scp_command(opts) + ['%s@%s:%s' % (opts.user, host,src), target])
     except subprocess.CalledProcessError as e:
-      if (tries > 10):
+      if (tries > 25):
         print("Failed to SCP to remote host {0} after r retries.".format(host), file=sys.stderr)
         # If this was an ssh failure, provide the user with hints.
         if e.returncode == 255:
@@ -1118,7 +1150,7 @@ def ssh_write(host, opts, command, input):
     status = proc.wait()
     if status == 0:
       break
-    elif (tries > 5):
+    elif (tries > 15):
       raise RuntimeError("ssh_write failed with error %s" % proc.returncode)
     else:
       print("Error {0} while executing remote command, retrying after 30 seconds".format(status), file=sys.stderr)

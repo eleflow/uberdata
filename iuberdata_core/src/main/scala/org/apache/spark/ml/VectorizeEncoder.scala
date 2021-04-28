@@ -21,8 +21,9 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared._
 import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable}
-import org.apache.spark.mllib.linalg.VectorUDT
+import org.apache.spark.ml.linalg.VectorUDT
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Dataset
 import org.apache.spark.sql.types.{StructField, StructType}
 
 /**
@@ -52,7 +53,7 @@ class VectorizeEncoder(override val uid: String)
 
   def setOutputCol(output: String) = set(outputCol, output)
 
-  override def transform(dataSet: DataFrame): DataFrame = {
+  override def transform(dataSet: Dataset[_]): DataFrame = {
     val context = dataSet.sqlContext.sparkContext
     val input = context.broadcast($(inputCols))
     val allColumnNames = dataSet.schema.map(_.name)
@@ -61,7 +62,7 @@ class VectorizeEncoder(override val uid: String)
       allColumnNames.zipWithIndex.filter(
         f => !$(inputCols).contains(f._1) || f._1 == $(groupByCol).get || f._1 == $(idCol)
           || f._1 == $(timeCol).getOrElse("")))
-    val result = dataSet.map { row =>
+    val result = dataSet.rdd.map { case (row: Row) =>
       val rowSeq = row.toSeq
       val nonInputColumns = nonInputColumnIndexes.value.map {
         case (_, index) => rowSeq(index)
@@ -76,7 +77,7 @@ class VectorizeEncoder(override val uid: String)
         .filter(f => f._1 != 0d)
         .unzip
       Row(
-        nonInputColumns :+ org.apache.spark.mllib.linalg.Vectors
+        nonInputColumns :+ org.apache.spark.ml.linalg.Vectors
           .sparse(size, indices.toArray, values.toArray): _*
       )
     }

@@ -17,13 +17,13 @@
 package org.apache.spark.ml
 
 import com.cloudera.sparkts.models.UberHoltWintersModel
-import org.apache.spark.Logging
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.HasGroupByCol
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Dataset
 
 import scala.reflect.ClassTag
 
@@ -36,8 +36,7 @@ class HoltWintersBestModelFinder[G](
     extends HoltWintersBestModelEvaluation[G, HoltWintersModel[G]]
     with DefaultParamsWritable
     with HasGroupByCol
-    with TimeSeriesBestModelFinder
-    with Logging {
+    with TimeSeriesBestModelFinder {
 
   def setTimeSeriesEvaluator(eval: TimeSeriesEvaluator[G]): this.type =
     set(timeSeriesEvaluator, eval)
@@ -70,7 +69,7 @@ class HoltWintersBestModelFinder[G](
     }
   }
 
-  override protected def train(dataSet: DataFrame): HoltWintersModel[G] = {
+  override protected def train(dataSet: Dataset[_]): HoltWintersModel[G] = {
     val splitDs = split(dataSet, $(nFutures))
     val idModels = splitDs.rdd.map(train)
     new HoltWintersModel[G](uid, modelEvaluation(idModels))
@@ -82,8 +81,10 @@ class HoltWintersBestModelFinder[G](
     val id = row.getAs[G]($(groupByCol).get)
 
     val result = try {
+      val dense = row.getAs[org.apache.spark.ml.linalg.DenseVector]($(featuresCol))
+      val ts:org.apache.spark.mllib.linalg.Vector  = org.apache.spark.mllib.linalg.Vectors.dense(dense.toArray);
       Some(
-        UberHoltWintersModel.fitModelWithBOBYQA(row.getAs($(featuresCol)), $(nFutures))
+        UberHoltWintersModel.fitModelWithBOBYQA(ts, $(nFutures))
       )
     } catch {
       case e: Exception =>

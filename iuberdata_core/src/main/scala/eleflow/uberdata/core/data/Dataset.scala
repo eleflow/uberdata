@@ -34,7 +34,8 @@ import org.apache.spark.sql.types.{StringType, StructField, StructType, DataType
 import scala.collection.immutable.TreeSet
 import dataset._
 import eleflow.uberdata.core.io.IUberdataIO
-import org.apache.spark.Logging
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * SparkNotebook
@@ -166,12 +167,13 @@ class Dataset private[data](dataFrame: DataFrame,
 
 	private def summarizeColumns = {
 
+
 		val fieldsTuple = convertedDataFrame.dtypes.zipWithIndex.partition(
 			f => f._1._2 == org.apache.spark.sql.types.StringType.toString
 		)
 		val (stringFields, nonStringFields) =
 			(fieldsTuple._1.map(_._2), fieldsTuple._2.map(_._2))
-		val valuex = convertedDataFrame.flatMap { row =>
+		val valuex = convertedDataFrame.rdd.flatMap { row =>
 			stringFields.map { sf =>
 				(sf, TreeSet(row.getString(sf)))
 			}
@@ -248,8 +250,9 @@ class Dataset private[data](dataFrame: DataFrame,
 		formatDateValues(columnIndexOf(columnName), dateSplitter)
 
 	def formatDateValues(index: Int, dateSplitter: Long): Dataset = {
+
 		val (beforeFields, afterFields) = getDataFrameSchema.toArray.splitAt(index)
-		val rdd = dataFrame.map { f =>
+		val rdd = dataFrame.rdd.map { f =>
 			val (before, after) = f.toSeq.splitAt(index)
 			val formattedDate = splitDateValues(f, index, dateSplitter)
 			Row(
@@ -356,21 +359,22 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 																	header: Option[String] = None,
 																	dateTimeParser: DateTimeParser = DateTimeParser()
 																	//                                  , schema2: Option[StructType]
-																 ) extends Serializable with Logging {
+																 ) extends Serializable {
+	val slf4jLogger: Logger  = LoggerFactory.getLogger(Dataset.getClass);
 
 	lazy val numberOfPartitions = 4 * ClusterSettings.getNumberOfCores
 	lazy val firstLine: String = {
-		logInfo(s"firstLine: ${loadedRDD.count()}")
+		slf4jLogger.info(s"firstLine: ${loadedRDD.count()}")
 		loadedRDD.first
 	}
 	lazy val columnNames: Array[String] =
 		headerOrFirstLine().split(separator, -1)
 	lazy val loadedRDD = {
-		logInfo(s"localFileName:$localFileName")
-		uc.sparkContext.textFile(localFileName)
+		slf4jLogger.info(s"localFileName:$localFileName")
+		uc.sparkSession.sparkContext.textFile(localFileName)
 	}
 	lazy val localFileName: String = {
-		uc.sparkContext
+		uc.sparkSession.sparkContext
 		// make sure that the cluster is up
 		val uri = Some(new URI(file))
 		val destURI = uri.filter { f =>
@@ -414,7 +418,7 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 		oRdd.cache
 	}
 
-	def header(newHeader: String) = {
+	def header(newHeader: String): FileDataset = {
 		new FileDataset(uc, file, separator, header = Some(newHeader))
 	}
 
@@ -425,9 +429,10 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 	}
 
 	protected def initCSVDataFrame: DataFrame = {
-		uc.sqlContext.read.format("com.databricks.spark.csv")
+		val df = uc.sqlContext.read
 			.option("header", "true")
-			.load(localFileName)
+			.csv(localFileName)
+		df.na.fill("")
 	}
 
 	protected def initDataFrame(columnNames: Array[String],
@@ -448,7 +453,7 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 		}
 		val dataFrame = sqlContext.createDataFrame(rowRdd, types)
 		val tableName = extractTableName(file)
-		dataFrame.registerTempTable(tableName)
+		dataFrame.createOrReplaceTempView(tableName)
 		dataFrame.repartition(numberOfPartitions)
 		dataFrame
 	}
@@ -460,11 +465,14 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 	}
 
 	protected def extractFirstCompleteLine(dataRdd: RDD[Row]): Array[String] = {
-		logInfo(s"extractFirstCompleteLine ${dataRdd.first()}")
+		slf4jLogger.info(s"extractFirstCompleteLine ${dataRdd.first()}")
 		val df = dataRdd.filter { value =>
-			val f = value.toSeq.map(_.toString)
-			f.nonEmpty &&
-				f.forall(!_.isEmpty)
+			val data = value.toSeq
+			!data.contains(null) && {
+				val f = value.toSeq.map(_.toString)
+				f.nonEmpty &&
+					f.forall(!_.isEmpty)
+			}
 		}
 		if (df.count == 0) {
 			dataRdd.first().toSeq.map(_.toString).toArray
@@ -559,7 +567,7 @@ package object dataset {
 							dateTimeParser: DateTimeParser): DataFrame = {
 		import org.apache.spark.sql.types._
 
-		val converted = dataFrame.map { row =>
+		val converted = dataFrame.rdd.map { row =>
 			val values = row.toSeq.zip(newSchema.fields).map {
 				case (null, _) => null
 				case (s: String, tp: StructField) if s.isEmpty && !tp.dataType.isInstanceOf[StringType] =>

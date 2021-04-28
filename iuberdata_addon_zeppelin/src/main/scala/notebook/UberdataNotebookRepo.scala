@@ -197,7 +197,7 @@ class UberdataNotebookRepo(conf: ZeppelinConfiguration) extends VFSNotebookRepo(
       val sameNameNotes = localNotes.filter { f =>
         (f._2 == note.getName || f._2.startsWith(note.getName) && pattern
           .findFirstIn(f._2)
-          .isDefined) && f._1 != note.id()
+          .isDefined) && f._1 != note.getId
       }
       sameNameNotes.headOption.map { _ =>
         note.setName(s"${note.getName}-V${sameNameNotes.size + 1}")
@@ -210,7 +210,7 @@ class UberdataNotebookRepo(conf: ZeppelinConfiguration) extends VFSNotebookRepo(
       val out: OutputStream = noteFile.getContent.getOutputStream(false)
       out.write(json.getBytes(conf.getString(ConfVars.ZEPPELIN_ENCODING)))
       out.close
-      localNotes.filter(f => f._2 != note.getName && f._1 == note.id()).map { f =>
+      localNotes.filter(f => f._2 != note.getName && f._1 == note.getId).map { f =>
         createFolders(f._2).delete(allFileSelector)
         cleanParentFolders(f._2)
 

@@ -54,10 +54,11 @@ class ArtificialNeuralNetworkModel private[mllib] (val weights: Vector, val topo
     require(layer >= 0 && layer < topology.length)
     /* TODO: BDM */
     val outputs = forwardRun(
-      testData.toBreeze.toDenseVector.toDenseMatrix.t,
+      testData.toDense.asBreeze.toDenseVector.toDenseMatrix.t,
       weightMatrices,
       bias
     )
+
     outputs(layer).toArray
   }
 
@@ -93,8 +94,8 @@ class ArtificialNeuralNetwork private[mllib] (topology: Array[Int],
           (0.0,
            Vectors.fromBreeze(
              BDV.vertcat(
-               v._1.toBreeze.toDenseVector,
-               v._2.toBreeze.toDenseVector
+               v._1.toDense.asBreeze.toDenseVector,
+               v._2.toDense.asBreeze.toDenseVector
              )
            ))
       )
@@ -416,8 +417,8 @@ private class ANNUpdater extends Updater {
                        iter: Int,
                        regParam: Double): (Vector, Double) = {
     val thisIterStepSize = stepSize
-    val brzWeights: BV[Double] = weightsOld.toBreeze.toDenseVector
-    brzAxpy(-thisIterStepSize, gradient.toBreeze, brzWeights)
+    val brzWeights: BV[Double] = weightsOld.toDense.asBreeze.toDenseVector
+    brzAxpy(-thisIterStepSize, gradient.toDense.asBreeze, brzWeights)
     (Vectors.fromBreeze(brzWeights), 0)
   }
 }

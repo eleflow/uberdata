@@ -29,7 +29,7 @@ import org.apache.spark.ml.util.{DefaultParamsReader, _}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types.{DoubleType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row}
-import org.apache.spark.Logging
+import org.apache.spark.sql.Dataset
 
 import scala.reflect.ClassTag
 
@@ -60,23 +60,23 @@ class XGBoostSmallModel[G](
 
   def setTimeCol(value: String): this.type = set(timeCol, Some(value))
 
-  def setSummary(summary: XGBoostTrainingSummary[G]) = {
+  def setSummary(summary: XGBoostTrainingSummary[G]): XGBoostSmallModel[G] = {
     trainingSummary = Some(summary)
     this
   }
 
   override def write: MLWriter = new XGBoostRegressionModelWriter(this)
 
-  override def transform(dataSet: DataFrame): DataFrame = {
+  override def transform(dataSet: Dataset[_]): DataFrame = {
     val schema = dataSet.schema
     val predSchema = transformSchema(schema)
 
-    val joined = models.join(dataSet.map(r => (r.getAs[G]($(groupByCol).get), r)))
+    val joined = models.join(dataSet.rdd.map{case (r: Row) => (r.getAs[G]($(groupByCol).get), r)})
 
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
         val features =
-          row.getAs[org.apache.spark.mllib.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
+          row.getAs[org.apache.spark.ml.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
         val featuresIndex = row.fieldIndex(IUberdataForecastUtil.FEATURES_COL_NAME)
         val idColIndex = row.fieldIndex($(idCol))
         val timeColIndex = row.fieldIndex($(timeCol).get)
@@ -90,7 +90,7 @@ class XGBoostSmallModel[G](
         }.map(_._1)
         val metric = metrics.minBy(_.metricResult).metricResult
         val featuresAsFloat = features.toArray.map(_.toFloat)
-        val labeledPoints = Iterator(XGBLabeledPoint.fromDenseVector(0, featuresAsFloat))
+        val labeledPoints = Iterator(XGBLabeledPoint(0, null, featuresAsFloat))
         val forecast = bestModel.boosterInstance
           .predict(new DMatrix(labeledPoints, null))
           .flatMap(_.map(_.toDouble))
@@ -136,7 +136,7 @@ object XGBoostSmallModel extends MLReadable[XGBoostSmallModel[_]] {
 
   private[XGBoostSmallModel] class XGBoostRegressionModelWriter(instance: XGBoostSmallModel[_])
       extends MLWriter
-      with Logging {
+  {
 
     override protected def saveImpl(path: String): Unit = {
       // Save metadata and Params

@@ -25,6 +25,11 @@ $ ./uberdata/ansible/setup_zeppelin_aws.sh
 ```
 Zeppelin will run at new instance ip.
 
+## XGBoost/Time Series
+There is an extra step needed to install XGBoost/Sparkts jars. To do this you have to execute the
+ ansible/build-xgboost-light.sh script into the driver server, this script is responsible for 
+ compiling xgboost in your server platform, and to copy the generated jars to the Zeppelin folder.
+  
 ## Monitoring
 ### Ganglia
 

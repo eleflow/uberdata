@@ -22,18 +22,19 @@ import eleflow.uberdata.enums.SupportedAlgorithm
 import eleflow.uberdata.models.UberXGBOOSTModel
 import ml.dmlc.xgboost4j.LabeledPoint
 import ml.dmlc.xgboost4j.scala.{Booster, DMatrix}
-import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.{SparkContext}
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.{HasGroupByCol, HasIdCol, HasTimeCol, HasXGBoostParams}
 import org.apache.spark.ml.regression.XGBoostLinearSummary
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
-import org.apache.spark.mllib.linalg.{VectorUDT, Vectors}
+import org.apache.spark.ml.linalg.{VectorUDT, Vectors}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.types.{ArrayType, FloatType, StructField, StructType}
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Dataset
 
 import scala.reflect.ClassTag
 
@@ -46,8 +47,7 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
     with HasXGBoostParams
     with TimeSeriesBestModelFinder
     with HasIdCol
-    with HasTimeCol
-    with Logging {
+    with HasTimeCol {
   def this()(implicit gt: ClassTag[G]) =
     this(Identifiable.randomUID("xgboostsmall"))
 
@@ -97,11 +97,13 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
     }
   }
 
-  override protected def train(dataSet: DataFrame): XGBoostSmallModel[G] = {
+  override protected def train(dataSet: Dataset[_]): XGBoostSmallModel[G] = {
     val trainSchema = buildTrainSchema(dataSet.sqlContext.sparkContext)
-    val idModels = dataSet.rdd.groupBy { row =>
+    val idModels = dataSet.rdd.groupBy { case (row: Row) =>
       row.getAs[G]($(groupByCol).get)
-    }.map(f => train(f._1, f._2.toIterator, trainSchema))
+    }.map{
+      f=> train(f._1, f._2.toIterator.asInstanceOf[Iterator[Row]], trainSchema)
+    }
     new XGBoostSmallModel[G](uid, modelEvaluation(idModels))
       .setValidationCol($(validationCol))
       .setIdCol($(idCol))
@@ -117,14 +119,14 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
       val array = rows.toArray
       val values = array.map { row =>
         val values = row
-          .getAs[org.apache.spark.mllib.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
+          .getAs[org.apache.spark.ml.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
           .toArray
         val label = DataTransformer.toFloat(row.getAs[L]($(labelCol)))
-        LabeledPoint.fromDenseVector(label, values.map(_.toFloat))
+        LabeledPoint(label, null, values.map(_.toFloat))
       }.toIterator
       val valuesVector = array.map { row =>
         val vector =
-          row.getAs[org.apache.spark.mllib.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
+          row.getAs[org.apache.spark.ml.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
         Vectors.dense(DataTransformer.toDouble(row.getAs($(labelCol))) +: vector.toArray)
       }
 

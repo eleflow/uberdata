@@ -18,7 +18,6 @@ package eleflow.uberdata.models
 
 import ml.dmlc.xgboost4j.scala.{Booster, DMatrix, XGBoost}
 import ml.dmlc.xgboost4j.{LabeledPoint => XGBLabeledPoint}
-import org.apache.spark.mllib.regression.LabeledPoint
 
 import org.apache.spark.rdd.RDD
 

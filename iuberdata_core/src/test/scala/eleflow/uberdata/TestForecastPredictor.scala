@@ -29,7 +29,7 @@ import eleflow.uberdata.enums.SupportedAlgorithm._
 import eleflow.uberdata.models.UberXGBOOSTModel
 import ml.dmlc.xgboost4j.scala.spark.XGBoost
 import org.apache.spark.ml.ArimaModel
-import org.apache.spark.mllib.linalg.{DenseVector, Vectors}
+import org.apache.spark.ml.linalg.{DenseVector, Vectors}
 import org.apache.spark.mllib.regression.LabeledPoint
 
 /**
@@ -336,7 +336,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 		val df = model.transform(dataFrame)
 
 		val first = df.first
-		assert(first.getAs[org.apache.spark.mllib.linalg.Vector](1).toArray.length == 11)
+		assert(first.getAs[org.apache.spark.ml.linalg.Vector](1).toArray.length == 11)
 		assert(first.getAs[Iterable[Double]](2).toArray.length == 11)
 	}
 
@@ -358,9 +358,9 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 		val model = timeSeriesBestModelFinder.fit(dataFrame)
 		val df = model.transform(dataFrame)
 		val first = df.first
-		assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("validation").toArray.length == 5)
+		assert(first.getAs[org.apache.spark.ml.linalg.Vector]("validation").toArray.length == 5)
 		assert(
-			first.getAs[org.apache.spark.mllib.linalg.Vector]("featuresPrediction").toArray.length ==
+			first.getAs[org.apache.spark.ml.linalg.Vector]("featuresPrediction").toArray.length ==
 				16)
 	}
 
@@ -372,8 +372,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 			Seq(
 				StructField("Store", DoubleType),
 				StructField("data", DoubleType),
-				StructField("Sales", IntegerType),
-				StructField("Open", BooleanType)))
+				StructField("Sales", IntegerType)))
 
 		val rdd = sc.parallelize(arimaData)
 		val dataFrame = sqlContext.createDataFrame(rdd, structType).filter("Sales !=0")
@@ -386,9 +385,9 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 		val model = timeSeriesBestModelFinder.fit(dataFrame)
 		val df = model.transform(dataFrame)
 		val first = df.first
-		assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("validation").toArray.length == 5)
+		assert(first.getAs[org.apache.spark.ml.linalg.Vector]("validation").toArray.length == 5)
 		assert(
-			first.getAs[org.apache.spark.mllib.linalg.Vector]("featuresPrediction").toArray.length == 16)
+			first.getAs[org.apache.spark.ml.linalg.Vector]("featuresPrediction").toArray.length == 16)
 	}
 
 	it should "execute holtWinters and return predictions" in {
@@ -411,7 +410,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 		val df = model.transform(dataFrame)
 		val first = df.first
 		assert(first.getAs[DenseVector]("validation").toArray.length == 8)
-		assert(first.getAs[org.apache.spark.mllib.linalg.Vector]("features").toArray.length == 16)
+		assert(first.getAs[org.apache.spark.ml.linalg.Vector]("features").toArray.length == 16)
 	}
 
 	it should "predict with ARIMA without standard field names and return predictions" in {
@@ -509,7 +508,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 			Seq(8, 12, 16, 24, 26))
 
 		assert(result.collect().length == 20)
-		assert(result.map(_.getAs[String](IUberdataForecastUtil.ALGORITHM)).distinct().count() > 1)
+		assert(result.rdd.map(_.getAs[String](IUberdataForecastUtil.ALGORITHM)).distinct().count() > 1)
 	}
 
 	"XGBoost" should "execute a prediction with a simple dataset" in {
@@ -591,7 +590,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 		val trainSchema = trainData.schema
 		val testSchema = testData.schema
 		val sqlContext = context.sqlContext
-		val convertedTest = sqlContext.createDataFrame(testData.map { row =>
+		val convertedTest = sqlContext.createDataFrame(testData.rdd.map { row =>
 			val seq = row.toSeq
 			val newSeq = if (seq.contains(null)) {
 				if (row.getAs[String]("StateHoliday") == "1.0")
@@ -600,7 +599,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 			} else seq
 			Row(newSeq: _*)
 		}, testSchema)
-		val convertedTrain = sqlContext.createDataFrame(trainData.map { row =>
+		val convertedTrain = sqlContext.createDataFrame(trainData.rdd.map { row =>
 			val seq = row.toSeq
 			val newSeq = if (seq.contains(null)) {
 				if (row.getAs[String]("StateHoliday") == "1.0")
@@ -672,7 +671,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 		val trainSchema = trainData.schema
 		val testSchema = testData.schema
 		val sqlContext = context.sqlContext
-		val convertedTest = sqlContext.createDataFrame(testData.map { row =>
+		val convertedTest = sqlContext.createDataFrame(testData.rdd.map { row =>
 			val seq = row.toSeq
 			val newSeq = if (seq.contains(null)) {
 				if (row.getAs[String]("StateHoliday") == "1.0") {
@@ -685,7 +684,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 			}
 			Row(newSeq: _*)
 		}, testSchema)
-		val convertedTrain = sqlContext.createDataFrame(trainData.map { row =>
+		val convertedTrain = sqlContext.createDataFrame(trainData.rdd.map { row =>
 			val seq = row.toSeq
 			val newSeq = if (seq.contains(null)) {
 				if (row.getAs[String]("StateHoliday") == "1.0") {

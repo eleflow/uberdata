@@ -50,60 +50,55 @@ class BinaryClassification {
 																	 featuresCol: Seq[String],
 																	 rounds: Int = 2000,
 																	 params: Map[String, Any] = Map.empty[String, Any],
-																	 trainingWindowSize: Int): (DataFrame, DataFrame, Double, Double) = {
-
+																	 trainingWindowSize: Int):
+	(DataFrame, DataFrame, Double, Double) = {
 		val testDataSize = test.count().toInt
 		val trainDataSize = train.count().toInt
 		val numberOfPredictionsByModelUpdate = testDataSize
 		val privateid = "privateid"
 		val decile = "decile"
-
 		if (trainingWindowSize >= trainDataSize) {
 			throw new IllegalArgumentException("trainingWindowSize is greater than train dataframe size ")
 		}
-
 		if (trainDataSize < testDataSize) {
 			throw new IllegalArgumentException("train dataframe size has to be greater than test dataframe size")
 		}
-
 		val orderedTrainDataFrame = dfZipWithIndex(train.orderBy(idCol), 1, privateid)
-
-		var indexes = (1 to (trainDataSize - (testDataSize + trainingWindowSize) + 1) by numberOfPredictionsByModelUpdate).toArray
-
-		if (indexes.size == 0) {
+		var indexes = (1 to (trainDataSize - (testDataSize + trainingWindowSize) + 1) by
+			numberOfPredictionsByModelUpdate).toArray
+		if (indexes.length == 0) {
 			indexes = Array(1)
 		}
-
-		val predictionsForTrainingSet = indexes.map { index =>
+ 	  val predictionsForTrainingSet = indexes.map { index =>
 			val clause1 = privateid + " >= " + index
 			val clause2 = privateid + " <= " + (index + trainingWindowSize - 1)
 			val clause3 = privateid + " > " + (index + trainingWindowSize - 1)
 			val clause4 = privateid + " <= " + (index + trainingWindowSize + numberOfPredictionsByModelUpdate - 1)
-			val trainingPartial = orderedTrainDataFrame.where(clause1).where(clause2).drop(privateid).repartition(1)
-			val testPartial = orderedTrainDataFrame.where(clause3).where(clause4).drop(privateid).repartition(1)
-
+			val trainingPartial = orderedTrainDataFrame.where(clause1).where(clause2).drop(privateid)
+			val testPartial = orderedTrainDataFrame.where(clause3).where(clause4).drop(privateid)
 			val (predictionsPartial, modelPartial) = predict(trainingPartial, testPartial.drop(labelCol), algorithm, labelCol, idCol, featuresCol, rounds, params)
 			insertDecileColumn(predictionsPartial, idCol, decile)
-
 		}
-
-		val allPredictionsForTrainingSetDF = predictionsForTrainingSet.toSeq.reduce(_.unionAll(_)).withColumnRenamed(idCol, "id1")
+		val allPredictionsForTrainingSetDF = predictionsForTrainingSet.toSeq.reduce(_.union(_)).withColumnRenamed(idCol, "id1")
 		val predictionsForTrainingSetStats = allPredictionsForTrainingSetDF.join(orderedTrainDataFrame, allPredictionsForTrainingSetDF("id1") === orderedTrainDataFrame(idCol)).select(idCol, decile, labelCol)
 		val conversionRateDF0 = predictionsForTrainingSetStats.groupBy(decile).agg("y" -> "sum").withColumnRenamed("sum(y)", "soma_convertidos")
 		val totalConversions = conversionRateDF0.rdd.map(_ (1).asInstanceOf[Long]).reduce(_ + _)
 		val conversionRateDF = conversionRateDF0.withColumn("conversion_rate", conversionRateDF0("soma_convertidos") / totalConversions).select("decile", "conversion_rate")
-
 		val clause1 = privateid + " > " + (trainDataSize - trainingWindowSize)
 		val clause2 = privateid + " <= " + trainDataSize
-		val trainDataForPredictionToBeReturned = orderedTrainDataFrame.where(clause1).where(clause2).drop(privateid).repartition(1)
-		val (predictionsForTestSet, modelForTestSet) = predict(trainDataForPredictionToBeReturned, test.repartition(1), algorithm, labelCol, idCol, featuresCol, rounds, params)
-
+		val trainDataForPredictionToBeReturned = orderedTrainDataFrame.where(clause1).where(clause2).drop(privateid)
+		val (predictionsForTestSet, modelForTestSet) = predict(trainDataForPredictionToBeReturned, test, algorithm, labelCol, idCol, featuresCol, rounds, params)
 		val predictionsAndLabels = allPredictionsForTrainingSetDF.join(orderedTrainDataFrame, allPredictionsForTrainingSetDF("id1") === orderedTrainDataFrame(idCol)).select("prediction", labelCol)
 		val metricsAUC = new BinaryClassificationMetrics(predictionsAndLabels.rdd.map { case Row(a: Float, b: Long) => (a.toDouble, b.toDouble) })
-
 		(conversionRateDF, predictionsForTestSet, metricsAUC.areaUnderPR, metricsAUC.areaUnderROC)
 	}
 
+	/* TODO "XGBoost is not working with this method, we need to update to call XGBoost pipeline
+	 * following this example:
+	 * https://github.com/dmlc/xgboost/blob/master/jvm-packages/xgboost4j-example/src/main/scala/ml
+	 * /dmlc/xgboost4j/scala/example/spark/SparkModelTuningTool.scala"
+	 */
+	@deprecated("XGBoost is not working with this method")
 	def predict(
 							 train: DataFrame,
 							 test: DataFrame,
@@ -127,12 +122,12 @@ class BinaryClassification {
 			case _ => throw new UnsupportedOperationException()
 		}
 		val joinIdColName = "joinIdColNam"
-		val united = train.cache.drop(labelCol).unionAll(test.cache)
+		val united = train.cache.drop(labelCol).union(test.cache)
 		val encoded = applyOneHotEncoder(united, featuresCol)
 		val encodedTrain = train.select(col(idCol).alias(joinIdColName), col(labelCol)).
-			join(encoded, col(joinIdColName) === encoded(idCol)).repartition(1)
+			join(encoded, col(joinIdColName) === encoded(idCol))
 		val encodedTest = test.select(col(idCol).alias(joinIdColName)).join(encoded, col
-		(joinIdColName) === encoded(idCol)).repartition(1)
+		(joinIdColName) === encoded(idCol))
 		val model = pipeline.fit(encodedTrain.cache)
 		val predictions = model.transform(encodedTest.cache).cache
 		(predictions.sort(idCol), model)
@@ -235,7 +230,6 @@ class BinaryClassification {
 		val predictionsPartialRdd = predictionsPartialWithInvertedDeciles.select(idCol, "prediction", decile).rdd.map {
 			case Row(id: Float, prediction: Float, dec: Int) => Row(id, prediction, Math.abs(11 - dec))
 		}
-
 		df.sqlContext.createDataFrame(predictionsPartialRdd, StructType(Array(StructField(idCol, FloatType), StructField("prediction", FloatType), StructField(decile, IntegerType))))
 
 	}

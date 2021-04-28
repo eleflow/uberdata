@@ -1,0 +1,135 @@
+[
+  {
+    "group": "uberdata",
+    "name": "uberdata-interpreter",
+    "className": "org.apache.zeppelin.spark.IUberSparkInterpreter",
+    "properties": {
+      "zeppelin.spark.useHiveContext": {
+        "envName": null,
+        "propertyName": "zeppelin.spark.useHiveContext",
+        "defaultValue": "true",
+        "description": "Use HiveContext instead of SQLContext if it is true."
+      },
+      "zeppelin.spark.maxResult": {
+        "envName": null,
+        "propertyName": "zeppelin.spark.maxResult",
+        "defaultValue": 1000,
+        "description": "Max allowed results to be displayed into interpreter"
+      },
+      "iuberdata.setup.classes": {
+        "envName": null,
+        "propertyName": "iuberdata.setup.classes",
+        "defaultValue": "eleflow.uberdata.core.InterpreterSetup",
+        "description": "Classes used to setup the interpreter"
+      },
+      "master": {
+        "envName": null,
+        "propertyName": "master",
+        "defaultValue": "eleflow.uberdata.core.InterpreterSetup",
+        "description": "Classes used to setup the interpreter"
+      },
+      "zeppelin.dep.localrepo": {
+        "envName": null,
+        "propertyName": "zeppelin.dep.localrepo",
+        "defaultValue": "local-repo",
+        "description": "Local repository for dependency loader"
+      },
+      "zeppelin.spark.printREPLOutput": {
+        "envName": null,
+        "propertyName": "zeppelin.spark.printREPLOutput",
+        "defaultValue": "true",
+        "description": "Print REPL output"
+      }
+    },
+    "editor": {
+      "language": "scala",
+      "editOnDblClick": false
+    }
+  },
+  {
+    "group": "uberdata",
+    "name": "sql",
+    "className": "org.apache.zeppelin.spark.IUberdataSparkSqlInterpreter",
+    "properties": {
+      "zeppelin.spark.concurrentSQL": {
+        "envName": "ZEPPELIN_SPARK_CONCURRENTSQL",
+        "propertyName": "zeppelin.spark.concurrentSQL",
+        "defaultValue": "false",
+        "description": "Execute multiple SQL concurrently if set true."
+      },
+      "zeppelin.spark.sql.stacktrace": {
+        "envName": "ZEPPELIN_SPARK_SQL_STACKTRACE",
+        "propertyName": "zeppelin.spark.sql.stacktrace",
+        "defaultValue": "false",
+        "description": "Show full exception stacktrace for SQL queries if set to true."
+      },
+      "zeppelin.spark.maxResult": {
+        "envName": "ZEPPELIN_SPARK_MAXRESULT",
+        "propertyName": "zeppelin.spark.maxResult",
+        "defaultValue": "100000",
+        "description": "Max number of Spark SQL result to display."
+      },
+      "zeppelin.spark.importImplicit": {
+        "envName": "ZEPPELIN_SPARK_IMPORTIMPLICIT",
+        "propertyName": "zeppelin.spark.importImplicit",
+        "defaultValue": "true",
+        "description": "Import implicits, UDF collection, and sql if set true. true by default."
+      }
+    },
+    "editor": {
+      "language": "sql",
+      "editOnDblClick": false
+    }
+  },
+  {
+    "group": "uberdata",
+    "name": "pyspark",
+    "className": "org.apache.zeppelin.spark.PySparkInterpreter",
+    "properties": {
+      "zeppelin.pyspark.python": {
+        "envName": "PYSPARK_PYTHON",
+        "propertyName": null,
+        "defaultValue": "python",
+        "description": "Python command to run pyspark with"
+      }
+    },
+    "editor": {
+      "language": "python",
+      "editOnDblClick": false
+    }
+  },
+  {
+    "group": "uberdata",
+    "name": "r",
+    "className": "org.apache.zeppelin.spark.SparkRInterpreter",
+    "properties": {
+      "zeppelin.R.knitr": {
+        "envName": "ZEPPELIN_R_KNITR",
+        "propertyName": "zeppelin.R.knitr",
+        "defaultValue": "true",
+        "description": "whether use knitr or not"
+      },
+      "zeppelin.R.cmd": {
+        "envName": "ZEPPELIN_R_CMD",
+        "propertyName": "zeppelin.R.cmd",
+        "defaultValue": "R",
+        "description": "R repl path"
+      },
+      "zeppelin.R.image.width": {
+        "envName": "ZEPPELIN_R_IMAGE_WIDTH",
+        "propertyName": "zeppelin.R.image.width",
+        "defaultValue": "100%",
+        "description": ""
+      },
+      "zeppelin.R.render.options": {
+        "envName": "ZEPPELIN_R_RENDER_OPTIONS",
+        "propertyName": "zeppelin.R.render.options",
+        "defaultValue": "out.format = 'html', comment = NA, echo = FALSE, results = 'asis', message = F, warning = F",
+        "description": ""
+      }
+    },
+    "editor": {
+      "language": "r"
+    }
+  }
+  ]

@@ -56,12 +56,14 @@ ZEPPELIN_CLASSPATH+=":${ZEPPELIN_CONF_DIR}:/opt/spark/conf"
 if [[ -d "${ZEPPELIN_HOME}/zeppelin-interpreter/target/classes" ]]; then
   ZEPPELIN_CLASSPATH+=":${ZEPPELIN_HOME}/zeppelin-interpreter/target/classes"
 else
-  ZEPPELIN_INTERPRETER_JAR="$(ls ${ZEPPELIN_HOME}/lib/zeppelin-interpreter*.jar)"
+  ZEPPELIN_INTERPRETER_JAR="$(ls ${ZEPPELIN_HOME}/lib/interpreter/zeppelin-interpreter*.jar)"
   ZEPPELIN_CLASSPATH+=":${ZEPPELIN_INTERPRETER_JAR}"
 fi
 
 addJarInDir "${ZEPPELIN_HOME}/zeppelin-interpreter/target/lib"
 addJarInDir "${INTERPRETER_DIR}"
+addJarInDir "${ZEPPELIN_HOME}/lib/interpreter"
+addJarInDir "${ZEPPELIN_HOME}/conf"
 
 HOSTNAME=$(hostname)
 ZEPPELIN_SERVER=org.apache.zeppelin.interpreter.remote.RemoteInterpreterServer

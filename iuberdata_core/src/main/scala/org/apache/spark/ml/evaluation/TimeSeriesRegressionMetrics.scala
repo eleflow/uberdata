@@ -16,7 +16,7 @@
 
 package org.apache.spark.ml.evaluation
 
-import org.apache.spark.mllib.linalg.Vectors
+import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.mllib.stat.{MultivariateOnlineSummarizer, MultivariateStatisticalSummary}
 import org.apache.spark.rdd.RDD
 
@@ -37,7 +37,7 @@ class TimeSeriesRegressionMetrics[T](
       (id, modelIndex, array, array.map {
         case (observation, prediction) =>
           Vectors.dense(observation, observation - prediction)
-      }.aggregate(new MultivariateOnlineSummarizer())((summary, current) => summary.add(current), (sum1, sum2) => sum1.merge(sum2)))
+      }.aggregate(new MultivariateOnlineSummarizer())((summary, current) => summary.add(org.apache.spark.mllib.linalg.Vectors.fromML(current)), (sum1, sum2) => sum1.merge(sum2)))
   }
   private lazy val SSerr = summaryRDD.map {
     case (id, modelIndex, values, summary) =>

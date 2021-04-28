@@ -8,4 +8,16 @@
         <name>javax.jdo.option.ConnectionDriverName</name>
         <value>org.apache.derby.jdbc.EmbeddedDriver</value>
     </property>
+    <property>
+        <name>hive.metastore.sasl.enabled</name>
+        <value>false</value>
+    </property>
+    <property>
+        <name>hive.server2.authentication</name>
+        <value>PAM</value>
+    </property>
+    <property>
+        <name>hive.server2.authentication.pam.services</name>
+        <value>login,sshd,sudo</value>
+    </property>
 </configuration>

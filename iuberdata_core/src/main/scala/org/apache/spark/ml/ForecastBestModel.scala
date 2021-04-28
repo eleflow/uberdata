@@ -25,6 +25,8 @@ import org.apache.spark.mllib.linalg.{Vector, VectorUDT, Vectors}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Dataset
+import org.apache.spark.mllib.util.MLUtils
 
 import scala.reflect.ClassTag
 
@@ -48,7 +50,7 @@ class ForecastBestModel[L](
   }
 
   override def transformSchema(schema: StructType): StructType = {
-    super.transformSchema(schema).add(StructField("featuresValidation", new VectorUDT))
+    super.transformSchema(schema).add(StructField("featuresValidation", new org.apache.spark.ml.linalg.VectorUDT))
   }
 
   def evaluateParams(models: Seq[(TimeSeriesModel, ModelParamEvaluation[L])],
@@ -62,20 +64,20 @@ class ForecastBestModel[L](
           val (featuresPrediction, forecastPrediction) =
             a.forecast(features, nFut.value).toArray.splitAt(features.size)
           Seq(
-            Vectors.dense(forecastPrediction),
+            Vectors.dense(forecastPrediction).asML,
             SupportedAlgorithm.Arima.toString,
             a.params,
-            Vectors.dense(featuresPrediction)
+            Vectors.dense(featuresPrediction).asML
           )
         case SupportedAlgorithm.HoltWinters =>
           val h = bestModel.asInstanceOf[UberHoltWintersModel]
           val forecast = Vectors.dense(new Array[Double](nFut.value))
           h.forecast(features, forecast)
           Seq(
-            forecast,
+            forecast.asML,
             SupportedAlgorithm.HoltWinters.toString,
             h.params,
-            features
+            features.asML
           )
         case SupportedAlgorithm.MovingAverage8 =>
           val windowSize = modelParamEvaluation.params.toSeq
@@ -92,10 +94,10 @@ class ForecastBestModel[L](
             )
           )
           Seq(
-            movingAverageForecast,
+            movingAverageForecast.asML,
             SupportedAlgorithm.MovingAverage8.toString,
             windowSize.map(f => (f._1, f._2.toString)),
-            features
+            features.asML
           )
       }
     } catch {
@@ -106,23 +108,23 @@ class ForecastBestModel[L](
     }
   }
 
-  override def transform(dataSet: DataFrame): DataFrame = {
+  override def transform(dataSet: Dataset[_]): DataFrame = {
     val schema = dataSet.schema
     val predSchema = transformSchema(schema)
 
     val scContext = dataSet.sqlContext.sparkContext
     //TODO fazer com que os modelos invalidos voltem numeros absurdos
 
-    val joined = models.join(dataSet.map(r => (r.getAs[L]($(labelCol)), r)))
+    val joined = models.join(dataSet.rdd.map{case (r: Row) => (r.getAs[L]($(labelCol)), r)})
 
     val featuresColName =
       dataSet.sqlContext.sparkContext.broadcast($(featuresCol))
     val nFut = scContext.broadcast($(nFutures))
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
-        val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
+        val features = row.getAs[org.apache.spark.ml.linalg.Vector](featuresColName.value)
         val prediction = {
-          evaluateParams(metrics, features, nFut)
+          evaluateParams(metrics, org.apache.spark.mllib.linalg.Vectors.fromML(features), nFut)
         }
         Row(row.toSeq ++ prediction: _*)
     }

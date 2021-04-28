@@ -20,14 +20,14 @@ import com.cloudera.sparkts.models.UberArimaModel
 import eleflow.uberdata.IUberdataForecastUtil
 import eleflow.uberdata.enums.SupportedAlgorithm
 import org.apache.hadoop.fs.Path
-import org.apache.spark.Logging
 import org.apache.spark.ml.param.ParamMap
 import org.apache.spark.ml.param.shared.HasNFutures
 import org.apache.spark.ml.util._
-import org.apache.spark.mllib.linalg.{VectorUDT, Vectors}
+import org.apache.spark.ml.linalg.{VectorUDT, Vectors}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.Dataset
 
 import scala.reflect.ClassTag
 
@@ -55,22 +55,22 @@ class ArimaModel[G](
   override def write: MLWriter =
     new ArimaModel.ARIMARegressionModelWriter(this)
 
-  override def transform(dataSet: DataFrame) = {
+  override def transform(dataSet: Dataset[_]): DataFrame = {
     val schema = dataSet.schema
     val predSchema = transformSchema(schema)
     val scContext = dataSet.sqlContext.sparkContext
     //TODO fazer com que os modelos invalidos voltem numeros absurdos
 
-    val joined = models.join(dataSet.map(r => (r.getAs[G]($(groupByCol).get), r)))
+    val joined = models.join(dataSet.rdd.map{case (r: Row) => (r.getAs[G]($(groupByCol).get), r)})
 
     val featuresColName =
       dataSet.sqlContext.sparkContext.broadcast($(featuresCol))
     val nFut = scContext.broadcast($(nFutures))
     val predictions = joined.map {
       case (id, ((bestModel, metrics), row)) =>
-        val features = row.getAs[org.apache.spark.mllib.linalg.Vector](featuresColName.value)
+        val features = row.getAs[org.apache.spark.ml.linalg.Vector](featuresColName.value)
         val (ownFeaturesPrediction, forecast) =
-          bestModel.forecast(features, nFut.value).toArray.splitAt(features.size)
+          bestModel.forecast(org.apache.spark.mllib.linalg.Vectors.fromML(features), nFut.value).toArray.splitAt(features.size)
         Row(
           row.toSeq :+ Vectors
             .dense(forecast) :+ SupportedAlgorithm.Arima.toString :+ bestModel.params :+ Vectors
@@ -106,7 +106,7 @@ object ArimaModel extends MLReadable[ArimaModel[_]] {
 
   private[ArimaModel] class ARIMARegressionModelWriter(instance: ArimaModel[_])
       extends MLWriter
-      with Logging {
+  {
 
     //TODO validar este metodo
     override protected def saveImpl(path: String): Unit = {

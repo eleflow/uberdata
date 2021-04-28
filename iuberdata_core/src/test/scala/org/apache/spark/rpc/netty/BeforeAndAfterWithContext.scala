@@ -41,7 +41,7 @@ trait BeforeAndAfterWithContext extends BeforeAndAfterEach { this: Suite =>
   import TestSparkConf._
   ClusterSettings.master = Some("local[*]")
   conf.set("spark.driver.allowMultipleContexts", "true")
-  val context = IUberdataContext.getUC(conf)
+  @transient val context = IUberdataContext.getUC(conf)
 
   override def beforeEach() = {
     setLogLevels(Level.INFO, Seq("spark", "org.eclipse.jetty", "akka"))
@@ -63,8 +63,9 @@ trait BeforeAndAfterWithContext extends BeforeAndAfterEach { this: Suite =>
         Some(get.rpcEnv)
       } else None
     context.clearContext()
-    rpcEnv.foreach(
-      _.fileServer.asInstanceOf[org.apache.spark.rpc.netty.HttpBasedFileServer].shutdown())
+    //rpcEnv.foreach(
+    //  _.fileServer.asInstanceOf[org.apache.spark.rpc.netty.HttpBasedFileServer].shutdown())
+
 
     System.clearProperty("spark.master.port")
   }
