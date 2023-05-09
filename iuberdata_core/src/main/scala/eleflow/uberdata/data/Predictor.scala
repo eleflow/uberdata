@@ -16,24 +16,22 @@
 
 package eleflow.uberdata.data
 
-import java.io.Serializable
-
-import eleflow.uberdata.core.data.{DataTransformer, Dataset}
+import eleflow.uberdata.core.data.{DataTransformer, UberDataset}
 import eleflow.uberdata.core.enums.DataSetType
 import eleflow.uberdata.core.exception.InvalidDataException
 import eleflow.uberdata.data.stat.Statistics
-import eleflow.uberdata.enums.ValidationMethod
 import eleflow.uberdata.enums.SupportedAlgorithm._
-import eleflow.uberdata.model.{Step, TypeMixin}
+import eleflow.uberdata.enums.ValidationMethod
 import eleflow.uberdata.model.TypeMixin._
-//import org.apache.spark.Logging
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import eleflow.uberdata.model.{Step, TypeMixin}
 
-import org.apache.spark.mllib.classification.ANNClassifierModel
+import java.io.Serializable
+import java.util.concurrent.ForkJoinPool
+//import org.apache.spark.Logging
+import eleflow.uberdata.enums.ValidationMethod._
+import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.mllib.classification._
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics
-import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.mllib.regression._
 import org.apache.spark.mllib.tree.DecisionTree
 import org.apache.spark.mllib.tree.model.DecisionTreeModel
@@ -42,14 +40,11 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.StatCounter
-import ValidationMethod._
-import org.apache.spark.SparkContext._
-
-import scala.concurrent.forkjoin.ForkJoinPool
-import org.apache.spark.mllib.feature.StandardScaler
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.TreeMap
+import scala.collection.parallel.CollectionConverters._
 import scala.collection.parallel.ForkJoinTaskSupport
 import scala.util.Random
 
@@ -67,7 +62,7 @@ trait Predictor extends Serializable {
     _ >: SVMModel with LogisticRegressionModel with NaiveBayesModel with RegressionModel with ANNClassifierModel <: Serializable
   ]
 
-  import Dataset._
+  import UberDataset._
 
   def validate(rdd: RDD[(Double, Double)], method: ValidationMethod): Double = {
     method match {
@@ -78,8 +73,8 @@ trait Predictor extends Serializable {
     }
   }
 
-  def evolutiveSVMPredict(trainDataset: Dataset,
-                          test: Dataset,
+  def evolutiveSVMPredict(trainDataset: UberDataset,
+                          test: UberDataset,
                           targetName: Seq[String],
                           idName: Seq[String],
                           method: ValidationMethod,
@@ -87,7 +82,7 @@ trait Predictor extends Serializable {
                           algorithm: Algorithm,
                           validationPercentage: Double = 0.3d,
                           columnsToUse: Int = 10) = {
-    val slf4jLogger: Logger  = LoggerFactory.getLogger(Dataset.getClass);
+    val slf4jLogger: Logger  = LoggerFactory.getLogger(UberDataset.getClass);
 
     val (
     trainDataSetCached,
@@ -138,8 +133,8 @@ trait Predictor extends Serializable {
      testDataSet.keys)
   }
 
-  def evolutiveMiddleStart(train: Dataset,
-                           testSetStd: Dataset,
+  def evolutiveMiddleStart(train: UberDataset,
+                           testSetStd: UberDataset,
                            targetName: Seq[String],
                            idName: Seq[String],
                            quantity: Int,
@@ -190,7 +185,9 @@ trait Predictor extends Serializable {
           getRandomCombinationsRandomSize(quantity, featuresSize)).par
 
       featuresCombinations.tasksupport = new ForkJoinTaskSupport(
-        new scala.concurrent.forkjoin.ForkJoinPool(4)
+//        new scala.concurrent.forkjoin.ForkJoinPool(4)
+        //@see https://www.scala-lang.org/api/2.12.2/scala/concurrent/forkjoin/index.html#ForkJoinPool=java.util.concurrent.ForkJoinPool
+        new ForkJoinPool(4)
       )
       val results = featuresCombinations.map { featureCombination =>
         val newTraining = trainLP
@@ -305,15 +302,15 @@ trait Predictor extends Serializable {
   }
 
   def evolutivePredictColumnList(
-    train: Dataset,
-    test: Dataset,
-    ids: Seq[String],
-    target: Seq[String],
-    validationPercentage: Double = 0.3d,
-    algorithm: Algorithm,
-    validationMethod: ValidationMethod,
-    columnNStep: List[Int],
-    iterations: Int
+                                  train: UberDataset,
+                                  test: UberDataset,
+                                  ids: Seq[String],
+                                  target: Seq[String],
+                                  validationPercentage: Double = 0.3d,
+                                  algorithm: Algorithm,
+                                  validationMethod: ValidationMethod,
+                                  columnNStep: List[Int],
+                                  iterations: Int
   ): Array[(Models, Double, Array[String])] = {
 
     val steps = new EvolutiveSingleStart(train.schema.fields.size, columnNStep)
@@ -338,15 +335,15 @@ trait Predictor extends Serializable {
   }
 
   def evolutivePredict(
-    train: Dataset,
-    test: Dataset,
-    ids: Seq[String] = Seq("id"),
-    target: Seq[String] = Seq("target"),
-    validationPercentage: Double = 0.3d,
-    algorithm: Algorithm,
-    validationMethod: ValidationMethod,
-    steps: Seq[Step],
-    iterations: Int
+                        train: UberDataset,
+                        test: UberDataset,
+                        ids: Seq[String] = Seq("id"),
+                        target: Seq[String] = Seq("target"),
+                        validationPercentage: Double = 0.3d,
+                        algorithm: Algorithm,
+                        validationMethod: ValidationMethod,
+                        steps: Seq[Step],
+                        iterations: Int
   ): Array[(Models, Double, Array[String])] = {
     require(!steps.isEmpty, "Steps can't be empty")
     val (cachedTrain, cachedValidation, cachedTest) =
@@ -373,8 +370,8 @@ trait Predictor extends Serializable {
     evolutivePredictionResult
   }
 
-  def predictWithColumnSetupInt(train: Dataset,
-                                test: Dataset,
+  def predictWithColumnSetupInt(train: UberDataset,
+                                test: UberDataset,
                                 ids: Seq[Int] = Seq(0),
                                 target: Seq[Int] = Seq.empty[Int],
                                 validationPercentage: Double = 0.3d,
@@ -423,8 +420,8 @@ trait Predictor extends Serializable {
      correlatedColumns)
   }
 
-  def predictWithColumnSetup(train: Dataset,
-                             test: Dataset,
+  def predictWithColumnSetup(train: UberDataset,
+                             test: UberDataset,
                              ids: Seq[String] = Seq("id"),
                              target: Seq[String] = Seq("target"),
                              validationPercentage: Double = 0.3d,
@@ -522,7 +519,7 @@ trait Predictor extends Serializable {
     target: Seq[String] = Seq("target"),
     includes: Seq[String] = Seq.empty,
     excludes: Seq[String] = Seq.empty
-  ): (Dataset, Dataset, scala.Seq[String], scala.Seq[String]) = {
+  ): (UberDataset, UberDataset, scala.Seq[String], scala.Seq[String]) = {
     val includedFields = if (includes.isEmpty) {
       train.columnNames()
     } else ids ++ target ++ includes
@@ -533,8 +530,8 @@ trait Predictor extends Serializable {
     (filteredTrainDataSet, filteredTestDataSet, target, ids)
   }
 
-  private def buildTestAndTrainDataSet(filteredTrainDataSet: Dataset,
-                                       filteredTestDataSet: Dataset,
+  private def buildTestAndTrainDataSet(filteredTrainDataSet: UberDataset,
+                                       filteredTestDataSet: UberDataset,
                                        targetName: Seq[String],
                                        idName: Seq[String],
                                        validationPercentage: Double = 0.3d) = {
@@ -582,15 +579,16 @@ trait Predictor extends Serializable {
       case ArtificialNeuralNetwork =>
         neuralNetwork(trainDataSet, iterations)
       case NaiveBayesClassifier => naiveBayesModel(trainDataSet, iterations)
-      case LinearLeastSquares =>
-        linearLeastSquaresModel(trainDataSet, iterations)
+//      case LinearLeastSquares =>
+//        linearLeastSquaresModel(trainDataSet, iterations)
       case XGBoostAlgorithm =>
         xgboost(trainDataSet,iterations)
     }
   }
 
   def binaryLogisticRegressionModelSGD(dataSet: RDD[LabeledPoint], iterations: Int) = {
-    val regression = new LogisticRegressionWithSGD()
+//    val regression = new LogisticRegressionWithSGD()
+    val regression = new LogisticRegressionWithLBFGS()
     regression.optimizer.setNumIterations(iterations)
     //    regression.optimizer.setRegParam(0.1d)
     val model = regression.run(dataSet)
@@ -627,11 +625,12 @@ trait Predictor extends Serializable {
     TrainedData[NaiveBayesModel](model, NaiveBayesClassifier, iterations)
   }
 
+  //TODO: reativar este método
   //private
-  def linearLeastSquaresModel(trainDataSet: RDD[LabeledPoint], iterations: Int) = {
-    val model = LassoWithSGD.train(trainDataSet, iterations)
-    TrainedData[RegressionModel](model, LinearLeastSquares, iterations)
-  }
+//  def linearLeastSquaresModel(trainDataSet: RDD[LabeledPoint], iterations: Int) = {
+//    val model = LassoWithSGD.train(trainDataSet, iterations)
+//    TrainedData[RegressionModel](model, LinearLeastSquares, iterations)
+//  }
 
   private def neuralNetwork(trainDataSet: RDD[LabeledPoint], iterations: Int) = {
 
@@ -644,8 +643,8 @@ trait Predictor extends Serializable {
     )
   }
 
-  def predictDecisionTree(train: Dataset,
-                          test: Dataset,
+  def predictDecisionTree(train: UberDataset,
+                          test: UberDataset,
                           targetIndexes: Seq[String] = Seq("id"),
                           testTargetIndexes: Seq[String] = Seq("target"),
                           validationPercentage: Double = 0.3d,
@@ -919,7 +918,7 @@ trait Predictor extends Serializable {
     target: Seq[Int] = Seq(1),
     includes: Seq[Int] = Seq.empty,
     excludes: Seq[Int] = Seq.empty
-  ): (Dataset, Dataset, scala.Seq[String], scala.Seq[String]) = {
+  ): (UberDataset, UberDataset, scala.Seq[String], scala.Seq[String]) = {
     val targetIndexes = mapIntIdsToString(train, target)
     val idsIndexes = mapIntIdsToString(train, ids)
     val includesIndexes = mapIntIdsToString(train, includes)
@@ -935,7 +934,7 @@ trait Predictor extends Serializable {
   }
 
   private def train(trainDataSetAfterValidationSplit: RDD[LabeledPoint],
-                    trainDataSetCached: Dataset,
+                    trainDataSetCached: UberDataset,
                     targetIndexes: Seq[String],
                     algorithm: Algorithm,
                     iterations: Int) = {
@@ -1136,17 +1135,18 @@ trait Predictor extends Serializable {
   }
 
   def datasetKeyJoinLabel(testKeys: RDD[(Double, Any)], values: RDD[LabeledPoint]) = {
-    testKeys.join(values.map(labelPoint => (labelPoint.label, labelPoint))).values
+    val toBeJoined = values.map(labelPoint => (labelPoint.label, labelPoint))
+    testKeys.join(toBeJoined).values
   }
 
   def predictGeneric(
-    filteredTrainDataSet: Dataset,
-    filteredTestDataSet: Dataset,
-    targetName: Seq[String],
-    idName: Seq[String],
-    validationPercentage: Double = 0.3d,
-    algorithm: Algorithm,
-    iterations: Int
+                      filteredTrainDataSet: UberDataset,
+                      filteredTestDataSet: UberDataset,
+                      targetName: Seq[String],
+                      idName: Seq[String],
+                      validationPercentage: Double = 0.3d,
+                      algorithm: Algorithm,
+                      iterations: Int
   ): (RDD[(Double, Double)],
       TypeMixin.TrainedData[scala.Serializable],
       RDD[((Double, Any), LabeledPoint)],
@@ -1209,8 +1209,8 @@ trait Predictor extends Serializable {
     (f._1, LabeledPoint(f._1, org.apache.spark.mllib.linalg.Vectors.fromML(Vectors.dense(f._2))))
   }
 
-  private def evolutivePredictObjectSplit(train: Dataset,
-                                          test: Dataset,
+  private def evolutivePredictObjectSplit(train: UberDataset,
+                                          test: UberDataset,
                                           ids: Seq[String],
                                           target: Seq[String]) = {
 
@@ -1229,19 +1229,19 @@ trait Predictor extends Serializable {
 
   @tailrec
   private def evolutivePrediction(
-    train: Dataset,
-    validation: Dataset,
-    test: Dataset,
-    ids: Seq[String],
-    target: Seq[String],
-    validationPercentage: Double,
-    algorithm: Algorithm,
-    validationMethod: ValidationMethod,
-    steps: Seq[Step],
-    iterations: Int,
-    columnList: List[String],
-    modelList: Array[(Models, Double, Array[String])],
-    unionDataset: Dataset
+                                   train: UberDataset,
+                                   validation: UberDataset,
+                                   test: UberDataset,
+                                   ids: Seq[String],
+                                   target: Seq[String],
+                                   validationPercentage: Double,
+                                   algorithm: Algorithm,
+                                   validationMethod: ValidationMethod,
+                                   steps: Seq[Step],
+                                   iterations: Int,
+                                   columnList: List[String],
+                                   modelList: Array[(Models, Double, Array[String])],
+                                   unionDataset: UberDataset
   ): Array[(Models, Double, Array[String])] = {
 
     if (steps.isEmpty) modelList //.map(f => (f._1,f._2,f._3.map(_+1)))

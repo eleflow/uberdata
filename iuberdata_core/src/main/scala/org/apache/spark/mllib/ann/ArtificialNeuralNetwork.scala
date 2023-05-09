@@ -17,21 +17,11 @@
 
 package org.apache.spark.mllib.ann
 
-import breeze.linalg.{
-  axpy => brzAxpy,
-  Vector => BV,
-  DenseVector => BDV,
-  DenseMatrix => BDM,
-  sum => Bsum,
-  argmax => Bargmax,
-  norm => Bnorm,
-  *
-}
+import breeze.linalg.{*, DenseMatrix => BDM, DenseVector => BDV, Vector => BV, argmax => Bargmax, axpy => brzAxpy, norm => Bnorm, sum => Bsum}
 import breeze.numerics.{sigmoid => Bsigmoid}
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.mllib.linalg
-
-import org.apache.spark.mllib.linalg.{DenseMatrix, DenseVector, Vector, Vectors}
+import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.mllib.optimization._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.util.random.XORShiftRandom
@@ -356,9 +346,9 @@ private[ann] trait NeuralHelper {
       outPrime :-= outputs(i)
       outPrime :*= outputs(i)
       if (i == topology.size - 1) {
-        deltas(i) = (outputs(i) :- targetOutput) :* outPrime
+        deltas(i) = (outputs(i) :-= targetOutput) :*= outPrime
       } else {
-        deltas(i) = (weightMatrices(i + 1).t * deltas(i + 1)) :* outPrime
+        deltas(i) = (weightMatrices(i + 1).t * deltas(i + 1)) :*= outPrime
       }
     }
     /* gradient */
@@ -401,8 +391,8 @@ private class ANNLeastSquaresGradient(val topology: Array[Int], val batchSize: I
     val (gradientMatrices, deltas) = wGradient(weightMatrices, target, outputs)
     rollWeights(gradientMatrices, deltas, cumGradient)
     /* error */
-    val diff = target :- outputs(topology.size - 1)
-    val outerError = Bsum(diff :* diff) / 2
+    val diff = target :-= outputs(topology.size - 1)
+    val outerError = Bsum(diff :*= diff) / 2
     /* NB! dividing by the number of instances in
      * the batch to be transparent for the optimizer */
     outerError / realBatchSize

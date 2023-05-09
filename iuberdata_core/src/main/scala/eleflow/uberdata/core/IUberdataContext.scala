@@ -19,7 +19,7 @@ import scala.collection.JavaConverters._
 import java.io._
 
 import eleflow.uberdata.core.listener.UberdataSparkListener
-import eleflow.uberdata.core.data.Dataset
+import eleflow.uberdata.core.data.UberDataset
 import eleflow.uberdata.core.util.ClusterSettings
 import org.apache.commons.io.IOUtils
 import org.apache.hadoop.conf.Configuration
@@ -335,15 +335,15 @@ class IUberdataContext(@transient sparkConf: SparkConf) extends Serializable {
 	}
 
 
-	def load(file: String, separator: String, loadSchema: Seq[DataType]): Dataset = {
-		val fileDataSet = Dataset(this, file, separator)
+	def load(file: String, separator: String, loadSchema: Seq[DataType]): UberDataset = {
+		val fileDataSet = UberDataset(this, file, separator)
 		fileDataSet.applyColumnTypes(loadSchema)
 		fileDataSet
 	}
 
 
-	def load(file: String, separator: String = ","): Dataset =
-		Dataset(this, file, separator)
+	def load(file: String, separator: String = ","): UberDataset =
+		UberDataset(this, file, separator)
 
 	private def copyFromClasspath2Tmp(filePath: String) = {
 		val scriptPath = System.getProperty("java.io.tmpdir")

@@ -16,23 +16,19 @@
 package org.apache.hive.hcatalog.streaming
 
 
-import java.sql.{Connection, DriverManager, Statement}
-
-import scala.reflect.runtime.universe._
-import org.apache.spark.sql.Dataset
 import io.circe.syntax._
 import org.apache.hadoop.hive.conf.HiveConf
-import org.apache.hive.hcatalog.streaming.ThriftDatasetWriter.dbName
 import org.apache.hive.hcatalog.streaming.TransactionBatch.TxnState
 import org.apache.spark.broadcast.Broadcast
+import org.apache.spark.sql.Dataset
 import org.slf4j.LoggerFactory
 
-import scala.collection.JavaConversions._
+import java.sql.{Connection, DriverManager, Statement}
+import scala.jdk.CollectionConverters._
+import scala.reflect.runtime.universe._
 import scala.util.matching.Regex
 
-
 object ThriftDatasetWriter {
-
 	val logger = LoggerFactory.getLogger(ThriftDatasetWriter.getClass)
 
 	def allFields[T: TypeTag]: Array[String] = {
@@ -87,7 +83,7 @@ object ThriftDatasetWriter {
 													broadColumns: Broadcast[Array[String]], broadMaxBatchGroups:
 													Broadcast[Int]) = {
 		tobe.foreachPartition {
-			dataPartition =>
+			dataPartition: Iterator[(String, String)] =>
 
 				val list = dataPartition.toList
 				if (list.nonEmpty) {
@@ -104,9 +100,12 @@ object ThriftDatasetWriter {
 							writeToPartitionedTable(broadMetastore.value, broadDbName.value, broadTableName.value,
 								List(partitions), broadColumns.value, broadMaxBatchGroups.value, data, maxSize)
 					}
-					partitionNames.headOption.getOrElse {
-						writeToPartitionedTable(broadMetastore.value, broadDbName.value, broadTableName.value,
-							List.empty[String], broadColumns.value, broadMaxBatchGroups.value, data, maxSize)
+					partitionNames.headOption match{
+						case Some(_) => ()
+						case None => {
+							writeToPartitionedTable(broadMetastore.value, broadDbName.value, broadTableName.value,
+								List.empty[String], broadColumns.value, broadMaxBatchGroups.value, data, maxSize)
+						}
 					}
 				}
 		}
@@ -132,7 +131,7 @@ object ThriftDatasetWriter {
 				val result = new Iterator[Seq[String]] {
 					def hasNext = resultSet.next()
 
-					def next = (1 to sz).map(resultSet.getString)
+					def next() = (1 to sz).map(resultSet.getString)
 				}.toList
 				resultSet.close()
 				result
@@ -166,7 +165,7 @@ object ThriftDatasetWriter {
 		try {
 			val func: Statement => Unit = { stmt =>
 				stmt.execute(s"insert into $tableName ${buildInsertValues(columns, values)}")
-				Unit
+				()
 			}
 			createConnection[Unit](serverAddress, dbName, user, password, func)
 		} catch {
@@ -187,7 +186,7 @@ object ThriftDatasetWriter {
 			val func: Statement => Unit = { stmt =>
 				stmt.execute(s"update $tableName set ${removeLastComma(buildUpdateValues(columns, values))}"
 					+ s" where $whereclause")
-				Unit
+				()
 			}
 			createConnection[Unit](serverAddress, dbName, user, password, func)
 		} catch {
@@ -257,12 +256,12 @@ object ThriftDatasetWriter {
 																			maxBatchGroups: Int, data: List[String], maxSize: Int)
 	= {
 
-		val endPt = new HiveEndPoint(metastore, dbName, tableName, partitions)
+		val endPt = new HiveEndPoint(metastore, dbName, tableName, partitions.asJava)
 		val conf: HiveConf = null
 		val connection = endPt.newConnection(true, conf)
 		val writer = columns.headOption.map {
-			_ => new DelimitedInputWriter(columns, ",", endPt);
-		}.getOrElse(new StrictJsonWriter(endPt))
+			_ => new DelimitedInputWriter(columns, ",", endPt, connection);
+		}.getOrElse(new StrictJsonWriter(endPt, conf, connection))
 		val txnBatch = connection.fetchTransactionBatch(maxBatchGroups,
 			writer)
 		try {

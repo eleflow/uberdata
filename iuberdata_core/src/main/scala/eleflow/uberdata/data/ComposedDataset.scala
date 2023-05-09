@@ -18,13 +18,13 @@ package eleflow.uberdata.data
 
 import java.text.{DecimalFormatSymbols, DecimalFormat}
 import java.util.Locale
-import eleflow.uberdata.core.data.Dataset
+import eleflow.uberdata.core.data.UberDataset
 import org.apache.spark.rdd.RDD
 
 /**
   * Created by dirceu on 18/02/15.
   */
-class ComposedDataset(train: Dataset, test: Dataset, result: Option[RDD[(Double, Double)]]) {
+class ComposedDataset(train: UberDataset, test: UberDataset, result: Option[RDD[(Double, Double)]]) {
 
   def exportResult(path: String, locale: Locale = Locale.ENGLISH) = {
     val formatSymbols = new DecimalFormatSymbols(locale)

@@ -30,7 +30,7 @@ object SparkRBackend {
 	}
 
 	def init() : Int = {
-		portNumber = backend.init()
+		portNumber = backend.init()._1
 		portNumber
 	}
 

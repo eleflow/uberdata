@@ -16,18 +16,17 @@
  */
 package eleflow.uberdata.core.util
 
-import java.nio.charset.StandardCharsets
-import java.nio.file.{FileSystems, Files}
-import java.text.ParseException
-
 import eleflow.uberdata.core.conf.SparkNotebookConfig
 import eleflow.uberdata.core.enums.PeriodOfDay
 import org.apache.spark.SparkFiles
-import org.joda.time.{DateTime, DateTimeZone}
 import org.joda.time.format.DateTimeFormat
+import org.joda.time.{DateTime, DateTimeZone}
 
-import scala.collection.JavaConversions._
+import java.nio.charset.StandardCharsets
+import java.nio.file.{FileSystems, Files}
 import scala.util.{Success, Try}
+
+import scala.jdk.CollectionConverters._
 
 /**
   * Created by dirceu on 24/02/15.
@@ -97,7 +96,7 @@ final class DateTimeParser(offset: Int) extends Serializable {
       parse(dateString, dateFormat)
       true
     } catch {
-      case e: ParseException =>
+      case e: Exception =>
         false
     }
   }
@@ -166,7 +165,7 @@ final class DateTimeParser(offset: Int) extends Serializable {
       SparkFiles.get(SparkNotebookConfig.dateFormatFileName)
     )
     if (Files.exists(clusterFilePath))
-      Files.readAllLines(clusterFilePath, StandardCharsets.UTF_8).headOption
+      Files.readAllLines(clusterFilePath, StandardCharsets.UTF_8).asScala.headOption
     else None
   }
 }

@@ -18,7 +18,6 @@ package eleflow.uberdata.notebook
 
 import java.io.{IOException, InputStream, OutputStream}
 import java.net.URI
-
 import com.google.gson.{Gson, GsonBuilder}
 import org.apache.commons.io.IOUtils
 import org.apache.commons.vfs2._
@@ -30,6 +29,7 @@ import org.apache.zeppelin.scheduler.Job.Status
 import org.apache.zeppelin.user.AuthenticationInfo
 import org.slf4j.{Logger, LoggerFactory}
 
+import scala.jdk.CollectionConverters._
 import scala.reflect.io.File
 
 /**
@@ -42,9 +42,9 @@ class UberdataNotebookRepo(conf: ZeppelinConfiguration) extends VFSNotebookRepo(
 
   private val renameOldRepos = {
     println("renameOldRepos")
-    import scala.collection.JavaConversions._
+    import scala.jdk.CollectionConverters._
     val allNotes = list()
-    allNotes.filter { notebook =>
+    allNotes.asScala.filter { notebook =>
       notebook.getName != notebook.getId && !resolveFile(notebook.getName).exists()
     }.foreach { notebook =>
       val oldRepo = resolveFile(notebook.getId)
@@ -98,7 +98,7 @@ class UberdataNotebookRepo(conf: ZeppelinConfiguration) extends VFSNotebookRepo(
   override def list(
     subject: AuthenticationInfo = ???
   ): java.util.List[NoteInfo] = {
-    import scala.collection.JavaConversions._
+    import scala.jdk.CollectionConverters._
 
     children.filter { f =>
       val fileName: String = f.getName.getBaseName
@@ -118,16 +118,15 @@ class UberdataNotebookRepo(conf: ZeppelinConfiguration) extends VFSNotebookRepo(
             null
           }
         }
-    }.filter(_ != null).toList
-
+    }.filter(_ != null).toList.asJava
   }
 
   def children = getChildren(rootDir)
 
-  import scala.collection.JavaConversions._
+  import scala.jdk.CollectionConverters._
 
   def notebooks =
-    list().map { f =>
+    list().asScala.map { f =>
       (f.getId -> f.getName)
     }.toMap
 
@@ -153,8 +152,8 @@ class UberdataNotebookRepo(conf: ZeppelinConfiguration) extends VFSNotebookRepo(
     getNote(noteId).map(getNote(_)).headOption.getOrElse(throw new Exception("Notebook not found"))
 
   private def getNote(noteId: String) = {
-    import scala.collection.JavaConversions._
-    list().filter(f => f.getId == noteId).map { f =>
+    import scala.jdk.CollectionConverters._
+    list().asScala.filter(f => f.getId == noteId).map { f =>
       resolveFile(f.getName)
     }
   }
@@ -178,8 +177,8 @@ class UberdataNotebookRepo(conf: ZeppelinConfiguration) extends VFSNotebookRepo(
       IOUtils.toString(ins, conf.getString(ConfVars.ZEPPELIN_ENCODING))
     ins.close
     val note: Note = gson.fromJson(json, classOf[Note])
-    import scala.collection.JavaConversions._
-    for (p <- note.getParagraphs) {
+    import scala.jdk.CollectionConverters._
+    for (p <- note.getParagraphs.asScala) {
       if (p.getStatus == Status.PENDING || p.getStatus == Status.RUNNING) {
         p.setStatus(Status.ABORT)
       }

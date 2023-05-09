@@ -16,7 +16,7 @@
 
 package eleflow.uberdata.data
 
-import eleflow.uberdata.core.data.Dataset
+import eleflow.uberdata.core.data.UberDataset
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRow
@@ -28,7 +28,7 @@ import org.scalatest.{FlatSpec, Matchers}
   */
 class TestFilterColumns extends FlatSpec with Matchers with BeforeAndAfterWithContext {
 
-  import Dataset._
+  import UberDataset._
 
   "FilterColumns" should
     "handle included string columns" in {

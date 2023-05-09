@@ -14,12 +14,11 @@
 // limitations under the License.
 //
 
-import sbt._
-import sbt.Keys._
-import sbt.complete.Parsers
-import com.typesafe.sbt.SbtNativePackager._
-import NativePackagerKeys._
 import com.typesafe.sbt.SbtGit._
+import com.typesafe.sbt.SbtNativePackager._
+import com.typesafe.sbt.SbtNativePackager.autoImport.NativePackagerKeys._
+import sbt.Keys._
+import sbt._
 
 versionWithGit
 
@@ -32,19 +31,14 @@ val ver = "0.2.0"
 publishMavenStyle := true
 
 resolvers += Resolver.sonatypeRepo("public")
-
 resolvers += Resolver.typesafeIvyRepo("releases")
-
 resolvers += Resolver.sonatypeRepo("releases")
-
 resolvers += Resolver.mavenLocal
 
-resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases"
-
+//resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases"
+resolvers += "Typesafe repository" at "https://repo.typesafe.com/typesafe/ivy-releases/"
 testOptions in Test += Tests.Argument("-oDF")
-
 parallelExecution in Test := false
-
 net.virtualvoid.sbt.graph.Plugin.graphSettings
 
 def iUberdataCoreVersion(gitVersion: Option[String] = Some("Not a Git Repository"), dir: File) = {

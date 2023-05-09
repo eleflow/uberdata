@@ -60,8 +60,8 @@ class ArimaBestModelFinder[G](
 
   def getOrdering(metricName: String): Ordering[Double] = {
     metricName match {
-      case "re" => Ordering.Double.reverse
-      case _ => Ordering.Double
+      case "re" => Ordering.Double.TotalOrdering.reverse
+      case _ => Ordering.Double.TotalOrdering
     }
   }
 

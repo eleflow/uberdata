@@ -17,15 +17,10 @@
 package org.apache.spark.ml.evaluation
 
 import org.apache.spark.annotation.Since
-import org.apache.spark.ml.param.{Param, ParamMap, ParamValidators}
-import org.apache.spark.ml.param.shared.{
-  HasFeaturesCol,
-  HasLabelCol,
-  HasPredictionCol,
-  HasValidationCol
-}
-import org.apache.spark.ml.util.{DefaultParamsWritable, Identifiable, _}
 import org.apache.spark.ml.linalg.{Vector, VectorUDT}
+import org.apache.spark.ml.param.shared.{HasLabelCol, HasPredictionCol, HasValidationCol}
+import org.apache.spark.ml.param.{Param, ParamMap, ParamValidators}
+import org.apache.spark.ml.util._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.functions._
@@ -151,7 +146,7 @@ object TimeSeriesEvaluator extends DefaultParamsReadable[TimeSeriesEvaluator[_]]
 
   def ordering(metricName: String): Ordering[Double] =
     metricName match {
-      case "r2" => Ordering.Double.reverse
-      case "rmspe" | "rmse" | "mse" | "mae" => Ordering.Double
+      case "r2" => Ordering.Double.TotalOrdering.reverse
+      case "rmspe" | "rmse" | "mse" | "mae" => Ordering.Double.TotalOrdering
     }
 }

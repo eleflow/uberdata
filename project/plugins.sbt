@@ -14,24 +14,23 @@
 // limitations under the License.
 //
 resolvers ++= Seq(
-  "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
-  "Sonatype OSS Snapshots Repository" at "http://oss.sonatype.org/content/groups/public"
+//  "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
+  "Typesafe repository" at "https://repo.typesafe.com/typesafe/maven-releases/",
+  "Sonatype OSS Snapshots Repository" at "https://oss.sonatype.org/content/groups/public"
 )
 
 addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.6.0")
 
 addSbtPlugin("net.virtual-void" % "sbt-dependency-graph" % "0.7.5")
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "0.7.4")
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.5.2")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.6.2")
 
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.1.0")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.1")
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.13.0")
 
-addSbtPlugin("com.typesafe.play" %% "sbt-plugin" % "2.4.2")
-
-addSbtPlugin("com.geirsson" % "sbt-scalafmt" % "0.3.0")
+addSbtPlugin("com.typesafe.play" %% "sbt-plugin" % "2.8.9")
 
 addSbtPlugin("org.scalastyle" %% "scalastyle-sbt-plugin" % "0.8.0")

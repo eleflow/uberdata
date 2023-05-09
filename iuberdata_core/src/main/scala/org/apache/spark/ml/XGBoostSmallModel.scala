@@ -90,7 +90,8 @@ class XGBoostSmallModel[G](
         }.map(_._1)
         val metric = metrics.minBy(_.metricResult).metricResult
         val featuresAsFloat = features.toArray.map(_.toFloat)
-        val labeledPoints = Iterator(XGBLabeledPoint(0, null, featuresAsFloat))
+//        val labeledPoints = Iterator(XGBLabeledPoint(0, null, featuresAsFloat)) //label, indices, values
+        val labeledPoints = Iterator(XGBLabeledPoint(0, features.size, null, featuresAsFloat)) //label, size, indices, value
         val forecast = bestModel.boosterInstance
           .predict(new DMatrix(labeledPoints, null))
           .flatMap(_.map(_.toDouble))
@@ -160,7 +161,8 @@ object XGBoostSmallModel extends MLReadable[XGBoostSmallModel[_]] {
 
       val arimaModel = new XGBoostSmallModel[G](metadata.uid, models)
 
-      DefaultParamsReader.getAndSetParams(arimaModel, metadata)
+//      DefaultParamsReader.getAndSetParams(arimaModel, metadata)
+        metadata.getAndSetParams(arimaModel)
       arimaModel
     }
   }

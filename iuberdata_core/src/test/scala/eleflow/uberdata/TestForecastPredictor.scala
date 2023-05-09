@@ -16,8 +16,8 @@
 
 package eleflow.uberdata
 
-import eleflow.uberdata.core.data.Dataset
-import Dataset._
+import eleflow.uberdata.core.data.UberDataset
+import UberDataset._
 import eleflow.uberdata.enums.SupportedAlgorithm
 import eleflow.uberdata.core.enums.DateSplitType._
 import eleflow.uberdata.core.exception.UnexpectedValueException
@@ -548,7 +548,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 	}
 
 	it should "execute prediction with Rossmann dataset" in {
-		val train = Dataset(context, s"$defaultFilePath/data/RossmannTrain.csv")
+		val train = UberDataset(context, s"$defaultFilePath/data/RossmannTrain.csv")
 		train.applyColumnTypes(
 			Seq(
 				DoubleType,
@@ -574,7 +574,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 				"StateHoliday",
 				"SchoolHoliday")
 			.cache
-		val test = Dataset(context, s"$defaultFilePath/data/RossmannTest.csv")
+		val test = UberDataset(context, s"$defaultFilePath/data/RossmannTest.csv")
 		test.applyColumnTypes(
 			Seq(
 				LongType,
@@ -629,7 +629,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 	}
 
 	it should "accept different kind of data into it's columns " in {
-		val train = Dataset(context, s"$defaultFilePath/data/RossmannTrain.csv")
+		val train = UberDataset(context, s"$defaultFilePath/data/RossmannTrain.csv")
 		train.applyColumnTypes(
 			Seq(
 				ShortType,
@@ -655,7 +655,7 @@ class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWi
 				"StateHoliday",
 				"SchoolHoliday")
 			.cache
-		val test = Dataset(context, s"$defaultFilePath/data/RossmannTest.csv")
+		val test = UberDataset(context, s"$defaultFilePath/data/RossmannTest.csv")
 		test.applyColumnTypes(
 			Seq(
 				DoubleType,

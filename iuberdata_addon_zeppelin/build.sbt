@@ -33,6 +33,7 @@ parallelExecution in Test := false
 net.virtualvoid.sbt.graph.Plugin.graphSettings
 
 resolvers ++= Seq(
-  "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
-  "Sonatype OSS Snapshots Repository" at "http://oss.sonatype.org/content/groups/public"
+//  "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
+  "Typesafe repository" at "https://repo.typesafe.com/typesafe/maven-releases/",
+  "Sonatype OSS Snapshots Repository" at "https://oss.sonatype.org/content/groups/public"
 )

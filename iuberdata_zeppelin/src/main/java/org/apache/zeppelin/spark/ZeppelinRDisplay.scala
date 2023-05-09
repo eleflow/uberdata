@@ -26,7 +26,7 @@ import org.jsoup.nodes.Element
 import org.jsoup.nodes.Document.OutputSettings
 import org.jsoup.safety.Whitelist
 
-import scala.collection.JavaConversions._
+import scala.jdk.CollectionConverters._
 import scala.util.matching.Regex
 
 case class RDisplay(content: String, `type`: Type, code: Code)
@@ -90,17 +90,17 @@ object ZeppelinRDisplay {
   private def htmlDisplay(body: Element, imageWidth: String): RDisplay = {
     var div = new String()
 
-    for (element <- body.children) {
-
+//    for (element <- body.children) {
+    body.children().forEach(element => {
       val eHtml = element.html()
       var eOuterHtml = element.outerHtml()
-
+      
       eOuterHtml = eOuterHtml.replace("“%html " , "").replace("”", "")
-
+      
       val r = (pattern findFirstIn eHtml).getOrElse("")
-
+      
       div = div + eOuterHtml.replace(r, "")
-    }
+    })
 
     val content =  div
       .replaceAll("src=\"//", "src=\"http://")
@@ -108,9 +108,10 @@ object ZeppelinRDisplay {
 
     body.html(content)
 
-    for (image <- body.getElementsByTag("img")) {
+//    for (image <- body.getElementsByTag("img")) {
+    body.getElementsByTag("img").forEach(image => {
       image.attr("width", imageWidth)
-    }
+    })
 
     RDisplay(body.html, HTML, SUCCESS)
   }

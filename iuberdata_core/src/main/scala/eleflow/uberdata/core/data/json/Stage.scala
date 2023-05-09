@@ -16,7 +16,7 @@
 
 package eleflow.uberdata.core.data.json
 
-import org.apache.spark.storage.{BlockStatus, StorageLevel, RDDInfo}
+import org.apache.spark.storage.{BlockStatus, RDDInfo, StorageLevel}
 
 /**
   * Created by dirceu on 30/11/15.
@@ -99,7 +99,7 @@ case class UberRDDInfo(id: Int,
                        numCachedPartitions: Int = 0,
                        memSize: Long = 0L,
                        diskSize: Long = 0L,
-                       externalBlockStoreSize: Long = 0L,
+//                       externalBlockStoreSize: Long = 0L,
                        isCached: Boolean) {
   def this(rddInfo: RDDInfo) =
     this(
@@ -118,7 +118,7 @@ case class UberRDDInfo(id: Int,
       rddInfo.numCachedPartitions,
       rddInfo.memSize,
       rddInfo.diskSize,
-      rddInfo.externalBlockStoreSize,
+//      rddInfo.externalBlockStoreSize,
       rddInfo.isCached
     )
 }

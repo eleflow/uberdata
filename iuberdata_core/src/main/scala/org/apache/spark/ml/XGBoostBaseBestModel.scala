@@ -54,7 +54,8 @@ trait BaseXGBoostBestModelFinder[G, M <: org.apache.spark.ml.ForecastBaseModel[M
       .getAs[Array[org.apache.spark.ml.linalg.Vector]](IUberdataForecastUtil.FEATURES_COL_NAME)
       .map { vec =>
         val values = vec.toArray.map(DataTransformer.toFloat)
-        LabeledPoint(values.head, null, values.tail)
+//        LabeledPoint(values.head, null, values.tail) //label, indices, values
+        LabeledPoint(values.head, values.tail.size, null, values.tail) //label, size, indices, value
       }
     val features = new DMatrix(featuresArray.toIterator)
     log.warn(s"Evaluating forecast for id $id, with xgboost")
@@ -62,6 +63,7 @@ trait BaseXGBoostBestModelFinder[G, M <: org.apache.spark.ml.ForecastBaseModel[M
     val (forecastToBeValidated, _) = prediction.splitAt(featuresArray.length)
     val toBeValidated = featuresArray.zip(forecastToBeValidated)
     val metric = broadcastEvaluator.value.evaluate(toBeValidated.map(f =>
+//      (f._1.label.toDouble, f._2.toDouble)))
       (f._1.label.toDouble, f._2.toDouble)))
     val metricName = broadcastEvaluator.value.getMetricName
     new ModelParamEvaluation[G](

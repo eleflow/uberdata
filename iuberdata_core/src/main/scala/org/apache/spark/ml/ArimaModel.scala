@@ -135,7 +135,8 @@ object ArimaModel extends MLReadable[ArimaModel[_]] {
 
       val arimaModel = new ArimaModel[T](metadata.uid, models)
 
-      DefaultParamsReader.getAndSetParams(arimaModel, metadata)
+//      DefaultParamsReader.getAndSetParams(arimaModel, metadata)
+        metadata.getAndSetParams(arimaModel)
       arimaModel
     }
   }

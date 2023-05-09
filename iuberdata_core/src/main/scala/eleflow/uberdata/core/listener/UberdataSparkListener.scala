@@ -17,8 +17,6 @@
 package eleflow.uberdata.core.listener
 
 
-import java.net.URI
-
 import eleflow.uberdata.core.IUberdataContext
 import eleflow.uberdata.core.conf.UberdataEventConfig
 import eleflow.uberdata.core.data.json.{Stage => StageJson, _}
@@ -28,13 +26,16 @@ import org.apache.spark._
 import org.apache.spark.executor._
 import org.apache.spark.network.util.JavaUtils
 import org.apache.spark.scheduler._
-import org.json4s._
-import play.api.libs.json.Json
+import org.json4s.DefaultFormats
+import play.api.libs.json._
 
+import java.net.URI
+
+//import java.net.URI
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration._
-import scala.collection.JavaConversions._
-import scala.util.Try
+import scala.jdk.CollectionConverters._
+import scala.language.postfixOps
 
 
 /**
@@ -118,7 +119,7 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 		val rddInfos = stageInfo.rddInfos.map {
 			rddInfo => new UberRDDInfo(rddInfo)
 		}
-		val stageComp = StageJson(sparkConf.getAppId, stageInfo.stageId, stageInfo.attemptId,
+		val stageComp = StageJson(sparkConf.getAppId, stageInfo.stageId, stageInfo.attemptNumber(),
 			stageInfo.name, stageInfo.numTasks, rddInfos, stageInfo.parentIds, stageInfo.details,
 			stageInfo.submissionTime, stageInfo.completionTime, stageInfo.failureReason)
 		accumulable.foreach(f => eventsAccum(f))
@@ -131,12 +132,12 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 		val accumulable = buildAccumulables(stageInfo)
 		val rddInfos = stageInfo.rddInfos.map(new UberRDDInfo(_))
 		val props = stageSubmitted.properties
-		import scala.collection.JavaConversions._
-		val properties = stageSubmitted.properties.stringPropertyNames().map { property =>
+		import scala.jdk.CollectionConverters._
+		val properties = stageSubmitted.properties.stringPropertyNames().asScala.map { property =>
 			property -> props.get(property).toString
 		}
 
-		val stageSub = StageJson(sparkConf.getAppId, stageInfo.stageId, stageInfo.attemptId,
+		val stageSub = StageJson(sparkConf.getAppId, stageInfo.stageId, stageInfo.attemptNumber(),
 			stageInfo.name, stageInfo.numTasks, rddInfos, stageInfo.parentIds, stageInfo.details,
 			stageInfo.submissionTime, stageInfo.completionTime, stageInfo.failureReason,
 			properties.toMap)
@@ -202,7 +203,7 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 		val reason = taskEnd.reason match {
 			case Success => "Success"
 			case Resubmitted => "Resubmitted"
-			case TaskKilled => "TaskKilled"
+			case TaskKilled(_,_,_,_) => "TaskKilled"
 			case UnknownReason => "UnknownReason"
 			case TaskResultLost => "TaskResultLost"
 			case _ => "Failed"
@@ -248,13 +249,13 @@ class UberdataSparkListener(sparkConf: SparkConf) extends SparkListener {
 			f =>
 				val rddInfos = f.rddInfos.map(new UberRDDInfo(_))
 				StageJson(sparkConf.getAppId, f.stageId,
-					f.attemptId, f.name, f.numTasks,
+					f.attemptNumber(), f.name, f.numTasks,
 					rddInfos,
 					f.parentIds, f.details)
 		}
 
 		val props = jobStart.properties
-		val properties = jobStart.properties.stringPropertyNames().map { property =>
+		val properties = jobStart.properties.stringPropertyNames().asScala.map { property =>
 			property -> props.get(property).toString
 		}
 		val job = JobStart(sparkConf.getAppId, jobStart.jobId, jobStart.time, properties.toMap)

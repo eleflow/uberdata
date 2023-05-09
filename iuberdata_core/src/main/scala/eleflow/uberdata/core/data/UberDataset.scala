@@ -15,27 +15,24 @@
  */
 package eleflow.uberdata.core.data
 
+import eleflow.uberdata.core.IUberdataContext
+import eleflow.uberdata.core.data.dataset._
+import eleflow.uberdata.core.enums.DataSetType
+import eleflow.uberdata.core.enums.DateSplitType._
+import eleflow.uberdata.core.exception.{InvalidDataException, UnexpectedFileFormatException}
+import eleflow.uberdata.core.io.IUberdataIO
+import eleflow.uberdata.core.util.{ClusterSettings, DateTimeParser}
+import org.apache.spark.mllib.regression.LabeledPoint
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql._
+import org.apache.spark.sql.types.{StringType, StructField, StructType, DataType => SqlDataType}
+import org.joda.time.{DateTime, DateTimeZone, Days}
+import org.slf4j.{Logger, LoggerFactory}
+
 import java.io.IOException
 import java.net.URI
 import java.sql.Timestamp
-
-import eleflow.uberdata.core.IUberdataContext
-import eleflow.uberdata.core.util.ClusterSettings
-import eleflow.uberdata.core.enums.{DataSetType, DateSplitType}
-import DateSplitType._
-import eleflow.uberdata.core.exception.{InvalidDataException, UnexpectedFileFormatException}
-import eleflow.uberdata.core.util.DateTimeParser
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql._
-import org.joda.time.{DateTime, DateTimeZone, Days}
-import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.{StringType, StructField, StructType, DataType => SqlDataType}
-
 import scala.collection.immutable.TreeSet
-import dataset._
-import eleflow.uberdata.core.io.IUberdataIO
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 
 /**
  * SparkNotebook
@@ -43,21 +40,21 @@ import org.slf4j.LoggerFactory
  * User: paulomagalhaes
  * Date: 11/4/14 3:44 PM
  */
-object Dataset {
-	implicit def DatasetToDataFrame(dataset: Dataset): DataFrame =
+object UberDataset {
+	implicit def DatasetToDataFrame(dataset: UberDataset): DataFrame =
 		dataset.toDataFrame
 
-	implicit def DataFrameToDataset(dataFrame: DataFrame): Dataset =
-		new Dataset(dataFrame)
+	implicit def DataFrameToDataset(dataFrame: DataFrame): UberDataset =
+		new UberDataset(dataFrame)
 
-	implicit def FileDatasetToDataset(fileDS: FileDataset): Dataset =
-		new Dataset(fileDS.toDataFrame)
+	implicit def FileDatasetToDataset(fileDS: FileDataset): UberDataset =
+		new UberDataset(fileDS.toDataFrame)
 
 	implicit def FileDatasetToDataFrame(fileDS: FileDataset): DataFrame =
 		fileDS.toDataFrame
 
 	def apply(uc: IUberdataContext, file: String, dateTimeParser: DateTimeParser) = {
-		new Dataset(
+		new UberDataset(
 			new FileDataset(uc, file, separator = ",").toDataFrame,
 			dateTimeParser = dateTimeParser
 		)
@@ -68,19 +65,19 @@ object Dataset {
 	}
 }
 
-class Dataset private[data](dataFrame: DataFrame,
-														originalDataSet: Option[Dataset] = None,
-														defaultSummarizedColumns: Option[
+class UberDataset private[data](dataFrame: DataFrame,
+																originalDataSet: Option[UberDataset] = None,
+																defaultSummarizedColumns: Option[
 															RDD[(Int, (Int, (Any) => Int, (Any) => Double))]
 															] = None,
-														label: Seq[String] = Seq.empty,
-														dateTimeParser: DateTimeParser = DateTimeParser())
+																label: Seq[String] = Seq.empty,
+																dateTimeParser: DateTimeParser = DateTimeParser())
 	extends Serializable {
 
 	originalDataSet
 		.map(f => dataFrameName(f.toDataFrame))
 		.getOrElse(dataFrameName(dataFrame))
-		.foreach(dataFrame.registerTempTable)
+		.foreach(dataFrame.createOrReplaceTempView)
 
 	lazy val columnsSize = summarizedColumns.map(_._2._1).sum().toInt
 	lazy val summarizedColumns = defaultSummarizedColumns.getOrElse(
@@ -100,7 +97,7 @@ class Dataset private[data](dataFrame: DataFrame,
 	}
 
 	def sliceByName(includes: Seq[String] = dataFrame.schema.fields.map(_.name),
-									excludes: Seq[String] = Seq[String]()): Dataset = {
+									excludes: Seq[String] = Seq[String]()): UberDataset = {
 		val includesIndices = dataFrame.schema.fields.zipWithIndex.collect {
 			case (structField, index)
 				if includes.contains(structField.name) && !excludes.contains(
@@ -112,7 +109,7 @@ class Dataset private[data](dataFrame: DataFrame,
 	}
 
 	def slice(includes: Seq[Int] = 0 to dataFrame.columns.length,
-						excludes: Seq[Int] = Seq.empty[Int]): Dataset = {
+						excludes: Seq[Int] = Seq.empty[Int]): UberDataset = {
 		val fields = dataFrame.columns.zipWithIndex.filter {
 			case (columnName, index) =>
 				includes.contains(index) && !excludes.contains(index)
@@ -124,7 +121,7 @@ class Dataset private[data](dataFrame: DataFrame,
 			if (filtered.length > 1)
 				dataFrame.select(filtered.head, filtered.tail: _*)
 			else dataFrame.select(filtered.head)
-		new Dataset(newDataFrame, None)
+		new UberDataset(newDataFrame, None)
 	}
 
 	lazy val convertedDataFrame = toDataFrame
@@ -136,7 +133,7 @@ class Dataset private[data](dataFrame: DataFrame,
 	private def getDataFrameSchema = //if (!converted) structType() else
 		dataFrame.schema
 
-	def toLabeledPoint = {
+	def toLabeledPoint: RDD[LabeledPoint] = {
 		DataTransformer
 			.createLabeledPointFromRDD(
 				dataFrame,
@@ -246,10 +243,10 @@ class Dataset private[data](dataFrame: DataFrame,
 		dateTimeParser.period(d).id
 	}
 
-	def formatDateValues(columnName: String, dateSplitter: Long): Dataset =
+	def formatDateValues(columnName: String, dateSplitter: Long): UberDataset =
 		formatDateValues(columnIndexOf(columnName), dateSplitter)
 
-	def formatDateValues(index: Int, dateSplitter: Long): Dataset = {
+	def formatDateValues(index: Int, dateSplitter: Long): UberDataset = {
 
 		val (beforeFields, afterFields) = getDataFrameSchema.toArray.splitAt(index)
 		val rdd = dataFrame.rdd.map { f =>
@@ -280,7 +277,7 @@ class Dataset private[data](dataFrame: DataFrame,
 			dateTimeParser
 		)
 
-		new Dataset(newDataFrame, Some(this))
+		new UberDataset(newDataFrame, Some(this))
 	}
 
 	private def determineSizeOfSplitter(dateSplitter: Long) =
@@ -360,7 +357,7 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 																	dateTimeParser: DateTimeParser = DateTimeParser()
 																	//                                  , schema2: Option[StructType]
 																 ) extends Serializable {
-	val slf4jLogger: Logger  = LoggerFactory.getLogger(Dataset.getClass);
+	val slf4jLogger: Logger  = LoggerFactory.getLogger(UberDataset.getClass);
 
 	lazy val numberOfPartitions = 4 * ClusterSettings.getNumberOfCores
 	lazy val firstLine: String = {
@@ -424,8 +421,8 @@ class FileDataset protected[data](@transient uc: IUberdataContext,
 
 	def toDataFrame: DataFrame = convert(dataFrame, schema, dateTimeParser)
 
-	def toDataset: Dataset = {
-		new Dataset(dataFrame)
+	def toDataset: UberDataset = {
+		new UberDataset(dataFrame)
 	}
 
 	protected def initCSVDataFrame: DataFrame = {

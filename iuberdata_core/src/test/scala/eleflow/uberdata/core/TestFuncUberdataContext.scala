@@ -1,13 +1,15 @@
 package eleflow.uberdata.core
 
-import eleflow.uberdata.core.data.Dataset
+import eleflow.uberdata.core.data.UberDataset
 import org.apache.spark.rpc.netty.{BeforeAndAfterWithContext, TestSparkConf}
-import org.scalatest.{FlatSpec, Matchers, Suite}
+import org.scalatest._
+import flatspec._
+import matchers._
 
 /**
  * Created by dirceu on 26/02/15.
  */
-class TestFuncUberdataContext extends FlatSpec with Matchers with BeforeAndAfterWithContext {
+class TestFuncUberdataContext extends AnyFlatSpec with should.Matchers with BeforeAndAfterWithContext {
   this: Suite =>
 
   class LocalContextI extends IUberdataContext(TestSparkConf.conf) {

@@ -130,7 +130,8 @@ object HoltWintersModel extends MLReadable[HoltWintersModel[_]] {
 
       val holtWintersModel = new HoltWintersModel[T](metadata.uid, models)
 
-      DefaultParamsReader.getAndSetParams(holtWintersModel, metadata)
+//      DefaultParamsReader.getAndSetParams(holtWintersModel, metadata)
+        metadata.getAndSetParams(holtWintersModel)
       holtWintersModel
     }
   }

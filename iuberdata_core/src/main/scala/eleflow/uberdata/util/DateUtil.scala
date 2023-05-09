@@ -26,7 +26,7 @@ import eleflow.uberdata.core.conf.SparkNotebookConfig
 import eleflow.uberdata.core.enums.PeriodOfDay
 import org.apache.spark.SparkFiles
 
-import scala.collection.JavaConversions._
+import scala.jdk.CollectionConverters._
 import java.nio.file.{FileSystems, Files}
 import java.text.ParseException
 
@@ -226,7 +226,7 @@ object DateUtil extends Serializable {
       SparkFiles.get(SparkNotebookConfig.dateFormatFileName)
     )
     if (Files.exists(clusterFilePath))
-      Files.readAllLines(clusterFilePath, StandardCharsets.UTF_8).headOption
+      Files.readAllLines(clusterFilePath, StandardCharsets.UTF_8).asScala.headOption
     else None
   }
 

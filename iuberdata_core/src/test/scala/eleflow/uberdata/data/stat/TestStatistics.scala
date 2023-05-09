@@ -17,7 +17,7 @@
 package eleflow.uberdata.data.stat
 
 import eleflow.uberdata.core.util.ClusterSettings
-import eleflow.uberdata.core.data.Dataset
+import eleflow.uberdata.core.data.UberDataset
 import org.apache.spark.mllib.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
@@ -43,7 +43,7 @@ class TestStatistics extends FlatSpec with Matchers with BeforeAndAfterWithConte
 
   def buildDataset = context.sparkContext.parallelize(values)
 
-  import Dataset._
+  import UberDataset._
 
   lazy val correlatedValues = Seq(
     //= [c1: int, c2: int]
@@ -162,11 +162,11 @@ class TestStatistics extends FlatSpec with Matchers with BeforeAndAfterWithConte
     assert(resumedResult.size == 2)
   }
 
-  import Dataset._
+  import UberDataset._
 
   it should "return the matrix of column correlations for dataset" in {
 
-    val dataSet = Dataset(context, s"${defaultFilePath}CorrelationDataSet.csv")
+    val dataSet = UberDataset(context, s"${defaultFilePath}CorrelationDataSet.csv")
     dataSet.applyColumnTypes(
       Seq(
         StringType,

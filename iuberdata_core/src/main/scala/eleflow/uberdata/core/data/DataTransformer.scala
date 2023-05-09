@@ -15,17 +15,14 @@
  */
 package eleflow.uberdata.core.data
 
-import java.sql.Timestamp
-
-import Dataset._
 import eleflow.uberdata.core.enums.DataSetType
 import eleflow.uberdata.core.exception.UnexpectedValueException
-
 import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 
+import java.sql.Timestamp
 import scala.collection.mutable
 
 /**
@@ -34,8 +31,8 @@ import scala.collection.mutable
 object DataTransformer {
 
   def createLabeledPointFromRDD(
-    train: Dataset,
-    test: Dataset,
+    train: UberDataset,
+    test: UberDataset,
     target: String,
     id: String
   ): (RDD[((Double, Any), LabeledPoint)],
@@ -44,8 +41,8 @@ object DataTransformer {
     createLabeledPointFromRDD(train, test, Seq(target), Seq(id))
 
   def createLabeledPointFromRDD(
-    train: Dataset,
-    test: Dataset,
+    train: UberDataset,
+    test: UberDataset,
     target: Seq[String],
     id: Seq[String]
   ): (RDD[((Double, Any), LabeledPoint)],
@@ -80,7 +77,7 @@ object DataTransformer {
   }
 
   //TODO
-  def idAndTargetAtHead(train: Dataset, test: Dataset, target: Seq[String], id: Seq[String]) = {
+  def idAndTargetAtHead(train: UberDataset, test: UberDataset, target: Seq[String], id: Seq[String]) = {
     val newTrain =
       if (train.columnIndexOf(target.head) == 1 && train.columnIndexOf(id.head) == 0) {
         train
@@ -88,7 +85,7 @@ object DataTransformer {
         val trainColumnNames = id ++ target ++ train
             .columnNames()
             .filter(f => !target.contains(f) && !id.contains(f))
-        new Dataset(
+        new UberDataset(
           train.select(trainColumnNames.head, trainColumnNames.tail: _*)
         )
       }
@@ -98,7 +95,7 @@ object DataTransformer {
       val testColumnNames = id ++ test
           .columnNames()
           .filter(f => !target.contains(f) && !id.contains(f))
-      new Dataset(test.select(testColumnNames.head, testColumnNames.tail: _*))
+      new UberDataset(test.select(testColumnNames.head, testColumnNames.tail: _*))
     }
     (newTrain, newTest)
   }
@@ -107,32 +104,35 @@ object DataTransformer {
     Row(a.toSeq.map(f => if (f == null) 0d else f))
   }
 
-  def prepareToSummarizeColumns(train: Dataset,
-                                test: Dataset,
+  def prepareToSummarizeColumns(train: UberDataset,
+                                test: UberDataset,
                                 target: Seq[String],
                                 id: Seq[String]) = {
-    train.sliceByName(excludes = target).union(test).sliceByName(excludes = id)
+    //TODO: fazer o union retornar um UberDataset
+    val newTrain = train.sliceByName(excludes = target).union(test)
+    val uds = UberDataset.DataFrameToDataset(newTrain.toDF())
+    uds.sliceByName(excludes = id)
   }
 
   def createLabeledPointFromRDD(
-    dataset: Dataset,
+    UberDataset: UberDataset,
     target: Seq[String],
     id: Seq[String],
     summarizedColumns: RDD[(Int, (Int, (Any => Int), (Any => Double)))],
-    dataSetType: DataSetType.Types,
+    DatasetType: DataSetType.Types,
     columnsSize: Int
   ): RDD[((Double, Any), LabeledPoint)] = {
     // TODO Break in two methods. One for train another for test
     val fields =
-      dataset.dtypes.zipWithIndex.filter(f => !target.contains(f._1._1) && !id.contains(f._1._1))
-    val targetFieldType = dataset.dtypes.filter(f => target.contains(f._1))
-    val targetIndices = target.map(f => dataset.columnIndexOf(f))
-    val idIndices = id.map(f => dataset.columnIndexOf(f))
+      UberDataset.dtypes.zipWithIndex.filter(f => !target.contains(f._1._1) && !id.contains(f._1._1))
+    val targetFieldType = UberDataset.dtypes.filter(f => target.contains(f._1))
+    val targetIndices = target.map(f => UberDataset.columnIndexOf(f))
+    val idIndices = id.map(f => UberDataset.columnIndexOf(f))
     val normalizedStrings =
-      dataset.sqlContext.sparkContext.broadcast(summarizedColumns.collectAsMap())
+      UberDataset.sqlContext.sparkContext.broadcast(summarizedColumns.collectAsMap())
     val columnShift = id.size + target.size
 
-    dataset.rdd.zipWithIndex.map {
+    UberDataset.rdd.zipWithIndex.map {
       case (row, rowIndex) =>
         val norm = normalizedStrings.value
         val normValues = fields.map {
@@ -163,7 +163,7 @@ object DataTransformer {
             toDouble(row(targetIndex))
           }
 
-        dataSetType match {
+        DataSetType match {
           case DataSetType.Test =>
             ((rowIndexD, row(targetIndex)),
              LabeledPoint(
@@ -222,18 +222,18 @@ object DataTransformer {
   }
 
   def createLabeledPointFromRDD(
-    dataset: Dataset,
+    UberDataset: UberDataset,
     target: Seq[String],
     id: Seq[String],
-    datasetType: DataSetType.Types
+    DatasetType: DataSetType.Types
   ): RDD[((Double, Any), LabeledPoint)] = {
     createLabeledPointFromRDD(
-      dataset,
+      UberDataset,
       target,
       id,
-      dataset.sliceByName(excludes = id ++ target).summarizedColumns,
-      datasetType,
-      dataset.columnsSize.toInt - target.size - id.size
+      UberDataset.sliceByName(excludes = id ++ target).summarizedColumns,
+      DatasetType,
+      UberDataset.columnsSize.toInt - target.size - id.size
     )
   }
 

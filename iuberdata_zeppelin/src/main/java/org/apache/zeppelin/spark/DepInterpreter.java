@@ -54,6 +54,7 @@ import scala.None;
 import scala.Some;
 import scala.collection.convert.WrapAsJava$;
 import scala.collection.JavaConversions;
+//import scala.jdk.CollectionConverters.*;
 import scala.tools.nsc.Settings;
 import scala.tools.nsc.interpreter.Completion.Candidates;
 import scala.tools.nsc.interpreter.Completion.ScalaCompleter;

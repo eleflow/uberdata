@@ -16,7 +16,7 @@
 
 package eleflow.uberdata.data.stat
 
-import eleflow.uberdata.core.data.{Dataset, DataTransformer}
+import eleflow.uberdata.core.data.{UberDataset, DataTransformer}
 import org.apache.spark.mllib.linalg.{Matrix, Vectors}
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
@@ -42,7 +42,7 @@ object Statistics {
   def correlation(rdd: RDD[LabeledPoint]): Matrix =
     SparkStatistics.corr(rdd.map(_.features))
 
-  def correlation(rdd: Dataset, numberOfColumns: Int = 20): Seq[(Double, String)] = {
+  def correlation(rdd: UberDataset, numberOfColumns: Int = 20): Seq[(Double, String)] = {
     val matrix = correlation(rdd.toLabeledPoint)
     val correlat = correlation(matrix, rdd)
     correlat.map {
@@ -53,7 +53,7 @@ object Statistics {
 
   private def correlation(
     matrix: Matrix,
-    rdd: Dataset
+    rdd: UberDataset
   ): IndexedSeq[((String, String), (String, String), Double)] = {
     val cols = matrix.numCols
     val rows = matrix.numRows
@@ -85,12 +85,12 @@ object Statistics {
     }.filter(f => !f._1.isNaN).sortBy(-_._1)
   }
 
-  def columnAndTargetCorrelation(dataset: Dataset,
+  def columnAndTargetCorrelation(dataset: UberDataset,
                                  numberOfColumns: Int = 20,
                                  ids: Seq[String] = Seq("id")) =
     (correlation(dataset, numberOfColumns), targetCorrelation(dataset, numberOfColumns, ids))
 
-  def targetCorrelation(rdd: Dataset,
+  def targetCorrelation(rdd: UberDataset,
                         numberOfColumns: Int = 20,
                         ids: Seq[String] = Seq("id")): Seq[(Double, Any)] = {
     val correlation = targetCorrelation(

@@ -17,7 +17,7 @@
 package eleflow.uberdata.data
 
 import eleflow.uberdata.core.util.ClusterSettings
-import eleflow.uberdata.core.data.Dataset
+import eleflow.uberdata.core.data.UberDataset
 import eleflow.uberdata.core.exception.InvalidDataException
 import eleflow.uberdata.data.stat.Statistics
 import eleflow.uberdata.enums.SupportedAlgorithm._
@@ -1211,7 +1211,7 @@ class TestPredictor extends FlatSpec with Matchers with BeforeAndAfterWithContex
   }
 
   it should "correct execute evolutive prediction with column steps" in {
-    import Dataset._
+    import UberDataset._
 
     @transient val sc = context.sparkContext
     @transient val sqlContext = context.sqlContext
@@ -1299,7 +1299,7 @@ class TestPredictor extends FlatSpec with Matchers with BeforeAndAfterWithContex
   }
 
   it should "steps can't be empty" in {
-    import Dataset._
+    import UberDataset._
 
     @transient val sc = context.sparkContext
     @transient val sqlContext = context.sqlContext
@@ -1336,7 +1336,7 @@ class TestPredictor extends FlatSpec with Matchers with BeforeAndAfterWithContex
   }
 
   it should "predict with columnSetup" in {
-    import Dataset._
+    import UberDataset._
 
     @transient val sc = context.sparkContext
     @transient val sqlContext = context.sqlContext
@@ -1416,7 +1416,7 @@ class TestPredictor extends FlatSpec with Matchers with BeforeAndAfterWithContex
   }
 
   it should "excute neuralnetwork predict" in {
-    import Dataset._
+    import UberDataset._
 
     @transient val sc = context.sparkContext
     @transient val sqlContext = context.sqlContext

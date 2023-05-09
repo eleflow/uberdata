@@ -1,4 +1,4 @@
-//
+  //
 // Copyright 2015 eleflow.com.br.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,12 +14,13 @@
 // limitations under the License.
 //
 resolvers ++= Seq(
-  "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
-  "Sonatype OSS Snapshots Repository" at "http://oss.sonatype.org/content/groups/public"
+//  "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/",
+  "Typesafe repository" at "https://repo.typesafe.com/typesafe/maven-releases/",
+  "Sonatype OSS Snapshots Repository" at "https://oss.sonatype.org/content/groups/public"
 )
 
-addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "0.7.4")
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.5.2")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.6.2")
 
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.1.0")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.1")

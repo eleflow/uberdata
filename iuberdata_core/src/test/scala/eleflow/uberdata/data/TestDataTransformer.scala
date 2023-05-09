@@ -17,8 +17,8 @@
 package eleflow.uberdata.data
 
 import eleflow.uberdata.core.util.ClusterSettings
-import eleflow.uberdata.core.data.Dataset._
-import eleflow.uberdata.core.data.{DataTransformer, Dataset}
+import eleflow.uberdata.core.data.UberDataset._
+import eleflow.uberdata.core.data.{DataTransformer, UberDataset}
 import eleflow.uberdata.core.enums.DataSetType
 import eleflow.uberdata.core.util.DateTimeParser
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
@@ -34,8 +34,8 @@ class TestDataTransformer extends FunSuite with Matchers with BeforeAndAfterWith
   this: Suite =>
 
   test("correctly load data with empty columns at the end") {
-    val testDataSet = Dataset(context, s"${defaultFilePath}LoadRddDataTransformerTestData.csv")
-    val dataset = Dataset(context, s"${defaultFilePath}LoadRddDataTransformerData.csv")
+    val testDataSet = UberDataset(context, s"${defaultFilePath}LoadRddDataTransformerTestData.csv")
+    val dataset = UberDataset(context, s"${defaultFilePath}LoadRddDataTransformerData.csv")
     val (result, _, _) =
       DataTransformer.createLabeledPointFromRDD(dataset, testDataSet, "t1", "int")
     val all = result.take(3)
@@ -54,7 +54,7 @@ class TestDataTransformer extends FunSuite with Matchers with BeforeAndAfterWith
     ClusterSettings.enforceDoubleAsBigDecimal = true
     @transient val sc = context.sparkContext
     @transient val sqlContext = context.sqlContext
-    val dataset = Dataset(context, s"${defaultFilePath}LoadRddDataTransformerData.csv")
+    val dataset = UberDataset(context, s"${defaultFilePath}LoadRddDataTransformerData.csv")
 
     def createBigDecimal(value: Double) =
       new java.math.BigDecimal(value.toString).setScale(ClusterSettings.defaultDecimalScale)
@@ -68,7 +68,7 @@ class TestDataTransformer extends FunSuite with Matchers with BeforeAndAfterWith
 
   test("Correct handle date values") {
     val dataSet =
-      Dataset(context, s"${defaultFilePath}HandleDataTransformer.csv", DateTimeParser(0))
+      UberDataset(context, s"${defaultFilePath}HandleDataTransformer.csv", DateTimeParser(0))
     val results = DataTransformer
       .createLabeledPointFromRDD(dataSet, Seq("id"), Seq(), DataSetType.Test)
       .take(3)
@@ -80,7 +80,7 @@ class TestDataTransformer extends FunSuite with Matchers with BeforeAndAfterWith
   }
 
   test("create labeledpoint for multiplestrings") {
-    val train = Dataset(context, s"${defaultFilePath}MultipleStringsTest.csv")
+    val train = UberDataset(context, s"${defaultFilePath}MultipleStringsTest.csv")
     train.applyColumnTypes(
       Seq(
         LongType,

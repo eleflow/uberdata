@@ -18,23 +18,20 @@ package org.apache.spark.ml
 
 import eleflow.uberdata.IUberdataForecastUtil
 import eleflow.uberdata.core.data.DataTransformer
-import eleflow.uberdata.enums.SupportedAlgorithm
 import eleflow.uberdata.models.UberXGBOOSTModel
 import ml.dmlc.xgboost4j.LabeledPoint
-import ml.dmlc.xgboost4j.scala.{Booster, DMatrix}
-import org.apache.spark.{SparkContext}
+import ml.dmlc.xgboost4j.scala.DMatrix
 import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.ml.evaluation.TimeSeriesEvaluator
+import org.apache.spark.ml.linalg.Vectors
 import org.apache.spark.ml.param.ParamMap
-import org.apache.spark.ml.param.shared.{HasGroupByCol, HasIdCol, HasTimeCol, HasXGBoostParams}
+import org.apache.spark.ml.param.shared.{HasIdCol, HasTimeCol, HasXGBoostParams}
 import org.apache.spark.ml.regression.XGBoostLinearSummary
 import org.apache.spark.ml.util.{DefaultParamsReadable, DefaultParamsWritable, Identifiable}
-import org.apache.spark.ml.linalg.{VectorUDT, Vectors}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
-import org.apache.spark.sql.types.{ArrayType, FloatType, StructField, StructType}
-import org.apache.spark.sql.{DataFrame, Row}
-import org.apache.spark.sql.Dataset
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{DataFrame, Dataset, Row}
 
 import scala.reflect.ClassTag
 
@@ -71,8 +68,8 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
 
   def getOrdering(metricName: String): Ordering[Double] = {
     metricName match {
-      case "re" => Ordering.Double.reverse
-      case _ => Ordering.Double
+      case "re" => Ordering.Double.TotalOrdering.reverse
+      case _ => Ordering.Double.TotalOrdering
     }
   }
 
@@ -122,8 +119,9 @@ class XGBoostBestSmallModelFinder[L, G](override val uid: String)(implicit gt: C
           .getAs[org.apache.spark.ml.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)
           .toArray
         val label = DataTransformer.toFloat(row.getAs[L]($(labelCol)))
-        LabeledPoint(label, null, values.map(_.toFloat))
-      }.toIterator
+//        LabeledPoint(label, null, values.map(_.toFloat)) //label, indices, values
+        LabeledPoint(label, values.map(_.toFloat).size, null, values.map(_.toFloat)) //label, size, indices, value
+      }.iterator
       val valuesVector = array.map { row =>
         val vector =
           row.getAs[org.apache.spark.ml.linalg.Vector](IUberdataForecastUtil.FEATURES_COL_NAME)

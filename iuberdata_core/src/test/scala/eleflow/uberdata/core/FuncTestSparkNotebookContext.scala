@@ -15,29 +15,30 @@
  */
 package eleflow.uberdata.core
 
-import eleflow.uberdata.core.data.{DataTransformer, Dataset}
+import eleflow.uberdata.core.data.{DataTransformer, UberDataset}
 import eleflow.uberdata.core.enums.DataSetType
 import org.apache.spark.rpc.netty.{BeforeAndAfterWithContext, TestSparkConf}
 import org.apache.spark.SparkException
 import org.scalatest._
+import flatspec._
+import matchers._
 
 /**
   * Created by dirceu on 14/10/14.
   *
   */
-class FuncTestSparkNotebookContext extends FlatSpec with BeforeAndAfterWithContext { this: Suite =>
+class FuncTestSparkNotebookContext extends AnyFlatSpec with should.Matchers with BeforeAndAfterWithContext { this: Suite =>
 
   val uberContext = context
 
   "Functional SparkNotebookContext" should
     "correctly load rdd" in {
 
-    import Dataset._
+    import UberDataset._
 
-    val dataset = Dataset(uberContext, s"${defaultFilePath}FuncTestSparkNotebookContextFile1.csv")
-
+    val dataset = UberDataset(uberContext, s"${defaultFilePath}FuncTestSparkNotebookContextFile1.csv")
     val testDataSet =
-      Dataset(uberContext, s"${defaultFilePath}FuncTestSparkNotebookContextFile2.csv")
+      UberDataset(uberContext, s"${defaultFilePath}FuncTestSparkNotebookContextFile2.csv")
 
     val (train, test, _) =
       DataTransformer.createLabeledPointFromRDD(dataset, testDataSet, "int", "id")
@@ -64,8 +65,8 @@ class FuncTestSparkNotebookContext extends FlatSpec with BeforeAndAfterWithConte
 
     context.sparkContext
     try {
-      import Dataset._
-      val dataset = Dataset(context, s"${defaultFilePath}FuncTestSparkNotebookContextFile1.csv")
+      import UberDataset._
+      val dataset = UberDataset(context, s"${defaultFilePath}FuncTestSparkNotebookContextFile1.csv")
       dataset.take(3)
     } catch {
       case e: SparkException =>
@@ -77,7 +78,7 @@ class FuncTestSparkNotebookContext extends FlatSpec with BeforeAndAfterWithConte
     @transient lazy val context = uberContext
     context.sparkContext
     val schemaRdd =
-      Dataset(context, s"${defaultFilePath}FuncTestSparkNotebookContextEmpty.csv").toDataFrame
+      UberDataset(context, s"${defaultFilePath}FuncTestSparkNotebookContextEmpty.csv").toDataFrame
     val result = DataTransformer
       .createLabeledPointFromRDD(schemaRdd, Seq("int"), Seq("id"), DataSetType.Train)
     assert(result.count() == 3)
