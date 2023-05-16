@@ -24,18 +24,21 @@ import eleflow.uberdata.core.exception.UnexpectedValueException
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
-import org.scalatest.{FlatSpec, Matchers, Suite}
+import org.scalatest.{Suite, flatspec, matchers}
 import eleflow.uberdata.enums.SupportedAlgorithm._
 import eleflow.uberdata.models.UberXGBOOSTModel
 import ml.dmlc.xgboost4j.scala.spark.XGBoost
 import org.apache.spark.ml.ArimaModel
 import org.apache.spark.ml.linalg.{DenseVector, Vectors}
 import org.apache.spark.mllib.regression.LabeledPoint
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.must.Matchers.be
+import org.scalatest.matchers.should.Matchers.a
 
 /**
  * Created by dirceu on 26/05/16.
  */
-class TestForecastPredictor extends FlatSpec with Matchers with BeforeAndAfterWithContext {
+class TestForecastPredictor extends AnyFlatSpec with matchers.should with BeforeAndAfterWithContext {
 	this: Suite =>
 
 	lazy val arimaData = List(
