@@ -517,66 +517,66 @@ class ForecastPredictor extends Serializable {
   }
   
   //TODO: rever o XGBoost e reativar este método
-  def predictBigModelFuture(
-    train: DataFrame,
-    test: DataFrame,
-    algorithm: Algorithm,
-    labelCol: String,
-    idCol: String,
-		timeCol: String,
-    featuresCol: Seq[String],
-    rounds: Int = 2000,
-    params: Map[String, Any] = Map.empty[String, Any]): (DataFrame, PipelineModel, Double) = {
-    val pipeline = algorithm match {
-      case XGBoostAlgorithm =>
-        prepareXGBoostBigModel(labelCol, idCol, featuresCol, timeCol, train.schema, rounds, params)
-      case _ => throw new UnsupportedOperationException()
-    }
-    val model = pipeline.fit(train.cache)
-    val predictions = model.transform(test).cache
-    val index = (train.count()*0.2).toInt
-    val trainForValidation = train.limit(index)
-
-    if(train.columns.contains(idCol)) {
-
-      val validation = model.transform(trainForValidation).cache.withColumnRenamed(idCol, "id1").select("id1", "prediction")
-      val joined = validation.join(train, validation("id1") === train(idCol)).select(idCol, "prediction", labelCol)
-        .filter(s"${labelCol} > 0")
-      val joinedWithError = joined.withColumn("Error", abs(joined(labelCol) - joined("prediction")) / joined(labelCol))
-
-      (predictions.sort(idCol), model, calculateAccuracyBigModelFuture(joinedWithError))
-    }else{
-      (predictions.sort(idCol), model, 0.0)
-    }
-  }
+//  def predictBigModelFuture(
+//    train: DataFrame,
+//    test: DataFrame,
+//    algorithm: Algorithm,
+//    labelCol: String,
+//    idCol: String,
+//		timeCol: String,
+//    featuresCol: Seq[String],
+//    rounds: Int = 2000,
+//    params: Map[String, Any] = Map.empty[String, Any]): (DataFrame, PipelineModel, Double) = {
+//    val pipeline = algorithm match {
+//      case XGBoostAlgorithm =>
+//        prepareXGBoostBigModel(labelCol, idCol, featuresCol, timeCol, train.schema, rounds, params)
+//      case _ => throw new UnsupportedOperationException()
+//    }
+//    val model = pipeline.fit(train.cache)
+//    val predictions = model.transform(test).cache
+//    val index = (train.count()*0.2).toInt
+//    val trainForValidation = train.limit(index)
+//
+//    if(train.columns.contains(idCol)) {
+//
+//      val validation = model.transform(trainForValidation).cache.withColumnRenamed(idCol, "id1").select("id1", "prediction")
+//      val joined = validation.join(train, validation("id1") === train(idCol)).select(idCol, "prediction", labelCol)
+//        .filter(s"${labelCol} > 0")
+//      val joinedWithError = joined.withColumn("Error", abs(joined(labelCol) - joined("prediction")) / joined(labelCol))
+//
+//      (predictions.sort(idCol), model, calculateAccuracyBigModelFuture(joinedWithError))
+//    }else{
+//      (predictions.sort(idCol), model, 0.0)
+//    }
+//  }
   
 //  TODO: rever o XGBoost e reativar este método
-  def prepareXGBoostBigModel[L, G](
-    labelCol: String,
-    idCol: String,
-    featuresCol: Seq[String],
-		timeCol: String,
-    schema: StructType,
-    rounds: Int,
-    params: Map[String, Any])(implicit ct: ClassTag[L], gt: ClassTag[G]): Pipeline = {
-    val validationCol: String = "validation"
-    val timeSeriesEvaluator: TimeSeriesEvaluator[G] = new TimeSeriesEvaluator[G]()
-      .setValidationCol(validationCol)
-      .setLabelCol(labelCol)
-      .setMetricName("rmspe")
-    val xgboost = new XGBoostBestBigRegressionModelFinder[L, G]()
-      .setTimeSeriesEvaluator(timeSeriesEvaluator)
-      .setLabelCol(labelCol)
-      .setIdCol(idCol)
-      .setXGBoostLinearParams(params)
-      .setXGBoostRounds(rounds)
-        .setTimeCol(timeCol)
-      .setValidationCol(validationCol)
-
-    new Pipeline().setStages(
-			createXGBoostPipelineStages(labelCol, featuresCol, "", Some(idCol), timeCol, schema = schema)
-        :+ xgboost)
-  }
+//  def prepareXGBoostBigModel[L, G](
+//    labelCol: String,
+//    idCol: String,
+//    featuresCol: Seq[String],
+//		timeCol: String,
+//    schema: StructType,
+//    rounds: Int,
+//    params: Map[String, Any])(implicit ct: ClassTag[L], gt: ClassTag[G]): Pipeline = {
+//    val validationCol: String = "validation"
+//    val timeSeriesEvaluator: TimeSeriesEvaluator[G] = new TimeSeriesEvaluator[G]()
+//      .setValidationCol(validationCol)
+//      .setLabelCol(labelCol)
+//      .setMetricName("rmspe")
+//    val xgboost = new XGBoostBestBigRegressionModelFinder[L, G]()
+//      .setTimeSeriesEvaluator(timeSeriesEvaluator)
+//      .setLabelCol(labelCol)
+//      .setIdCol(idCol)
+//      .setXGBoostLinearParams(params)
+//      .setXGBoostRounds(rounds)
+//        .setTimeCol(timeCol)
+//      .setValidationCol(validationCol)
+//
+//    new Pipeline().setStages(
+//			createXGBoostPipelineStages(labelCol, featuresCol, "", Some(idCol), timeCol, schema = schema)
+//        :+ xgboost)
+//  }
 
   private def calculateAccuracySmallModelFuture(df: DataFrame): Double = {
     /*val spark = SparkSession.builder.

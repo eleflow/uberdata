@@ -31,12 +31,13 @@ import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
 import org.easymock.EasyMock
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should
 
 /**
   * Created by dirceu on 03/11/14.
   */
-class TestPredictor extends FlatSpec with Matchers with BeforeAndAfterWithContext {
+class TestPredictor extends AnyFlatSpec with should.Matchers with BeforeAndAfterWithContext {
 
   "DataPredictor" should "throw an exception if included and excluded are empty" in {
 

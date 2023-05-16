@@ -16,11 +16,11 @@
 
 package eleflow.uberdata.data
 
-import org.apache.spark.ml.{MovingAverage, TimeSeriesGenerator}
-import org.apache.spark.ml.linalg.{DenseVector, Vectors}
-import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
-import org.scalatest.mock.EasyMockSugar
-import org.scalatest.{FlatSpec, Matchers}
+//import org.apache.spark.ml.{MovingAverage, TimeSeriesGenerator}
+//import org.apache.spark.ml.linalg.{DenseVector, Vectors}
+//import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
+//import org.scalatest.mock.EasyMockSugar
+//import org.scalatest.{FlatSpec, Matchers}
 
 /**
   * Created by celio on 04/05/16.

@@ -22,15 +22,18 @@ import eleflow.uberdata.core.data.{DataTransformer, UberDataset}
 import eleflow.uberdata.core.enums.DataSetType
 import eleflow.uberdata.core.util.DateTimeParser
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
-import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.types._
 import org.scalatest._
+import org.scalatest.matchers.should
+import funsuite.AnyFunSuite
+
+import java.util.Objects
 
 /**
   * Created by dirceu on 21/10/14.
   */
-class TestDataTransformer extends FunSuite with Matchers with BeforeAndAfterWithContext {
+class TestDataTransformer extends AnyFunSuite with should.Matchers with BeforeAndAfterWithContext {
   this: Suite =>
 
   test("correctly load data with empty columns at the end") {
@@ -44,9 +47,11 @@ class TestDataTransformer extends FunSuite with Matchers with BeforeAndAfterWith
 
     // format: off
     assert(first.label == 3)
-    assert(first.features.toArray.deep == Array[Double](0.0, 1.0, 0.0, 0.0, 0.0, 10.5, 0.0, 1.0, 0.0).deep)
+//    assert(first.features.toArray.deep == Array[Double](0.0, 1.0, 0.0, 0.0, 0.0, 10.5, 0.0, 1.0, 0.0).deep)
+    assert(Objects.deepEquals(first.features.toArray, Array[Double](0.0, 1.0, 0.0, 0.0, 0.0, 10.5, 0.0, 1.0, 0.0)))
     assert(second.label == 4)
-    assert(second.features.toArray.deep == Array[Double](1.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 1.0).deep)
+//    assert(second.features.toArray.deep == Array[Double](1.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 1.0).deep)
+    assert(Objects.deepEquals(second.features.toArray, Array[Double](1.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 1.0)))
     // format: on
   }
 
@@ -59,11 +64,16 @@ class TestDataTransformer extends FunSuite with Matchers with BeforeAndAfterWith
     def createBigDecimal(value: Double) =
       new java.math.BigDecimal(value.toString).setScale(ClusterSettings.defaultDecimalScale)
     val result = dataset.toDataFrame
-    assert(
-      result.collect.deep == Array(
+//    assert(
+//      result.collect.deep == Array(
+//        new GenericRow(Array[Any](3l, 5l, "vlr1", createBigDecimal(10.5), "va")),
+//        new GenericRow(Array[Any](4l, 1l, "vl3", createBigDecimal(0.1), "vb")),
+//        new GenericRow(Array[Any](5l, 8l, "vlr1", createBigDecimal(10.0), ""))).deep)
+    assert(Objects.deepEquals(
+      result.collect, Array(
         new GenericRow(Array[Any](3l, 5l, "vlr1", createBigDecimal(10.5), "va")),
         new GenericRow(Array[Any](4l, 1l, "vl3", createBigDecimal(0.1), "vb")),
-        new GenericRow(Array[Any](5l, 8l, "vlr1", createBigDecimal(10.0), ""))).deep)
+        new GenericRow(Array[Any](5l, 8l, "vlr1", createBigDecimal(10.0), "")))))
   }
 
   test("Correct handle date values") {
@@ -73,9 +83,12 @@ class TestDataTransformer extends FunSuite with Matchers with BeforeAndAfterWith
       .createLabeledPointFromRDD(dataSet, Seq("id"), Seq(), DataSetType.Test)
       .take(3)
     // format: off
-    assert(results(0)._2.features.toArray.deep == Array(5.0, 0.0, 1.0, 10.5, 394296.0).deep)
-    assert(results(1)._2.features.toArray.deep == Array(1.0, 1.0, 0.0, 0.1, 394176.0).deep)
-    assert(results(2)._2.features.toArray.deep == Array(8.0, 1.0, 0.0, 10.0, 394176.0).deep)
+//    assert(results(0)._2.features.toArray.deep == Array(5.0, 0.0, 1.0, 10.5, 394296.0).deep)
+//    assert(results(1)._2.features.toArray.deep == Array(1.0, 1.0, 0.0, 0.1, 394176.0).deep)
+//    assert(results(2)._2.features.toArray.deep == Array(8.0, 1.0, 0.0, 10.0, 394176.0).deep)
+    assert(Objects.deepEquals(results(0)._2.features.toArray,Array(5.0, 0.0, 1.0, 10.5, 394296.0)))
+    assert(Objects.deepEquals(results(1)._2.features.toArray,Array(1.0, 1.0, 0.0, 0.1, 394176.0)))
+    assert(Objects.deepEquals(results(2)._2.features.toArray,Array(8.0, 1.0, 0.0, 10.0, 394176.0)))
     // format: on
   }
 
@@ -99,15 +112,18 @@ class TestDataTransformer extends FunSuite with Matchers with BeforeAndAfterWith
     assert(result.head._1._2 == 5)
     assert(result.head._2.label == 5.0)
     assert(result.head._2.features.size == 14)
-    assert(result.head._2.features.toArray.deep == Array(0.0, 1.0, 1.0, 0.0, 10.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0).deep)
+//    assert(result.head._2.features.toArray.deep == Array(0.0, 1.0, 1.0, 0.0, 10.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0).deep)
+    assert(Objects.deepEquals(result.head._2.features.toArray, Array(0.0, 1.0, 1.0, 0.0, 10.5, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0)))
     assert(result(1)._1._1 == 1.0)
     assert(result(1)._1._2 == 1)
     assert(result(1)._2.label == 1.0)
-    assert(result(1)._2.features.toArray.deep == Array(1.0, 0.0, 1.0, 0.0, 0.1, 1.0, 0.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0, 0.0).deep)
+//    assert(result(1)._2.features.toArray.deep == Array(1.0, 0.0, 1.0, 0.0, 0.1, 1.0, 0.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0, 0.0).deep)
+    assert(Objects.deepEquals(result(1)._2.features.toArray, Array(1.0, 0.0, 1.0, 0.0, 0.1, 1.0, 0.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0, 0.0)))
     assert(result(2)._1._1 == 8.0)
     assert(result(2)._1._2 == 8)
     assert(result(2)._2.label == 8.0)
-    assert(result(2)._2.features.toArray.deep == Array(0.0, 1.0, 0.0, 1.0, 10.0, 0.0, 0.0, 1.0, 0.0, 1.0, 3.0, 1.0, 0.0, 0.0).deep)
+//    assert(result(2)._2.features.toArray.deep == Array(0.0, 1.0, 0.0, 1.0, 10.0, 0.0, 0.0, 1.0, 0.0, 1.0, 3.0, 1.0, 0.0, 0.0).deep)
+    assert(Objects.deepEquals(result(2)._2.features.toArray, Array(0.0, 1.0, 0.0, 1.0, 10.0, 0.0, 0.0, 1.0, 0.0, 1.0, 3.0, 1.0, 0.0, 0.0)))
     // format: on
   }
 }

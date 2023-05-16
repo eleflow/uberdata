@@ -22,12 +22,14 @@ import org.apache.spark.mllib.linalg.VectorUDT
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
-import org.scalatest.{FlatSpec, Matchers, Suite}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should
+import org.scalatest.Suite
 
 /**
   * Created by dirceu on 02/05/16.
   */
-class TestTimeSeriesBestModelFinder extends FlatSpec with Matchers with BeforeAndAfterWithContext {
+class TestTimeSeriesBestModelFinder extends AnyFlatSpec with should.Matchers with BeforeAndAfterWithContext {
   this: Suite =>
 
   // format: off

@@ -23,6 +23,8 @@ import org.scalatest._
 import flatspec._
 import matchers._
 
+import java.util.Objects
+
 /**
   * Created by dirceu on 14/10/14.
   *
@@ -46,17 +48,21 @@ class FuncTestSparkNotebookContext extends AnyFlatSpec with should.Matchers with
     val (_, first) = all.head
     val (_, second) = all.tail.head
     assert(first.label == 5.0)
-    assert(first.features.toArray.deep == Array[Double](0.0, 1.0, 10.5).deep)
+//    assert(first.features.toArray.deep == Array[Double](0.0, 1.0, 10.5).deep)
+    assert(Objects.deepEquals(first.features.toArray, Array[Double](0.0, 1.0, 10.5)))
     assert(second.label == 1.0)
-    assert(second.features.toArray.deep == Array[Double](1.0, 0.0, 0.1).deep)
+//    assert(second.features.toArray.deep == Array[Double](1.0, 0.0, 0.1).deep)
+    assert(Objects.deepEquals(second.features.toArray, Array[Double](1.0, 0.0, 0.1)))
 
     val allTest = test.take(3)
     val (_, firstTest) = allTest.head
     val (_, secondTest) = allTest.tail.head
     assert(firstTest.label == 1.0)
-    assert(firstTest.features.toArray.deep == Array[Double](0.0, 1.0, 10.5).deep)
+//    assert(firstTest.features.toArray.deep == Array[Double](0.0, 1.0, 10.5).deep)
+    assert(Objects.deepEquals(firstTest.features.toArray, Array[Double](0.0, 1.0, 10.5)))
     assert(secondTest.label == 2.0)
-    assert(secondTest.features.toArray.deep == Array[Double](1.0, 0.0, 0.1).deep)
+//    assert(secondTest.features.toArray.deep == Array[Double](1.0, 0.0, 0.1).deep)
+    assert(Objects.deepEquals(secondTest.features.toArray, Array[Double](1.0, 0.0, 0.1)))
   }
 
   it should "Throw an exception when process an empty numeric column" in {

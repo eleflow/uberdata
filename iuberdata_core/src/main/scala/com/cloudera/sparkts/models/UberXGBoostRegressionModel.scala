@@ -40,25 +40,28 @@ object UberXGBoostRegressionModel {
     new XGBoostRegressor(configMap).fit(trainLabel)
   }
 
-  def labelPredict(testSet: RDD[XGBLabeledPoint],
-                   useExternalCache: Boolean,
-                   booster: XGBoostRegressionModel): RDD[(Float, Float)] = {
-    val broadcastBooster = testSet.sparkContext.broadcast(booster)
-    testSet.mapPartitions { testData =>
-      val (toPredict, toLabel) = testData.duplicate
-      val dMatrix = new DMatrix(toPredict)
-      val prediction = broadcastBooster.value.booster.predict(dMatrix).flatten.toIterator
-      toLabel.map(_.label).zip(prediction)
-    }
-  }
+//    TODO: rever os dois métodos abaixo
+//  def labelPredict(testSet: RDD[XGBLabeledPoint],
+//                   useExternalCache: Boolean,
+//                   booster: XGBoostRegressionModel): RDD[(Float, Float)] = {
+//    val broadcastBooster = testSet.sparkContext.broadcast(booster)
+//    testSet.mapPartitions { testData =>
+//      val (toPredict, toLabel) = testData.duplicate
+//      val dMatrix = new DMatrix(toPredict)
+//      val prediction = broadcastBooster.value.booster.predict(dMatrix).flatten.toIterator
+//      toLabel.map(_.label).zip(prediction)
+//    }
+//  }
+//
+//  def labelPredict(testSet: Dataset[_],
+//                   booster: XGBoostRegressionModel) = {
+//    val broadcastBooster = testSet.rdd.sparkContext.broadcast(booster)
+//    val rdd = testSet.cache
+//    val ret = broadcastBooster.value.transform(testSet).map(value => (value(0),
+//      value(1)))
+//    ret
 
-  def labelPredict(testSet: Dataset[_],
-                   booster: XGBoostRegressionModel) = {
-    val broadcastBooster = testSet.rdd.sparkContext.broadcast(booster)
-    val rdd = testSet.cache
-    val ret = broadcastBooster.value.transform(testSet).map(value => (value(0),
-      value(1)))
-    ret
+
 //    testSet.
 //    testSet.mapPartitions { testData =>
 //      val (toPredict, toLabel) = testData.duplicate
@@ -67,5 +70,5 @@ object UberXGBoostRegressionModel {
 //      val prediction = broadcastBooster.value.booster.predict(dMatrix).flatten.toIterator
 //      toLabel.map(_.label).zip(prediction)
 //    }
-  }
+//  }
 }

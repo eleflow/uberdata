@@ -23,12 +23,15 @@ import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should
+
+import java.util.Objects
 
 /**
   * Created by dirceu on 30/12/14.
   */
-class TestStatistics extends FlatSpec with Matchers with BeforeAndAfterWithContext {
+class TestStatistics extends AnyFlatSpec with should.Matchers with BeforeAndAfterWithContext {
 
   lazy val schema = StructType(
     Array(
@@ -208,7 +211,8 @@ class TestStatistics extends FlatSpec with Matchers with BeforeAndAfterWithConte
     val data = context.sparkContext.parallelize(rawValues)
     val (resumedResult, _, _, _) = Statistics.correlationLabeledPoint(data, data, data, Left(20))
     assert(resumedResult.count == 10)
-    assert(resumedResult.first.features.toArray.deep == Array(0.0, 0.0, 351.0).deep)
+//    assert(resumedResult.first.features.toArray.deep == Array(0.0, 0.0, 351.0).deep)
+    assert(Objects.deepEquals(resumedResult.first.features.toArray, Array(0.0, 0.0, 351.0)))
   }
   it should "transform the labeledpoint retaining only the correlated columns with limited correlation" in {
     val rdd = context.sqlContext.createDataFrame(buildDataset, schema)
@@ -218,7 +222,8 @@ class TestStatistics extends FlatSpec with Matchers with BeforeAndAfterWithConte
     val data = context.sparkContext.parallelize(rawValues)
     val (resumedResult, _, _, _) = Statistics.correlationLabeledPoint(data, data, data, Right(.19))
     assert(resumedResult.count == 10)
-    assert(resumedResult.first.features.toArray.deep == Array(0.0, 0.0, 351.0).deep)
+//    assert(resumedResult.first.features.toArray.deep == Array(0.0, 0.0, 351.0).deep)
+    assert(Objects.deepEquals(resumedResult.first.features.toArray, Array(0.0, 0.0, 351.0)))
   }
 
   private def roundDouble(number: Double, scale: Int) = {

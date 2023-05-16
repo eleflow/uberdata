@@ -33,12 +33,13 @@ import org.apache.spark.ml.linalg.{DenseVector, Vectors}
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.must.Matchers.be
+import org.scalatest.matchers.should
 import org.scalatest.matchers.should.Matchers.a
 
 /**
  * Created by dirceu on 26/05/16.
  */
-class TestForecastPredictor extends AnyFlatSpec with matchers.should with BeforeAndAfterWithContext {
+class TestForecastPredictor extends AnyFlatSpec with should.Matchers with BeforeAndAfterWithContext {
 	this: Suite =>
 
 	lazy val arimaData = List(

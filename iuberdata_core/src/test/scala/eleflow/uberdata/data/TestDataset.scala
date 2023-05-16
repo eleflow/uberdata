@@ -1,26 +1,26 @@
 package eleflow.uberdata.data
 
-import java.nio.file.{FileSystems, Files}
-
-import eleflow.uberdata.core.IUberdataContext
 import eleflow.uberdata.core.conf.SparkNotebookConfig
-import eleflow.uberdata.core.data.{DataTransformer, UberDataset, FileDataset}
+import eleflow.uberdata.core.data.UberDataset._
+import eleflow.uberdata.core.data.{DataTransformer, UberDataset}
 import eleflow.uberdata.core.enums.{DataSetType, DateSplitType}
 import eleflow.uberdata.core.util.ClusterSettings
 import eleflow.uberdata.util.DateUtil
 import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
-import org.scalatest.{FlatSpec, Matchers}
-import UberDataset._
-import org.apache.spark.ml.tuning.TrainValidationSplitModel
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should
+
+import java.nio.file.{FileSystems, Files}
+import java.util.Objects
 
 /**
   * Created by caio.martins on 19/10/16.
   */
-class TestDataset extends FlatSpec with Matchers with BeforeAndAfterWithContext  {
+class TestDataset extends AnyFlatSpec with should.Matchers with BeforeAndAfterWithContext  {
 
-  val  model: TrainValidationSplitModel
+//  val  model: TrainValidationSplitModel
 
   it should "Correct handle date dayofaweek values" in {
     val dataSet = UberDataset(context, s"${defaultFilePath}HandleDataTransformer.csv")
@@ -31,9 +31,12 @@ class TestDataset extends FlatSpec with Matchers with BeforeAndAfterWithContext 
     assert(results(1)._1._2 == 2)
     assert(results(2)._1._2 == 3)
 
-    assert(results(0)._2.features.toArray.deep == Array(0.0, 1.0, 10.5, 4.0).deep)
-    assert(results(1)._2.features.toArray.deep == Array(1.0, 0.0, 0.1, 6.0).deep)
-    assert(results(2)._2.features.toArray.deep == Array(1.0, 0.0, 10.0, 6.0).deep)
+//    assert(results(0)._2.features.toArray.deep == Array(0.0, 1.0, 10.5, 4.0).deep)
+//    assert(results(1)._2.features.toArray.deep == Array(1.0, 0.0, 0.1, 6.0).deep)
+//    assert(results(2)._2.features.toArray.deep == Array(1.0, 0.0, 10.0, 6.0).deep)
+    assert(Objects.deepEquals(results(0)._2.features.toArray, Array(0.0, 1.0, 10.5, 4.0)))
+    assert(Objects.deepEquals(results(1)._2.features.toArray, Array(1.0, 0.0, 0.1, 6.0)))
+    assert(Objects.deepEquals(results(2)._2.features.toArray, Array(1.0, 0.0, 10.0, 6.0)))
   }
 
   it should "Correct handle date dayofaweek and period values" in {

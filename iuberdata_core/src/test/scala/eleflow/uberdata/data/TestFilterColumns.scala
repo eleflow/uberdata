@@ -21,12 +21,15 @@ import org.apache.spark.rpc.netty.BeforeAndAfterWithContext
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.types._
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should
+
+import java.util.Objects
 
 /**
   * Created by dirceu on 22/10/14.
   */
-class TestFilterColumns extends FlatSpec with Matchers with BeforeAndAfterWithContext {
+class TestFilterColumns extends AnyFlatSpec with should.Matchers with BeforeAndAfterWithContext {
 
   import UberDataset._
 
@@ -47,11 +50,16 @@ class TestFilterColumns extends FlatSpec with Matchers with BeforeAndAfterWithCo
     val schema = sqlContext.applySchema(rdd, structType)
     val result = schema.sliceByName(Seq("id", "string2"), Seq.empty)
 
-    assert(
-      result.collect.deep == Array(
+//    assert(
+//      result.collect.deep == Array(
+//        new GenericRow(Array(1, "vlr1")),
+//        new GenericRow(Array(2, "vl3")),
+//        new GenericRow(Array(3, "vl3"))).deep)
+    assert(Objects.deepEquals(
+      result.collect, Array(
         new GenericRow(Array(1, "vlr1")),
         new GenericRow(Array(2, "vl3")),
-        new GenericRow(Array(3, "vl3"))).deep)
+        new GenericRow(Array(3, "vl3")))))
   }
 
   it should "correct handle excluded string columns" in {
@@ -70,12 +78,16 @@ class TestFilterColumns extends FlatSpec with Matchers with BeforeAndAfterWithCo
     val rdd = sc.parallelize(data)
     val schema = sqlContext.applySchema(rdd, structType)
     val result = schema.sliceByName(excludes = Seq("id", "double"))
-    assert(
-      result.collect.deep == Array(
+//    assert(
+//      result.collect.deep == Array(
+//        new GenericRow(Array(5, "vlr1")),
+//        new GenericRow(Array(1, "vl3")),
+//        new GenericRow(Array(8, "vl3"))).deep)
+    assert(Objects.deepEquals(
+      result.collect, Array(
         new GenericRow(Array(5, "vlr1")),
         new GenericRow(Array(1, "vl3")),
-        new GenericRow(Array(8, "vl3"))).deep)
-  }
+        new GenericRow(Array(8, "vl3")))))}
 
   it should "handle included int columns" in {
     @transient val uberContext = context
@@ -92,11 +104,16 @@ class TestFilterColumns extends FlatSpec with Matchers with BeforeAndAfterWithCo
     val rdd = sc.parallelize(data)
     val schema = sqlContext.applySchema(rdd, structType)
     val result = schema.slice(Seq(2, 3))
-    assert(
-      result.collect.deep == Array(
+//    assert(
+//      result.collect.deep == Array(
+//        new GenericRow(Array("vlr1", 10.5)),
+//        new GenericRow(Array("vl3", 0.1)),
+//        new GenericRow(Array("vl3", 10.0))).deep)
+    assert(Objects.deepEquals(
+      result.collect,Array(
         new GenericRow(Array("vlr1", 10.5)),
         new GenericRow(Array("vl3", 0.1)),
-        new GenericRow(Array("vl3", 10.0))).deep)
+        new GenericRow(Array("vl3", 10.0)))))
   }
 
   it should "correct handle excluded int columns" in {
@@ -115,10 +132,15 @@ class TestFilterColumns extends FlatSpec with Matchers with BeforeAndAfterWithCo
     val rdd = sc.parallelize(data)
     val schema = sqlContext.applySchema(rdd, structType)
     val result = schema.slice(excludes = Seq(0, 3))
-    assert(
-      result.collect.deep == Array(
+//    assert(
+//      result.collect.deep == Array(
+//        new GenericRow(Array(5, "vlr1")),
+//        new GenericRow(Array(1, "vl3")),
+//        new GenericRow(Array(8, "vl3"))).deep)
+    assert(Objects.deepEquals(
+      result.collect, Array(
         new GenericRow(Array(5, "vlr1")),
         new GenericRow(Array(1, "vl3")),
-        new GenericRow(Array(8, "vl3"))).deep)
+        new GenericRow(Array(8, "vl3")))))
   }
 }

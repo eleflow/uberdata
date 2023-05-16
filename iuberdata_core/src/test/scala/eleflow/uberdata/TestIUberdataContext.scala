@@ -21,7 +21,6 @@ package eleflow.uberdata
   */
 import java.io.IOException
 import java.net.URI
-
 import com.amazonaws.AmazonClientException
 import com.amazonaws.services.s3.AmazonS3
 import com.amazonaws.services.s3.model.{S3Object, S3ObjectInputStream}
@@ -30,12 +29,13 @@ import org.apache.hadoop.fs.{FSDataOutputStream, FileSystem, Path}
 import org.apache.spark.SparkConf
 import org.easymock.EasyMock
 import org.easymock.EasyMock.anyObject
-import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should
 
 /**
   * Created by dirceu on 30/09/14.
   */
-class TestIUberdataContext extends FlatSpec with Matchers {
+class TestIUberdataContext extends AnyFlatSpec with should.Matchers {
 
   val conf = EasyMock.createMock(classOf[SparkConf])
   val host = "10.0.0.1"
