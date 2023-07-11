@@ -31,8 +31,11 @@ val ver = "0.2.0"
 publishMavenStyle := true
 
 resolvers += Resolver.sonatypeRepo("public")
+
 resolvers += Resolver.typesafeIvyRepo("releases")
+
 resolvers += Resolver.sonatypeRepo("releases")
+
 resolvers += Resolver.mavenLocal
 
 //resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases"

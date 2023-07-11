@@ -34,7 +34,7 @@ lazy val xgboostVersion = "0.8-SNAPSHOT"
 
 lazy val commonSettings = Seq(
 	organization := "br.com.eleflow",
-	version := "0.2.0-SNAPSHOT",
+	version := "0.3.0-SNAPSHOT",
 	scalaVersion := scalaV
 )
 
@@ -51,7 +51,7 @@ lazy val publishRepo = {
 publishTo in ThisBuild := publishRepo
 
 resolvers ++= Seq(
-	//  "Local Maven Repository" at "file://" + Path.userHome.absolutePath + "/.m2/repository",
+//	"Local Maven Repository" at "file://" + Path.userHome.absolutePath + "/.m2/repository",
 	"Objective Nexus Snapshots" at "http://10.44.1.88:8080/archiva/repository/snapshots",
 	"Objective Nexus Release" at "http://10.44.1.88:8080/archiva/repository/internal")
 scalaVersion := scalaV
@@ -123,11 +123,11 @@ lazy val iuberdata_zeppelin = project dependsOn (iuberdata_core % "test->test;co
 			exclude("org.apache.maven", "maven-model"),
 		"org.apache.maven.wagon" % "wagon-http-lightweight" % "1.0" exclude("org.apache.maven.wagon", "wagon-http-shared"),
 		"org.apache.maven.wagon" % "wagon-http" % "1.0",
-		"org.rosuda.REngine" % "REngine" % "2.1.0",
-		"org.rosuda.REngine" % "Rserve" % "1.8.1",
-			"org.apache.zeppelin" % "zeppelin-interpreter" % zeppelin_version % "provided",
-		"junit" % "junit" % "4.11" % "test")
-	) settings (commonSettings)
+		"org.rosuda.REngine" % "REngine" % "2.1.1-SNAPSHOT",
+		"org.rosuda.REngine" % "Rserve" % "1.8.2-SNAPSHOT"
+		, "org.apache.zeppelin" % "zeppelin-interpreter" % zeppelin_version % "provided"
+		, "junit" % "junit" % "4.11" % "test"
+	)) settings (commonSettings)
 //, dependencyOverrides ++= Set(
 //    "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.5"
 //  ))
